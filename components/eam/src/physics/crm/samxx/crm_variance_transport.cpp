@@ -14,8 +14,10 @@ void VT_filter(int filter_wn_max, real4d &f_in, real4d &f_out) {
   int nwx = nx2-(filter_wn_max+1)*2;
   int nwy = ny2-(filter_wn_max+1)*2;
   
-  yakl::FFT<nx> fftx;
-  yakl::FFT<fftySize> ffty;
+  yakl::RealFFT1D<nx> fftx;
+  yakl::RealFFT1D<fftySize> ffty;
+  fftx.init();
+  ffty.init();
 
   //----------------------------------------------------------------------------
   // Forward Fourier transform
@@ -24,10 +26,10 @@ void VT_filter(int filter_wn_max, real4d &f_in, real4d &f_out) {
   //   for (int j=0; j<ny; j++) {
   //     for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
-    real ftmp[nx+2]; real tmp [nx];
-    for (int i=0; i<nx ; i++) { ftmp[i] = f_in(k,j,i,icrm); }
-    fftx.forward(ftmp, tmp);
-    for (int i=0; i<nx2; i++) { fft_out(k,j,i,icrm) = ftmp[i]; }
+    SArray<real,1,nx+2> ftmp;
+    for (int i=0; i<nx ; i++) { ftmp(i) = f_in(k,j,i,icrm); }
+    fftx.forward(ftmp, fftx.trig, yakl::FFT_SCALE_ECMWF);
+    for (int i=0; i<nx2; i++) { fft_out(k,j,i,icrm) = ftmp(i); }
   });
 
   if (RUN3D) {
@@ -35,10 +37,10 @@ void VT_filter(int filter_wn_max, real4d &f_in, real4d &f_out) {
     //   for (int i=0; j<nx+1; i++) {
     //     for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( SimpleBounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
-      real ftmp[ny+2]; real tmp [ny];
-      for (int j=0; j<ny ; j++) { ftmp[j] = fft_out(k,j,i,icrm); }
-      ffty.forward(ftmp, tmp);
-      for (int j=0; j<ny2; j++) { fft_out(k,j,i,icrm) = ftmp[j]; }
+      SArray<real,1,ny+2> ftmp;
+      for (int j=0; j<ny ; j++) { ftmp(j) = fft_out(k,j,i,icrm); }
+      ffty.forward(ftmp, ffty.trig, yakl::FFT_SCALE_ECMWF);
+      for (int j=0; j<ny2; j++) { fft_out(k,j,i,icrm) = ftmp(j); }
     });
   }
 
@@ -73,10 +75,10 @@ void VT_filter(int filter_wn_max, real4d &f_in, real4d &f_out) {
     //   for (int i=0; i<nx+1; i++) {
     //     for (int icrm=0; icrm<ncrms; icrm++) {
     parallel_for( SimpleBounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
-      real ftmp[ny+2]; real tmp [ny];
-      for(int j=0; j<ny+2; j++) { ftmp[j] = fft_out(k,j,i,icrm); }
-      ffty.inverse(ftmp,tmp);
-      for(int j=0; j<ny  ; j++) { fft_out(k,j,i,icrm) = ftmp[j]; } 
+      SArray<real,1,ny+2> ftmp;
+      for(int j=0; j<ny+2; j++) { ftmp(j) = fft_out(k,j,i,icrm); }
+      ffty.inverse(ftmp, ffty.trig, yakl::FFT_SCALE_ECMWF);
+      for(int j=0; j<ny  ; j++) { fft_out(k,j,i,icrm) = ftmp(j); }
     });
   }
 
@@ -84,10 +86,10 @@ void VT_filter(int filter_wn_max, real4d &f_in, real4d &f_out) {
   //   for (int j=0; i<ny; i++) {
   //     for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
-    real ftmp[nx+2]; real tmp [nx];
-    for(int i=0; i<nx+2; i++) { ftmp[i] = fft_out(k,j,i,icrm); }
-    fftx.inverse(ftmp,tmp);
-    for(int i=0; i<nx  ; i++) { f_out(k,j,i,icrm) = ftmp[i]; }
+    SArray<real,1,nx+2> ftmp;
+    for(int i=0; i<nx+2; i++) { ftmp(i) = fft_out(k,j,i,icrm); }
+    fftx.inverse(ftmp, fftx.trig, yakl::FFT_SCALE_ECMWF);
+    for(int i=0; i<nx  ; i++) { f_out(k,j,i,icrm) = ftmp(i); }
   });
 
 }
@@ -96,20 +98,20 @@ void VT_filter(int filter_wn_max, real4d &f_in, real4d &f_out) {
 //==============================================================================
 
 void VT_diagnose() {
-  auto &t            = :: t;
-  auto &qv           = :: qv;
-  auto &qcl          = :: qcl;
-  auto &qci          = :: qci;
-  auto &factor_xy    = :: factor_xy;
-  auto &t_vt_pert    = :: t_vt_pert;
-  auto &q_vt_pert    = :: q_vt_pert;
-  auto &t_vt         = :: t_vt;
-  auto &q_vt         = :: q_vt;
-  auto &ncrms        = :: ncrms;
+  YAKL_SCOPE( t             , :: t);
+  YAKL_SCOPE( micro_field   , :: micro_field);
+  YAKL_SCOPE( factor_xy     , :: factor_xy);
+  YAKL_SCOPE( t_vt_pert     , :: t_vt_pert);
+  YAKL_SCOPE( q_vt_pert     , :: q_vt_pert);
+  YAKL_SCOPE( t_vt          , :: t_vt);
+  YAKL_SCOPE( q_vt          , :: q_vt);
+  YAKL_SCOPE( ncrms         , :: ncrms);
 
   // local variables
   real2d t_mean("t_mean", nzm, ncrms);
   real2d q_mean("q_mean", nzm, ncrms);
+
+  int idx_qt = index_water_vapor;
 
   //----------------------------------------------------------------------------
   // calculate horizontal mean
@@ -129,7 +131,7 @@ void VT_diagnose() {
   //      do icrm = 1,ncrms
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     yakl::atomicAdd( t_mean(k,icrm) , t(k,j+offy_s,i+offx_s,icrm) );
-    yakl::atomicAdd( q_mean(k,icrm) , qv(k,j,i,icrm) + qcl(k,j,i,icrm) + qci(k,j,i,icrm) );
+    yakl::atomicAdd( q_mean(k,icrm) , micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) );
   });
 
   // do k = 1,nzm
@@ -154,7 +156,7 @@ void VT_diagnose() {
     //       do icrm = 1,ncrms
     parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       tmp_t(k,j,i,icrm) = t(k,j+offy_s,i+offx_s,icrm);
-      tmp_q(k,j,i,icrm) = qv(k,j,i,icrm) + qcl(k,j,i,icrm) + qci(k,j,i,icrm);
+      tmp_q(k,j,i,icrm) = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm);
       tmp_t(k,j,i,icrm) = tmp_t(k,j,i,icrm) - t_mean(k,icrm);
       tmp_q(k,j,i,icrm) = tmp_q(k,j,i,icrm) - q_mean(k,icrm);
     });
@@ -170,7 +172,7 @@ void VT_diagnose() {
     //       do icrm = 1,ncrms
     parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       t_vt_pert(k,j,i,icrm) = t(k,j+offy_s,i+offx_s,icrm) - t_mean(k,icrm);
-      q_vt_pert(k,j,i,icrm) = qv(k,j,i,icrm) + qcl(k,j,i,icrm) + qci(k,j,i,icrm) - q_mean(k,icrm);
+      q_vt_pert(k,j,i,icrm) = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) - q_mean(k,icrm);
     });
     
   }
@@ -204,16 +206,16 @@ void VT_diagnose() {
 //==============================================================================
 
 void VT_forcing() {
-  auto &t           = :: t;
-  auto &micro_field = :: micro_field;
-  auto &t_vt_tend   = :: t_vt_tend;
-  auto &q_vt_tend   = :: q_vt_tend;
-  auto &t_vt_pert   = :: t_vt_pert;
-  auto &q_vt_pert   = :: q_vt_pert;
-  auto &t_vt        = :: t_vt;
-  auto &q_vt        = :: q_vt;
-  auto &ncrms       = :: ncrms;
-  auto &dtn         = :: dtn;
+  YAKL_SCOPE( t            , :: t);
+  YAKL_SCOPE( micro_field  , :: micro_field);
+  YAKL_SCOPE( t_vt_tend    , :: t_vt_tend);
+  YAKL_SCOPE( q_vt_tend    , :: q_vt_tend);
+  YAKL_SCOPE( t_vt_pert    , :: t_vt_pert);
+  YAKL_SCOPE( q_vt_pert    , :: q_vt_pert);
+  YAKL_SCOPE( t_vt         , :: t_vt);
+  YAKL_SCOPE( q_vt         , :: q_vt);
+  YAKL_SCOPE( ncrms        , :: ncrms);
+  YAKL_SCOPE( dtn          , :: dtn);
 
   // local variables
   real2d t_pert_scale("t_pert_scale", nzm, ncrms);

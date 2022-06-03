@@ -57,7 +57,7 @@ module ice_comp_mct
    use seaice_time_integration
    use seaice_error, only: seaice_check_critical_error
 
-   use ice_constants_colpkg, only: Tffresh
+   use ice_constants_colpkg, only: Tffresh, ice_ref_salinity, p001
 
    use ice_colpkg, only: colpkg_sea_freezing_temperature
 
@@ -439,9 +439,22 @@ contains
 
     else if (runtype == "continue" .or. runtype == "branch") then ! Restart run or branch run
 
-        ! Turn on restart
+        ! Turn on restarts
         call mpas_pool_get_config(domain % configs, "config_do_restart", tempLogicalConfig)
         tempLogicalConfig = .true.
+        call mpas_pool_get_config(domain % configs, "config_do_restart_bgc", tempLogicalConfig)
+        tempLogicalConfig = .true.
+        call mpas_pool_get_config(domain % configs, "config_do_restart_hbrine", tempLogicalConfig)
+        tempLogicalConfig = .true.
+        call mpas_pool_get_config(domain % configs, "config_do_restart_snow_density", tempLogicalConfig)
+        tempLogicalConfig = .true.
+        call mpas_pool_get_config(domain % configs, "config_do_restart_snow_grain_radius", tempLogicalConfig)
+        tempLogicalConfig = .true.
+        call mpas_pool_get_config(domain % configs, "config_do_restart_zsalinity", tempLogicalConfig)
+        tempLogicalConfig = .true.
+        call mpas_pool_get_config(domain % configs, "config_do_restart_bgc", tempLogicalConfig)
+        tempLogicalConfig = .true.
+
 
         ! Set start time to be read from file
         call mpas_pool_get_config(domain % configs, "config_start_time", tempCharConfig)
@@ -1684,8 +1697,8 @@ contains
 !    o  swndf    -- sw: nir diffuse downward
 !    o  swvdf    -- sw: vis diffuse downward
 !    o  swnet    -- sw: net
-!    o  q        -- ocn freeze/melt heat flux
-!    o  frazil   -- ocn frazil production
+!    o  q        -- ocn frazil heat flux(+) / melt potential(-)
+!    o  frazil   -- ocn frazil mass flux 
 !    o  bcphidry -- Black Carbon hydrophilic dry deposition flux
 !    o  bcphodry -- Black Carbon hydrophobic dry deposition flux
 !    o  bcphiwet -- Black Carbon hydrophilic wet deposition flux
@@ -1759,9 +1772,8 @@ contains
       i,n
 
    real (kind=RKIND) :: &
-      frazilProduction, &
-      meltingPotential, &
-      freezingPotential
+      frazilMassFlux, &
+      frazilMassFluxRev
 
    type (block_type), pointer :: block_ptr
 
@@ -1790,6 +1802,7 @@ contains
       seaSurfaceSalinityField,          &
       seaFreezingTemperatureField,      &
       freezingMeltingPotentialField,    &
+      frazilMassAdjustField,            &
       uOceanVelocityField,              &
       vOceanVelocityField,              &
       seaSurfaceTiltUField,             &
@@ -1832,6 +1845,7 @@ contains
       seaSurfaceSalinity,          &
       seaFreezingTemperature,      &
       freezingMeltingPotential,    &
+      frazilMassAdjust,            &
       uOceanVelocity,              &
       vOceanVelocity,              &
       seaSurfaceTiltU,             &
@@ -1857,7 +1871,8 @@ contains
       oceanDMSPConc,               &
       oceanHumicsConc,             &
       carbonToNitrogenRatioAlgae,  &
-      carbonToNitrogenRatioDON
+      carbonToNitrogenRatioDON,    &
+      DOCPoolFractions
 
    real (kind=RKIND), dimension(:,:), pointer :: &
       oceanAlgaeConc,              &
@@ -1905,6 +1920,7 @@ contains
       call mpas_pool_get_array(oceanCoupling, 'seaSurfaceSalinity', seaSurfaceSalinity)
       call mpas_pool_get_array(oceanCoupling, 'seaFreezingTemperature', seaFreezingTemperature)
       call mpas_pool_get_array(oceanCoupling, 'freezingMeltingPotential', freezingMeltingPotential)
+      call mpas_pool_get_array(oceanCoupling, 'frazilMassAdjust', frazilMassAdjust)
       call mpas_pool_get_array(oceanCoupling, 'uOceanVelocity', uOceanVelocity)
       call mpas_pool_get_array(oceanCoupling, 'vOceanVelocity', vOceanVelocity)
       call mpas_pool_get_array(oceanCoupling, 'seaSurfaceTiltU', seaSurfaceTiltU)
@@ -1950,6 +1966,8 @@ contains
          call mpas_pool_get_array(biogeochemistry, 'oceanZAerosolConc', oceanZAerosolConc)
          call mpas_pool_get_array(biogeochemistry, 'carbonToNitrogenRatioAlgae', carbonToNitrogenRatioAlgae)
          call mpas_pool_get_array(biogeochemistry, 'carbonToNitrogenRatioDON', carbonToNitrogenRatioDON)
+         call mpas_pool_get_array(biogeochemistry, 'DOCPoolFractions', DOCPoolFractions)
+
          if (config_use_zaerosols) then
             call mpas_pool_get_array(biogeochemistry, "atmosBlackCarbonFlux", atmosBlackCarbonFlux)
             call mpas_pool_get_array(biogeochemistry, "atmosDustFlux", atmosDustFlux)
@@ -1970,13 +1988,25 @@ contains
 
         if (trim(config_ocean_surface_type) == "free") then ! free surface (MPAS-O)
         
-           meltingPotential            = x2i_i % rAttr(index_x2i_Fioo_q, n)
+           ! freezingMeltingPotential(i) is the ocean energy associated with frazil formation 
+           ! when it is positive and frazilMassFlux is positive. Conversely, freezingMeltingPotential(i)
+           ! is negative when there is the melting potential in which case frazilMassFlux is zero.
 
-           ! frazil calculation
-           frazilProduction            = x2i_i % rAttr(index_x2i_Fioo_frazil, n)
-           call freezing_potential(freezingPotential, frazilProduction, seaSurfaceSalinity(i), &
+           freezingMeltingPotential(i) = x2i_i % rAttr(index_x2i_Fioo_q, n)
+
+           frazilMassFlux              = x2i_i % rAttr(index_x2i_Fioo_frazil, n)
+
+           ! Now determine the sea ice mass associated with the frazil heat flux given when
+           ! freezingMeltingPotential(i) is positive. This produces a revised mass flux, given 
+           ! in frazilMassFluxRev for the given sea surface salinity. The resulting difference
+           ! is assigned to frazilMassAdjust(i) which is exported to the ocean in the subsequent
+           ! coupling step as a freshwater and salt flux. This step is required to balance mass
+           ! and heat with the ocean.
+
+           call frazil_mass(freezingMeltingPotential(i), frazilMassFluxRev, seaSurfaceSalinity(i), &
                                    config_thermodynamics_type)
-           freezingMeltingPotential(i) = freezingPotential + min(meltingPotential,0.0_RKIND)
+
+           frazilMassAdjust(i) = frazilMassFlux-frazilMassFluxRev 
 
         else ! non-free surface (SOM)
 
@@ -2034,12 +2064,13 @@ contains
         if (config_use_column_biogeochemistry) then
            oceanAlgaeConc(1,i)           = x2i_i % rAttr(index_x2i_So_algae1, n)
            oceanAlgaeConc(2,i)           = x2i_i % rAttr(index_x2i_So_algae2, n)
-           oceanAlgaeConc(3,i)           = x2i_i % rAttr(index_x2i_So_algae3, n)
-           oceanDOCConc(1,i)             = x2i_i % rAttr(index_x2i_So_doc1, n)
-           oceanDOCConc(2,i)             = x2i_i % rAttr(index_x2i_So_doc2, n)
+           oceanAlgaeConc(3,i)           = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_algae3, n)
+           oceanDOCConc(1,i)             = x2i_i % rAttr(index_x2i_So_doc1, n) * DOCPoolFractions(1)
+           oceanDOCConc(2,i)             = x2i_i % rAttr(index_x2i_So_doc2, n) * DOCPoolFractions(2)
            oceanDOCConc(3,i)             = 0.0_RKIND
-           oceanDICConc(1,i)             = x2i_i % rAttr(index_x2i_So_dic1, n) !JW not used, set to 0?
-           oceanDONConc(1,i)             = x2i_i % rAttr(index_x2i_So_don1, n)
+           oceanDICConc(1,i)             = x2i_i % rAttr(index_x2i_So_dic1, n)
+           oceanDONConc(1,i)             = x2i_i % rAttr(index_x2i_So_doc3, n) * DOCPoolFractions(3) &
+              /carbonToNitrogenRatioDON(1)
            oceanNitrateConc(i)           = x2i_i % rAttr(index_x2i_So_no3, n)
            oceanSilicateConc(i)          = x2i_i % rAttr(index_x2i_So_sio3, n)
            oceanAmmoniumConc(i)          = x2i_i % rAttr(index_x2i_So_nh4, n)
@@ -2050,12 +2081,12 @@ contains
            oceanParticulateIronConc(2,i) = x2i_i % rAttr(index_x2i_So_fep2, n)
            oceanDissolvedIronConc(1,i)   = x2i_i % rAttr(index_x2i_So_fed1, n)
            oceanDissolvedIronConc(2,i)   = x2i_i % rAttr(index_x2i_So_fed2, n)
-           oceanZAerosolConc(1,i)        = x2i_i % rAttr(index_x2i_So_zaer1, n) !JW not used, set to 0?
-           oceanZAerosolConc(2,i)        = x2i_i % rAttr(index_x2i_So_zaer2, n) !JW not used, set to 0?
-           oceanZAerosolConc(3,i)        = x2i_i % rAttr(index_x2i_So_zaer3, n) !JW not used, set to 0?
-           oceanZAerosolConc(4,i)        = x2i_i % rAttr(index_x2i_So_zaer4, n) !JW not used, set to 0?
-           oceanZAerosolConc(5,i)        = x2i_i % rAttr(index_x2i_So_zaer5, n) !JW not used, set to 0?
-           oceanZAerosolConc(6,i)        = x2i_i % rAttr(index_x2i_So_zaer6, n) !JW not used, set to 0?
+           oceanZAerosolConc(1,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer1, n)
+           oceanZAerosolConc(2,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer2, n)
+           oceanZAerosolConc(3,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer3, n)
+           oceanZAerosolConc(4,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer4, n)
+           oceanZAerosolConc(5,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer5, n)
+           oceanZAerosolConc(6,i)        = 0.0_RKIND !x2i_i % rAttr(index_x2i_So_zaer6, n)
            ! set aerosols, if configured
            if (config_use_zaerosols) then
               if (config_use_modal_aerosols) then
@@ -2095,6 +2126,7 @@ contains
 !
 !-----------------------------------------------------------------------
       do i = 1, nCellsSolve
+
         seaSurfaceTemperature(i)  = seaSurfaceTemperature(i) - seaiceFreshWaterFreezingPoint
 
         if (config_use_column_biogeochemistry) then
@@ -2120,6 +2152,7 @@ contains
    call mpas_pool_get_field(oceanCoupling, 'seaSurfaceSalinity', seaSurfaceSalinityField)
    call mpas_pool_get_field(oceanCoupling, 'seaFreezingTemperature', seaFreezingTemperatureField)
    call mpas_pool_get_field(oceanCoupling, 'freezingMeltingPotential', freezingMeltingPotentialField)
+   call mpas_pool_get_field(oceanCoupling, 'frazilMassAdjust', frazilMassAdjustField)
    call mpas_pool_get_field(oceanCoupling, 'uOceanVelocity', uOceanVelocityField)
    call mpas_pool_get_field(oceanCoupling, 'vOceanVelocity', vOceanVelocityField)
    call mpas_pool_get_field(oceanCoupling, 'seaSurfaceTiltU', seaSurfaceTiltUField)
@@ -2172,6 +2205,7 @@ contains
    call mpas_dmpar_exch_halo_field(seaSurfaceSalinityField)
    call mpas_dmpar_exch_halo_field(seaFreezingTemperatureField)
    call mpas_dmpar_exch_halo_field(freezingMeltingPotentialField)
+   call mpas_dmpar_exch_halo_field(frazilMassAdjustField)
    call mpas_dmpar_exch_halo_field(uOceanVelocityField)
    call mpas_dmpar_exch_halo_field(vOceanVelocityField)
    call mpas_dmpar_exch_halo_field(seaSurfaceTiltUField)
@@ -2216,6 +2250,8 @@ contains
       endif
    endif
 
+! REVISION HISTORY:
+! Revised Andrew Roberts May 2021
 !-----------------------------------------------------------------------
 !EOC
 
@@ -2273,6 +2309,7 @@ contains
       velocitySolver,   &
       shortwave,        &
       atmosCoupling,    &
+      oceanCoupling,    &
       atmosFluxes,      &
       oceanFluxes,      &
       icebergFluxes,    &
@@ -2324,6 +2361,7 @@ contains
       oceanShortwaveFlux,          &
       oceanFreshWaterFlux,         &
       oceanSaltFlux,               &
+      frazilMassAdjust,            &
       bergFreshwaterFlux,          &
       bergLatentHeatFlux,          &
       oceanNitrateFlux,            &
@@ -2364,6 +2402,7 @@ contains
       call MPAS_pool_get_subpool(block_ptr % structs, "velocity_solver", velocitySolver)
       call MPAS_pool_get_subpool(block_ptr % structs, "shortwave", shortwave)
       call MPAS_pool_get_subpool(block_ptr % structs, 'atmos_coupling', atmosCoupling)
+      call MPAS_pool_get_subpool(block_ptr % structs, 'ocean_coupling', oceanCoupling)
       call MPAS_pool_get_subpool(block_ptr % structs, "atmos_fluxes", atmosFluxes)
       call MPAS_pool_get_subpool(block_ptr % structs, "ocean_fluxes", oceanFluxes)
 
@@ -2397,6 +2436,8 @@ contains
       call MPAS_pool_get_array(atmosCoupling, 'atmosReferenceSpeed10m', atmosReferenceSpeed10m)
       call MPAS_pool_get_array(atmosCoupling, 'atmosReferenceTemperature2m', atmosReferenceTemperature2m)
       call MPAS_pool_get_array(atmosCoupling, 'atmosReferenceHumidity2m', atmosReferenceHumidity2m)
+
+      call MPAS_pool_get_array(oceanCoupling, 'frazilMassAdjust', frazilMassAdjust)
 
       call MPAS_pool_get_array(atmosFluxes, 'latentHeatFlux', latentHeatFlux)
       call MPAS_pool_get_array(atmosFluxes, 'sensibleHeatFlux', sensibleHeatFlux)
@@ -2523,11 +2564,13 @@ contains
                i2x_i % rAttr(index_i2x_Faii_swnet,n) = absorbedShortwaveFlux(i)
             endif
 
-            !--- i/o fluxes computed by ice
+            ! i/o fluxes computed by ice, as well as additional freshwater and salt calculated at the last 
+            ! coupling import and needed to grow sea ice from frazil passed from the ocean model in the
+            ! field frazilMassAdjust.
             i2x_i % rAttr(index_i2x_Fioi_melth,n) = oceanHeatFlux(i)
             i2x_i % rAttr(index_i2x_Fioi_swpen,n) = oceanShortwaveFlux(i)
-            i2x_i % rAttr(index_i2x_Fioi_meltw,n) = oceanFreshWaterFlux(i)
-            i2x_i % rAttr(index_i2x_Fioi_salt ,n) = oceanSaltFlux(i)
+            i2x_i % rAttr(index_i2x_Fioi_meltw,n) = oceanFreshWaterFlux(i) + frazilMassAdjust(i)/ailohi
+            i2x_i % rAttr(index_i2x_Fioi_salt ,n) = oceanSaltFlux(i) + ice_ref_salinity*p001*frazilMassAdjust(i)/ailohi
             i2x_i % rAttr(index_i2x_Fioi_taux ,n) = tauxo
             i2x_i % rAttr(index_i2x_Fioi_tauy ,n) = tauyo
 
@@ -2539,7 +2582,7 @@ contains
                i2x_i % rAttr(index_i2x_Fioi_algae3,n) = oceanAlgaeFlux(3,i) * carbonToNitrogenRatioAlgae(3)
                i2x_i % rAttr(index_i2x_Fioi_doc1  ,n) = oceanDOCFlux(1,i)
                i2x_i % rAttr(index_i2x_Fioi_doc2  ,n) = oceanDOCFlux(2,i)
-               i2x_i % rAttr(index_i2x_Fioi_doc3  ,n) = oceanDOCFlux(3,i) !JW set to 0?
+               i2x_i % rAttr(index_i2x_Fioi_doc3  ,n) = oceanDONFlux(1,i) * carbonToNitrogenRatioDON(1)
                i2x_i % rAttr(index_i2x_Fioi_dic1  ,n) = oceanDICFlux(1,i)
                i2x_i % rAttr(index_i2x_Fioi_don1  ,n) = oceanDONFlux(1,i)
                i2x_i % rAttr(index_i2x_Fioi_no3   ,n) = oceanNitrateFlux(i)
@@ -2561,6 +2604,8 @@ contains
       block_ptr => block_ptr % next
    enddo
 
+! REVISION HISTORY:
+! Revised Andrew Roberts May 2021
 !-----------------------------------------------------------------------
 !EOC
 
@@ -2696,14 +2741,18 @@ contains
 !***********************************************************************
 !BOP
 !
-! !IROUTINE: freezing_potential
+! !IROUTINE: frazil_mass
 !
-! !INTERFACE:
-   subroutine freezing_potential(freezingPotential, frazilProduction, seaSurfaceSalinity, &
+! !INTERFACE
+   subroutine frazil_mass(freezingPotential, frazilMassFlux, seaSurfaceSalinity, &
                                  config_thermodynamics_type)
 !
 ! !DESCRIPTION:
-! Calculate freezing potential for a cell
+! Calculate frazil mass based on on the sea surface salinity, and frazil heat flux 
+! from the ocean, otherwise referred to as to as the freeze-melt potential. When 
+! freezingPotential is positive, it gives the heat flux, according to the ocean model
+! associated with the frazil mass passed from the ocean.  This function calculates
+! the frazil mass based on the freezingPotential according to sea ice model thermodynamics,
 !
 ! !USES:
       use ice_mushy_physics, only:  &
@@ -2715,12 +2764,12 @@ contains
          phi_init
 
 ! !INPUT PARAMETERS:
-      real (kind=RKIND),      intent(in)  :: frazilProduction
-      real (kind=RKIND),      intent(in)  :: seaSurfaceSalinity
-      character(len=strKIND), intent(in)  :: config_thermodynamics_type
+      real (kind=RKIND),      intent(in)   :: freezingPotential
+      real (kind=RKIND),      intent(in)   :: seaSurfaceSalinity
+      character(len=strKIND), intent(in)   :: config_thermodynamics_type
 
 ! !OUTPUT PARAMETERS:
-      real (kind=RKIND),      intent(out) :: freezingPotential
+      real (kind=RKIND),      intent(out)  :: frazilMassFlux
 
 !EOP
 !BOC
@@ -2736,7 +2785,7 @@ contains
       vi0new
 
 
-   if (frazilProduction > 0.0_RKIND) then
+   if (freezingPotential > 0.0_RKIND) then
 
       if (trim(config_thermodynamics_type) == "mushy") then  ! mushy
          if (seaSurfaceSalinity > 2.0_RKIND * dSin0_frazil) then
@@ -2744,25 +2793,26 @@ contains
          else
              Si0new = seaSurfaceSalinity**2 / (4.0_RKIND*dSin0_frazil)
          endif
-         Ti = min(liquidus_temperature_mush(Si0new/phi_init), -0.1_RKIND)
+         Ti = liquidus_temperature_mush(Si0new/phi_init)
          qi0new = enthalpy_mush(Ti, Si0new)
       else
          qi0new = -seaiceDensityIce*seaiceLatentHeatMelting
       endif    ! ktherm
 
-      vi0new = max (frazilProduction, 0.0_RKIND) / seaiceDensityIce
-      freezingPotential = -vi0new*qi0new ! note sign convention, qi < 0
+      frazilMassFlux = -freezingPotential*seaiceDensityIce/qi0new
 
    else
 
-      freezingPotential = 0.0_RKIND
+      frazilMassFlux = 0.0_RKIND
 
    endif
 
+! REVISION HISTORY:
+! Revised Andrew Roberts May 2021
 !-----------------------------------------------------------------------
 !EOC
 
-   end subroutine freezing_potential!}}}
+   end subroutine frazil_mass!}}}
 
 !***********************************************************************
 !BOP

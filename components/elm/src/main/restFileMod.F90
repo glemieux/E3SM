@@ -60,6 +60,7 @@ module restFileMod
   use BeTRSimulationALM    , only : betr_simulation_alm_type
   use CropType             , only : crop_type
   use GridcellDataType     , only : grc_wf
+  use TopounitDataType     , only : top_es
   use LandunitDataType     , only : lun_es, lun_ws
   use ColumnDataType       , only : col_es, col_ef, col_ws, col_wf
   use ColumnDataType       , only : col_cs, c13_col_cs, c14_col_cs
@@ -71,6 +72,7 @@ module restFileMod
   use VegetationDataType   , only : veg_cf, c13_veg_cf, c14_veg_cf
   use VegetationDataType   , only : veg_ns, veg_nf
   use VegetationDataType   , only : veg_ps, veg_pf
+  use GridcellDataType     , only : grc_cs
   
   !
   ! !PUBLIC TYPES:
@@ -123,7 +125,8 @@ contains
     ! Define/write CLM restart file.
     !
     use WaterBudgetMod, only : WaterBudget_Restart
-    use elm_varctl    , only : do_budgets
+    use CNPBudgetMod  , only : CNPBudget_Restart
+    use elm_varctl    , only : do_budgets, use_cn
     !
     implicit none
     !
@@ -222,6 +225,8 @@ contains
     call col_wf%Restart (bounds, ncid, flag='define')
     
     call veg_wf%Restart (bounds, ncid, flag='define')
+
+    call top_es%Restart (bounds, ncid, flag='define')
     
     call lun_es%Restart (bounds, ncid, flag='define')
 
@@ -288,6 +293,9 @@ contains
        call veg_ps%Restart(bounds, ncid, flag='define')
        call veg_pf%Restart(bounds, ncid, flag='define')
        call crop_vars%Restart(bounds, ncid, flag='define')
+
+       call grc_cs%Restart(bounds, ncid, flag='define')
+
     end if
 
 
@@ -308,6 +316,9 @@ contains
 
     if (do_budgets) then
        call WaterBudget_Restart(bounds, ncid, flag='define')
+       if (use_cn) then
+          call CNPBudget_Restart(bounds, ncid, flag='define')
+       endif
     end if
 
     call restFile_enddef( ncid )
@@ -351,6 +362,8 @@ contains
     call col_wf%Restart (bounds, ncid, flag='write')
 
     call veg_wf%Restart (bounds, ncid, flag='write')
+
+    call top_es%Restart (bounds, ncid, flag='write')
 
     call lun_es%Restart (bounds, ncid, flag='write')
 
@@ -440,6 +453,9 @@ contains
 
     if (do_budgets) then
        call WaterBudget_Restart(bounds, ncid, flag='write')
+       if (use_cn) then
+          call CNPBudget_Restart(bounds, ncid, flag='write')
+       endif
     end if
 
     ! --------------------------------------------
@@ -486,6 +502,8 @@ contains
     use decompMod        , only : bounds_type
     use reweightMod      , only : reweight_wrapup
     use WaterBudgetMod   , only : WaterBudget_Restart
+    use CNPBudgetMod     , only : CNPBudget_Restart
+    use elm_varctl       , only : do_budgets, use_cn
     !
     ! !ARGUMENTS:
     character(len=*)               , intent(in)    :: file  ! output netcdf restart file
@@ -585,6 +603,8 @@ contains
 
     call veg_wf%Restart (bounds, ncid, flag='read')
 
+    call top_es%Restart (bounds, ncid, flag='read')
+
     call lun_es%Restart (bounds, ncid, flag='read')
 
     call col_es%Restart (bounds, ncid, flag='read')
@@ -669,7 +689,12 @@ contains
         
     call hist_restart_ncd (bounds, ncid, flag='read')
 
-    call WaterBudget_Restart(bounds, ncid, flag='read')
+    if (do_budgets) then
+       call WaterBudget_Restart(bounds, ncid, flag='read')
+       if (use_cn) then
+          call CNPBudget_Restart(bounds, ncid, flag='read')
+       endif
+    endif
 
     ! Do error checking on file
     
@@ -935,6 +960,7 @@ contains
     use decompMod            , only : get_proc_global
     use elm_varctl           , only : do_budgets
     use WaterBudgetMod       , only : f_size, s_size, p_size
+    use CNPBudgetMod         , only : c_f_size, c_s_size, n_f_size, n_s_size, p_f_size, p_s_size
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: ncid
@@ -987,6 +1013,14 @@ contains
     if (do_budgets) then
        call ncd_defdim(ncid , 'budg_flux' , f_size*p_size,  dimid)
        call ncd_defdim(ncid , 'budg_state', s_size*p_size,  dimid)
+       if (use_cn) then
+          call ncd_defdim(ncid , 'C_budg_flux' , c_f_size*p_size,  dimid)
+          call ncd_defdim(ncid , 'C_budg_state', c_s_size*p_size,  dimid)
+          call ncd_defdim(ncid , 'N_budg_flux' , n_f_size*p_size,  dimid)
+          call ncd_defdim(ncid , 'N_budg_state', n_s_size*p_size,  dimid)
+          call ncd_defdim(ncid , 'P_budg_flux' , p_f_size*p_size,  dimid)
+          call ncd_defdim(ncid , 'P_budg_state', p_s_size*p_size,  dimid)
+       endif
     end if
 
     ! Define global attributes
@@ -1089,8 +1123,9 @@ contains
     ! Add global metadata defining pft types
     !
     ! !USES:
-    use elm_varpar, only : natpft_lb, mxpft, cft_lb, cft_ub
+    use elm_varpar, only : natpft_lb, mxpft, cft_lb, cft_ub, mxpft_nc
     use pftvarcon , only : pftname_len, pftname
+    use elm_varctl,  only : use_crop
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: ncid ! local file id
@@ -1104,6 +1139,7 @@ contains
     !-----------------------------------------------------------------------
     
     do ptype = natpft_lb, mxpft
+       if(.not. use_crop .and. ptype > mxpft_nc) EXIT ! exit the do loop
        attname = att_prefix // pftname(ptype)
        call ncd_putatt(ncid, ncd_global, attname, ptype)
     end do

@@ -1,5 +1,19 @@
 MODEL_FORMULATION =
 
+#
+# Autodetect CORE from path
+#
+override CORE =
+ifneq ($(findstring components/mpas-ocean,$(PWD)),)
+	override CORE = ocean
+endif
+ifneq ($(findstring components/mpas-seaice,$(PWD)),)
+	override CORE = seaice
+endif
+ifneq ($(findstring components/mpas-albany-landice,$(PWD)),)
+	override CORE = landice
+endif
+
 ifneq "${MPAS_SHELL}" ""
         SHELL = ${MPAS_SHELL}
 endif
@@ -15,6 +29,7 @@ xlf:
 	"FC_SERIAL = xlf2003_r" \
 	"CC_SERIAL = xlc_r" \
 	"CXX_SERIAL = xlc++_r" \
+	"FFLAGS_FPIEEE = -qstrict" \
 	"FFLAGS_PROMOTION = -qrealsize=8" \
 	"FFLAGS_OPT = -O3 -qufmt=be -WF,-qnotrigraph" \
 	"CFLAGS_OPT = -O3" \
@@ -32,6 +47,7 @@ xlf:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 xlf-summit-omp-offload:
@@ -42,6 +58,7 @@ xlf-summit-omp-offload:
 	"FC_SERIAL = xlf90_r" \
 	"CC_SERIAL = xlc_r" \
 	"CXX_SERIAL = xlc++_r" \
+	"FFLAGS_FPIEEE = -qstrict" \
 	"FFLAGS_PROMOTION = -qrealsize=8" \
 	"FFLAGS_OPT = -g -qfullpath -qmaxmem=-1 -qphsinfo -qzerosize -qfree=f90 -qxlf2003=polymorphic -qspillsize=2500 -qextname=flush -O2 -qstrict -Q" \
 	"CFLAGS_OPT = -g -qfullpath -qmaxmem=-1 -qphsinfo -O3" \
@@ -62,6 +79,7 @@ xlf-summit-omp-offload:
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
 	"OPENMP_OFFLOAD = $(OPENMP_OFFLOAD)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DFORTRAN_SAME -DCPRIBM -DLINUX" )
 
 ftn:
@@ -72,6 +90,7 @@ ftn:
 	"FC_SERIAL = ftn" \
 	"CC_SERIAL = cc" \
 	"CXX_SERIAL = CC" \
+	"FFLAGS_FPIEEE = " \
 	"FFLAGS_PROMOTION = -r8" \
 	"FFLAGS_OPT = -i4 -gopt -O2 -Mvect=nosse -Kieee -convert big_endian" \
 	"CFLAGS_OPT = -fast" \
@@ -84,25 +103,7 @@ ftn:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
-
-titan-cray:
-	( $(MAKE) all \
-	"FC_PARALLEL = ftn" \
-	"CC_PARALLEL = cc" \
-	"FC_SERIAL = ftn" \
-	"CC_SERIAL = gcc" \
-	"FFLAGS_PROMOTION = -default64" \
-	"FFLAGS_OPT = -s integer32 -O3 -f free -N 255 -em -ef" \
-	"CFLAGS_OPT = -O3" \
-	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_OMP = " \
-	"CFLAGS_OMP = " \
-	"BUILD_TARGET = $(@)" \
-	"CORE = $(CORE)" \
-	"DEBUG = $(DEBUG)" \
-	"USE_PAPI = $(USE_PAPI)" \
-	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 pgi:
@@ -113,6 +114,7 @@ pgi:
 	"FC_SERIAL = pgf90" \
 	"CC_SERIAL = pgcc" \
 	"CXX_SERIAL = pgc++" \
+	"FFLAGS_FPIEEE = -Kieee" \
 	"FFLAGS_PROMOTION = -r8" \
 	"FFLAGS_OPT = -O3 -byteswapio -Mfree" \
 	"CFLAGS_OPT = -O3" \
@@ -130,6 +132,7 @@ pgi:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DCPRPGI" )
 
 pgi-summit:
@@ -140,17 +143,18 @@ pgi-summit:
 	"FC_SERIAL = pgf90" \
 	"CC_SERIAL = pgcc" \
 	"CXX_SERIAL = pgc++" \
+	"FFLAGS_FPIEEE = -Kieee" \
 	"FFLAGS_PROMOTION = -r8" \
 	"FFLAGS_OPT = -g -O3 -byteswapio -Mfree" \
 	"CFLAGS_OPT = -O3 " \
 	"CXXFLAGS_OPT = -O3 " \
 	"LDFLAGS_OPT = -O3 " \
-	"FFLAGS_ACC = -acc -Minfo=accel -ta=tesla:cc70,cc60,deepcopy,nollvm " \
-	"CFLAGS_ACC = -acc -Minfo=accel -ta=tesla:cc70,cc60,deepcopy,nollvm "  \
-	"FFLAGS_DEBUG = -O0 -g -Mbounds -Mchkptr -byteswapio -Mfree -Ktrap=divz,fp,inv,ovf -traceback" \
+	"FFLAGS_ACC = -acc -Minfo=accel -ta=tesla:cc70,cc60 " \
+	"CFLAGS_ACC = -acc -Minfo=accel -ta=tesla:cc70,cc60 "  \
+	"FFLAGS_DEBUG = -O0 -g -byteswapio -Mfree -Ktrap=divz,fp,inv,ovf -traceback" \
 	"CFLAGS_DEBUG = -O0 -g -traceback" \
 	"CXXFLAGS_DEBUG = -O0 -g -traceback" \
-	"LDFLAGS_DEBUG = -O0 -g -Mbounds -Mchkptr -Ktrap=divz,fp,inv,ovf -traceback" \
+	"LDFLAGS_DEBUG = -O0 -g -Ktrap=divz,fp,inv,ovf -traceback" \
 	"FFLAGS_OMP = -mp" \
 	"CFLAGS_OMP = -mp" \
 	"PICFLAG = -fpic" \
@@ -160,6 +164,7 @@ pgi-summit:
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
 	"OPENACC = $(OPENACC)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = -DpgiFortran -D_MPI -DUNDERSCORE" )
 
 pgi-nersc:
@@ -170,6 +175,7 @@ pgi-nersc:
 	"FC_SERIAL = ftn" \
 	"CC_SERIAL = cc" \
 	"CXX_SERIAL = CC" \
+	"FFLAGS_FPIEEE = -Kieee" \
 	"FFLAGS_PROMOTION = -r8" \
 	"FFLAGS_OPT = -O3 -byteswapio -Mfree" \
 	"CFLAGS_OPT = -O3" \
@@ -182,30 +188,8 @@ pgi-nersc:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DCPRPGI" )
-
-pgi-llnl:
-	( $(MAKE) all \
-	"FC_PARALLEL = mpipgf90" \
-	"CC_PARALLEL = pgcc" \
-	"CXX_PARALLEL = mpipgcxx" \
-	"FC_SERIAL = pgf90" \
-	"CC_SERIAL = pgcc" \
-	"CXX_SERIAL = pgc++" \
-	"FFLAGS_PROMOTION = -r8" \
-	"FFLAGS_OPT = -i4 -g -O2 -byteswapio" \
-	"CFLAGS_OPT = -fast" \
-	"CXXFLAGS_OPT = -fast" \
-	"LDFLAGS_OPT = " \
-	"FFLAGS_OMP = -mp" \
-	"CFLAGS_OMP = -mp" \
-	"BUILD_TARGET = $(@)" \
-	"CORE = $(CORE)" \
-	"DEBUG = $(DEBUG)" \
-	"USE_PAPI = $(USE_PAPI)" \
-	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DCPRPGI" )
-
 ifort:
 	( $(MAKE) all \
 	"FC_PARALLEL = mpif90" \
@@ -214,6 +198,7 @@ ifort:
 	"FC_SERIAL = ifort" \
 	"CC_SERIAL = icc" \
 	"CXX_SERIAL = icpc" \
+	"FFLAGS_FPIEEE = -fp-model=precise" \
 	"FFLAGS_PROMOTION = -real-size 64" \
 	"FFLAGS_OPT = -O3 -convert big_endian -free -align array64byte" \
 	"CFLAGS_OPT = -O3" \
@@ -231,6 +216,7 @@ ifort:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 ifort-scorep:
@@ -241,6 +227,7 @@ ifort-scorep:
 	"FC_SERIAL = ifort" \
 	"CC_SERIAL = icc" \
 	"CXX_SERIAL = icpc" \
+	"FFLAGS_FPIEEE = -fp-model=precise" \
 	"FFLAGS_PROMOTION = -real-size 64" \
 	"FFLAGS_OPT = -O3 -g -convert big_endian -free -align array64byte" \
 	"CFLAGS_OPT = -O3 -g" \
@@ -257,6 +244,7 @@ ifort-scorep:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 ifort-gcc:
@@ -267,6 +255,7 @@ ifort-gcc:
 	"FC_SERIAL = ifort" \
 	"CC_SERIAL = gcc" \
 	"CXX_SERIAL = g++" \
+	"FFLAGS_FPIEEE = -fp-model=precise" \
 	"FFLAGS_PROMOTION = -real-size 64" \
 	"FFLAGS_OPT = -O3 -convert big_endian -free -align array64byte" \
 	"CFLAGS_OPT = -O3" \
@@ -283,6 +272,7 @@ ifort-gcc:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 intel-mpi:
@@ -293,8 +283,9 @@ intel-mpi:
 	"FC_SERIAL = ifort" \
 	"CC_SERIAL = icc" \
 	"CXX_SERIAL = icpc" \
+	"FFLAGS_FPIEEE = -fp-model=precise" \
 	"FFLAGS_PROMOTION = -real-size 64" \
-	"FFLAGS_OPT = -O3 -convert big_endian -free -align array64byte" \
+	"FFLAGS_OPT = -O3 -convert big_endian -free -align array64byte -xHost" \
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
@@ -310,9 +301,16 @@ intel-mpi:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 gfortran:
+	GFORTRAN_GTE_10=$$(expr `gfortran -dumpversion | cut -f1 -d.` \>= 10) ;\
+	if [ "$${GFORTRAN_GTE_10}" = "1" ]; then \
+	    EXTRA_FFLAGS="-fallow-argument-mismatch"; \
+	else \
+	    EXTRA_FFLAGS=""; \
+	fi; \
 	( $(MAKE) all \
 	"FC_PARALLEL = mpif90" \
 	"CC_PARALLEL = mpicc" \
@@ -320,12 +318,13 @@ gfortran:
 	"FC_SERIAL = gfortran" \
 	"CC_SERIAL = gcc" \
 	"CXX_SERIAL = g++" \
+	"FFLAGS_FPIEEE = " \
 	"FFLAGS_PROMOTION = -fdefault-real-8 -fdefault-double-8" \
-	"FFLAGS_OPT = -O3 -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form" \
+	"FFLAGS_OPT = -O3 -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form -ffpe-summary=none $${EXTRA_FFLAGS}" \
 	"CFLAGS_OPT = -O3 -m64" \
 	"CXXFLAGS_OPT = -O3 -m64" \
 	"LDFLAGS_OPT = -O3 -m64" \
-	"FFLAGS_DEBUG = -g -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form -fbounds-check -fbacktrace -ffpe-trap=invalid,zero,overflow" \
+	"FFLAGS_DEBUG = -g -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form -fbounds-check -fbacktrace -ffpe-trap=invalid,zero,overflow -ffpe-summary=none $${EXTRA_FFLAGS}" \
 	"CFLAGS_DEBUG = -g -m64" \
 	"CXXFLAGS_DEBUG = -O3 -m64" \
 	"LDFLAGS_DEBUG = -g -m64" \
@@ -337,22 +336,30 @@ gfortran:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 gfortran-clang:
+	GFORTRAN_GTE_10=$$(expr `gfortran -dumpversion | cut -f1 -d.` \>= 10) ;\
+	if [ "$${GFORTRAN_GTE_10}" = "1" ]; then \
+	    EXTRA_FFLAGS="-fallow-argument-mismatch"; \
+	else \
+	    EXTRA_FFLAGS=""; \
+	fi; \
 	( $(MAKE) all \
 	"FC_PARALLEL = mpif90" \
-	"CC_PARALLEL = mpicc -cc=clang" \
-	"CXX_PARALLEL = mpicxx -cxx=clang++" \
+	"CC_PARALLEL = mpicc" \
+	"CXX_PARALLEL = mpicxx" \
 	"FC_SERIAL = gfortran" \
 	"CC_SERIAL = clang" \
 	"CXX_SERIAL = clang++" \
+	"FFLAGS_FPIEEE = " \
 	"FFLAGS_PROMOTION = -fdefault-real-8 -fdefault-double-8" \
-	"FFLAGS_OPT = -O3 -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form" \
+	"FFLAGS_OPT = -O3 -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form -ffpe-summary=none $${EXTRA_FFLAGS}" \
 	"CFLAGS_OPT = -O3 -m64" \
 	"CXXFLAGS_OPT = -O3 -m64" \
 	"LDFLAGS_OPT = -O3 -m64" \
-	"FFLAGS_DEBUG = -g -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form -fbounds-check -fbacktrace -ffpe-trap=invalid,zero,overflow" \
+	"FFLAGS_DEBUG = -g -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form -fbounds-check -fbacktrace -ffpe-trap=invalid,zero,overflow -ffpe-summary=none $${EXTRA_FFLAGS}" \
 	"CFLAGS_DEBUG = -g -m64" \
 	"CXXFLAGS_DEBUG = -O3 -m64" \
 	"LDFLAGS_DEBUG = -g -m64" \
@@ -363,6 +370,7 @@ gfortran-clang:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 g95:
@@ -373,6 +381,7 @@ g95:
 	"FC_SERIAL = g95" \
 	"CC_SERIAL = gcc" \
 	"CXX_SERIAL = g++" \
+	"FFLAGS_FPIEEE = " \
 	"FFLAGS_PROMOTION = -r8" \
 	"FFLAGS_OPT = -O3 -ffree-line-length-huge -fendian=big" \
 	"CFLAGS_OPT = -O3" \
@@ -385,28 +394,7 @@ g95:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
-
-pathscale-nersc:
-	( $(MAKE) all \
-	"FC_PARALLEL = ftn" \
-	"CC_PARALLEL = cc" \
-	"CXX_PARALLEL = CC" \
-	"FC_SERIAL = ftn" \
-	"CC_SERIAL = cc" \
-	"CXX_SERIAL = CC" \
-	"FFLAGS_PROMOTION = -r8" \
-	"FFLAGS_OPT = -O3 -freeform -extend-source" \
-	"CFLAGS_OPT = -O3" \
-	"CXXFLAGS_OPT = -O3" \
-	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_OMP = -mp" \
-	"CFLAGS_OMP = -mp" \
-	"BUILD_TARGET = $(@)" \
-	"CORE = $(CORE)" \
-	"DEBUG = $(DEBUG)" \
-	"USE_PAPI = $(USE_PAPI)" \
-	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 cray-nersc:
@@ -417,6 +405,7 @@ cray-nersc:
 	"FC_SERIAL = ftn" \
 	"CC_SERIAL = cc" \
 	"CXX_SERIAL = CC" \
+	"FFLAGS_FPIEEE = " \
 	"FFLAGS_PROMOTION = -default64" \
 	"FFLAGS_OPT = -O3 -f free" \
 	"CFLAGS_OPT = -O3" \
@@ -429,9 +418,16 @@ cray-nersc:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 gnu-nersc:
+	GFORTRAN_GTE_10=$$(expr `ftn -dumpversion | cut -f1 -d.` \>= 10) ;\
+	if [ "$${GFORTRAN_GTE_10}" = "1" ]; then \
+	    EXTRA_FFLAGS="-fallow-argument-mismatch"; \
+	else \
+	    EXTRA_FFLAGS=""; \
+	fi; \
 	( $(MAKE) all \
 	"FC_PARALLEL = ftn" \
 	"CC_PARALLEL = cc" \
@@ -439,20 +435,25 @@ gnu-nersc:
 	"FC_SERIAL = ftn" \
 	"CC_SERIAL = cc" \
 	"CXX_SERIAL = CC" \
+	"FFLAGS_FPIEEE = " \
 	"FFLAGS_PROMOTION = -fdefault-real-8 -fdefault-double-8" \
-	"FFLAGS_OPT = -O3 -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form" \
+	"FFLAGS_OPT = -O3 -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form -ffpe-summary=none $${EXTRA_FFLAGS}" \
 	"CFLAGS_OPT = -O3 -m64" \
 	"CXXFLAGS_OPT = -O3 -m64" \
 	"LDFLAGS_OPT = -O3 -m64" \
-	"FFLAGS_DEBUG = -g -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form" \
+	"FFLAGS_DEBUG = -g -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form -fbounds-check -fbacktrace -ffpe-trap=invalid,zero,overflow -ffpe-summary=none $${EXTRA_FFLAGS}" \
 	"CFLAGS_DEBUG = -g -m64" \
 	"CXXFLAGS_DEBUG = -g -m64" \
 	"LDFLAGS_DEBUG = -g -m64" \
+	"FFLAGS_OMP = -fopenmp" \
+	"CFLAGS_OMP = -fopenmp" \
 	"BUILD_TARGET = $(@)" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
 	"SERIAL = $(SERIAL)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI $(FILE_OFFSET) $(ZOLTAN_DEFINE)" )
 
 intel-nersc:
@@ -463,6 +464,7 @@ intel-nersc:
 	"FC_SERIAL = ftn" \
 	"CC_SERIAL = cc" \
 	"CXX_SERIAL = CC" \
+	"FFLAGS_FPIEEE = -fp-model=precise" \
 	"FFLAGS_PROMOTION = -real-size 64" \
 	"FFLAGS_OPT = -O3 -convert big_endian -free -align array64byte" \
 	"CFLAGS_OPT = -O3" \
@@ -479,32 +481,7 @@ intel-nersc:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
-
-bluegene:
-	( $(MAKE) all \
-	"FC_PARALLEL = mpixlf95_r" \
-	"CC_PARALLEL = mpixlc_r" \
-	"CXX_PARALLEL = mpixlcxx_r" \
-	"FC_SERIAL = bgxlf95_r" \
-	"CC_SERIAL = bgxlc_r" \
-	"CXX_SERIAL = bgxlc++_r" \
-	"FFLAGS_PROMOTION = -qrealsize=8" \
-	"FFLAGS_OPT = -O2 -g" \
-	"CFLAGS_OPT = -O2 -g" \
-	"CXXFLAGS_OPT = -O2 -g" \
-	"LDFLAGS_OPT = -O2 -g" \
-	"FFLAGS_DEBUG = -O0 -g -C -qinitalloc -qinitauto" \
-	"CFLAGS_DEBUG = -O0 -g" \
-	"CXXFLAGS_DEBUG = -O0 -g" \
-	"LDFLAGS_DEBUG = -O0 -g" \
-	"FFLAGS_OMP = -qsmp=omp" \
-	"CFLAGS_OMP = -qsmp=omp" \
-	"BUILD_TARGET = $(@)" \
-	"CORE = $(CORE)" \
-	"DEBUG = $(DEBUG)" \
-	"USE_PAPI = $(USE_PAPI)" \
-	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 llvm:
@@ -515,6 +492,7 @@ llvm:
 	"FC_SERIAL = flang" \
 	"CC_SERIAL = clang" \
 	"CXX_SERIAL = clang++" \
+	"FFLAGS_FPIEEE = " \
 	"FFLAGS_PROMOTION = -r8" \
 	"FFLAGS_OPT = -O3 -g -Mbyteswapio -Mfreeform" \
 	"CFLAGS_OPT = -O3 -g" \
@@ -532,32 +510,8 @@ llvm:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
-
-nag:
-	( $(MAKE) all \
-	"FC_PARALLEL = mpifort" \
-	"CC_PARALLEL = mpicc" \
-	"CXX_PARALLEL = mpic++" \
-	"FC_SERIAL = nagfor" \
-	"CC_SERIAL = gcc" \
-	"CXX_SERIAL = g++" \
-	"FFLAGS_PROMOTION = -r8" \
-	"FFLAGS_OPT = -free -mismatch -O3 -convert=big_ieee" \
-	"CFLAGS_OPT = -O3" \
-	"CXXFLAGS_OPT = -O3" \
-	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_DEBUG = -free -mismatch -O0 -g -C -convert=big_ieee" \
-	"CFLAGS_DEBUG = -O0 -g -Wall -pedantic" \
-	"CXXFLAGS_DEBUG = -O0 -g -Wall -pedantic" \
-	"LDFLAGS_DEBUG = -O0 -g -C" \
-	"FFLAGS_OMP = -qsmp=omp" \
-	"CFLAGS_OMP = -qsmp=omp" \
-	"CORE = $(CORE)" \
-	"DEBUG = $(DEBUG)" \
-	"USE_PAPI = $(USE_PAPI)" \
-	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE -DNAG_COMPILER" )
 
 CPPINCLUDES =
 FCINCLUDES =
@@ -655,10 +609,12 @@ ifeq "$(USE_LAPACK)" "true"
 ifndef LAPACK
 $(error LAPACK is not set.  Please set LAPACK to the LAPACK install directory when USE_LAPACK=true)
 endif
-ifneq (, $(shell ls $(LAPACK)/liblapack.*))
+ifneq ($(wildcard $(LAPACK)/liblapack.*), )
 	LIBS += -L$(LAPACK)
-else ifneq (, $(shell ls $(LAPACK)/lib/liblapack.*))
+else ifneq ($(wildcard $(LAPACK)/lib/liblapack.*), )
 	LIBS += -L$(LAPACK)/lib
+else ifneq ($(wildcard $(LAPACK)/lib64/liblapack.*), )
+	LIBS += -L$(LAPACK)/lib64
 else
 $(error liblapack.* does NOT exist in $(LAPACK) or $(LAPACK)/lib)
 endif
@@ -667,16 +623,23 @@ endif
 	override CPPFLAGS += -DUSE_LAPACK
 endif
 
+ifeq "$(USE_SHTNS)" "true"
+	override CPPFLAGS += -DUSE_SHTNS
+endif
+
 RM = rm -f
 CPP = cpp -P -traditional
 RANLIB = ranlib
 
+COREPATH=$(PWD)/src
+FWPATH=$(PWD)/../mpas-framework/src
+
 ifdef CORE
 
-ifneq ($(wildcard src/core_$(CORE)), ) # CHECK FOR EXISTENCE OF CORE DIRECTORY
+ifneq ($(wildcard src), ) # CHECK FOR EXISTENCE OF CORE DIRECTORY
 
-ifneq ($(wildcard src/core_$(CORE)/build_options.mk), ) # Check for build_options.mk
-include src/core_$(CORE)/build_options.mk
+ifneq ($(wildcard src/build_options.mk), ) # Check for build_options.mk
+include src/build_options.mk
 else # ELSE Use Default Options
 EXE_NAME=$(CORE)_model
 NAMELIST_SUFFIX=$(CORE)
@@ -849,6 +812,12 @@ else
 	OPENACC_MESSAGE="MPAS was built without OpenACC accelerator support."
 endif
 
+ifeq "$(USE_SHTNS)" "true"
+	SHTNS_MESSAGE="MPAS was built with SHTNS library."
+else
+	SHTNS_MESSAGE="MPAS was built without SHTNS library."
+endif
+
 ifneq ($(wildcard .mpas_core_*), ) # CHECK FOR BUILT CORE
 
 ifneq ($(wildcard .mpas_core_$(CORE)), ) # CHECK FOR SAME CORE AS ATTEMPTED BUILD.
@@ -912,16 +881,14 @@ ifdef MPAS_EXTERNAL_CPPFLAGS
 	override CPPFLAGS += $(MPAS_EXTERNAL_CPPFLAGS)
 endif
 ####################################################
+ifeq "$(USE_PIO2)" "true"
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Darwin)
+    	override LIBS += -lc++
+    else
+    	override LIBS += -lstdc++
+    endif
 
-ifeq ($(wildcard src/core_$(CORE)), ) # CHECK FOR EXISTENCE OF CORE DIRECTORY
-
-all: core_error
-
-else
-
-ifeq ($(wildcard src/core_$(CORE)/build_options.mk), ) # Check for build_options.mk
-report_builds:
-	@echo "CORE=$(CORE)"
 endif
 
 ifeq "$(CONTINUE)" "true"
@@ -929,9 +896,6 @@ all: mpas_main
 else
 all: clean_core
 endif
-
-endif
-
 
 openmp_test:
 ifeq "$(OPENMP)" "true"
@@ -990,11 +954,13 @@ endif
 	@rm -rf pio[12].f90 pio[12].out
 
 
-mpas_main: openmp_test pio_test
-ifeq "$(AUTOCLEAN)" "true"
-	$(RM) .mpas_core_*
-endif
-	cd src; $(MAKE) FC="$(FC)" \
+dycore: $(AUTOCLEAN_DEPS) framework
+	@echo "Auto-detected core from path: " $(CORE)
+	@echo "START DYCORE: $(PWD)"
+	( cd src; $(MAKE) CPP="$(CPP)" CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" REG_PARSE="$(FWPATH)/tools/registry/parse" gen_includes )
+	( cd src; $(MAKE) CPP="$(CPP)" CPPFLAGS="$(CPPFLAGS)" CPPINCLUDES="$(CPPINCLUDES)" NL_GEN="$(FWPATH)/tools/input_gen/namelist_gen" ST_GEN="$(FWPATH)/tools/input_gen/streams_gen" core_input_gen )
+	( cd src; $(MAKE) \
+	         FC="$(FC)" \
                  CC="$(CC)" \
                  CXX="$(CXX)" \
                  SFC="$(SFC)" \
@@ -1012,13 +978,65 @@ endif
                  FCINCLUDES="$(FCINCLUDES)" \
                  CORE="$(CORE)"\
                  AUTOCLEAN="$(AUTOCLEAN)" \
-                 GEN_F90="$(GEN_F90)" \
-                 NAMELIST_SUFFIX="$(NAMELIST_SUFFIX)" \
-                 EXE_NAME="$(EXE_NAME)"
+                 GEN_F90="$(GEN_F90)" )
+
+
+drver:  $(AUTOCLEAN_DEPS) framework dycore
+	( cd $(FWPATH)/driver; $(MAKE) COREPATH="$(COREPATH)" \
+                 FC="$(FC)" \
+                 CC="$(CC)" \
+                 CXX="$(CXX)" \
+                 SFC="$(SFC)" \
+                 SCC="$(SCC)" \
+                 LINKER="$(LINKER)" \
+                 CFLAGS="$(CFLAGS)" \
+                 CXXFLAGS="$(CXXFLAGS)" \
+                 FFLAGS="$(FFLAGS)" \
+                 LDFLAGS="$(LDFLAGS)" \
+                 RM="$(RM)" \
+                 CPP="$(CPP)" \
+                 CPPFLAGS="$(CPPFLAGS)" \
+                 LIBS="$(LIBS)" \
+                 CPPINCLUDES="$(CPPINCLUDES)" \
+                 FCINCLUDES="$(FCINCLUDES)" \
+                 CORE="$(CORE)"\
+                 AUTOCLEAN="$(AUTOCLEAN)" \
+                 GEN_F90="$(GEN_F90)" )
+
+
+mpas: $(AUTOCLEAN_DEPS) framework dycore drver
+	$(LINKER) $(LDFLAGS) -o $(EXE_NAME) $(FWPATH)/driver/*.o -L$(FWPATH) -Lsrc -ldycore -lops -lframework $(LIBS) -I./external/esmf_time_f90 -L$(FWPATH)/external/esmf_time_f90 -lesmf_time
+
+framework:
+	cd $(FWPATH); $(MAKE) \
+                 FC="$(FC)" \
+                 CC="$(CC)" \
+                 CXX="$(CXX)" \
+                 SFC="$(SFC)" \
+                 SCC="$(SCC)" \
+                 LINKER="$(LINKER)" \
+                 CFLAGS="$(CFLAGS)" \
+                 CXXFLAGS="$(CXXFLAGS)" \
+                 FFLAGS="$(FFLAGS)" \
+                 LDFLAGS="$(LDFLAGS)" \
+                 RM="$(RM)" \
+                 CPP="$(CPP)" \
+                 CPPFLAGS="$(CPPFLAGS)" \
+                 LIBS="$(LIBS)" \
+                 CPPINCLUDES="$(CPPINCLUDES)" \
+                 FCINCLUDES="$(FCINCLUDES)" \
+                 CORE="$(CORE)"\
+                 AUTOCLEAN="$(AUTOCLEAN)" \
+                 GEN_F90="$(GEN_F90)"
+
+mpas_main: openmp_test pio_test mpas
+ifeq "$(AUTOCLEAN)" "true"
+	$(RM) .mpas_core_*
+endif
 
 	@echo "$(EXE_NAME)" > .mpas_core_$(CORE)
 	if [ -e src/$(EXE_NAME) ]; then mv src/$(EXE_NAME) .; fi
-	( cd src/core_$(CORE); $(MAKE) ROOT_DIR="$(PWD)" post_build )
+	( cd src; $(MAKE) ROOT_DIR="$(PWD)" post_build )
 	@echo "*******************************************************************************"
 	@echo $(PRECISION_MESSAGE)
 	@echo $(DEBUG_MESSAGE)
@@ -1035,21 +1053,16 @@ endif
 	@echo $(GEN_F90_MESSAGE)
 	@echo $(TIMER_MESSAGE)
 	@echo $(PIO_MESSAGE)
+	@echo $(SHTNS_MESSAGE)
 	@echo "*******************************************************************************"
 clean:
+	cd $(FWPATH); $(MAKE) clean RM="$(RM)" CORE="$(CORE)"
 	cd src; $(MAKE) clean RM="$(RM)" CORE="$(CORE)"
 	$(RM) .mpas_core_*
 	$(RM) $(EXE_NAME)
 	$(RM) namelist.$(NAMELIST_SUFFIX).defaults
 	$(RM) streams.$(NAMELIST_SUFFIX).defaults
-core_error:
-	@echo ""
-	@echo "*******************************************************************************"
-	@echo "     The directory src/core_$(CORE) does not exist."
-	@echo "     $(CORE) is not a valid core choice."
-	@echo "*******************************************************************************"
-	@echo ""
-	exit 1
+
 error: errmsg
 
 clean_core:
@@ -1075,29 +1088,27 @@ clean_core:
 else # CORE IF
 
 all: error
-clean: errmsg
+clean: error
 	exit 1
-error: errmsg
-	@echo "************ ERROR ************"
-	@echo "No CORE specified. Quitting."
-	@echo "************ ERROR ************"
-	@echo ""
+error:
+	@echo "ERROR: You must execute make within one of the mpas-ocean, mpas-seaice, or mpas-albany-landice directories."
+	@echo "Quitting."
 	exit 1
 
 endif # CORE IF
 
 errmsg:
 	@echo ""
-	@echo "Usage: $(MAKE) target CORE=[core] [options]"
+	@echo "Usage: $(MAKE) target [options]"
+	@echo ""
+	@echo "You must execute make within one of the mpas-ocean, mpas-seaice, or mpas-albany-landice directories."
+	@echo "CORE is auto-detected from mpas-CORE directory in your path."
 	@echo ""
 	@echo "Example targets:"
 	@echo "    ifort"
 	@echo "    gfortran"
 	@echo "    xlf"
 	@echo "    pgi"
-	@echo ""
-	@echo "Availabe Cores:"
-	@cd src; ls -d core_* | grep ".*" | sed "s/core_/    /g"
 	@echo ""
 	@echo "Available Options:"
 	@echo "    DEBUG=true    - builds debug version. Default is optimized version."
@@ -1114,6 +1125,7 @@ errmsg:
 	@echo "    PRECISION=single - builds with default single-precision real kind. Default is to use double-precision."
 	@echo "    SHAREDLIB=true - generate position-independent code suitable for use in a shared library. Default is false."
 	@echo "    USE_LAPACK=true - builds and links with LAPACK / BLAS libraries.  Default is to not use LAPACK."
+	@echo "    USE_SHTNS=true - builds and links with SHTNS/FFTW.  Default is false."
 	@echo ""
 	@echo "Ensure that NETCDF, PNETCDF, PIO, LAPACK (if USE_LAPACK=true), and PAPI (if USE_PAPI=true) are environment variables"
 	@echo "that point to the absolute paths for the libraries."

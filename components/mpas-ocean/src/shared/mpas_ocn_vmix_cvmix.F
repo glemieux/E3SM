@@ -21,6 +21,7 @@ module ocn_vmix_cvmix
 
    use ocn_constants
    use ocn_config
+   use ocn_mesh
    use ocn_diagnostics_variables
 
    use cvmix_kinds_and_types
@@ -150,15 +151,15 @@ contains
 
       integer, dimension(:,:), pointer :: edgesOnCell, cellsOnEdge, cellsOnCell, cellMask
 
-      integer :: k, i, iCell, jCell, iNeighbor, iter, timeLevel, kIndexOBL, kav, iEdge, nCells
+      integer :: k, i, iCell, iNeighbor, timeLevel, kIndexOBL, kav, iEdge, nCells
       integer :: edgeCount, nEdges, topIndex, nsmooth, kpp_stage
       integer, pointer :: nVertLevels, nVertLevelsP1
       integer, dimension(:), pointer :: nCellsArray
       integer, dimension(:), allocatable :: surfaceAverageIndex
 
-      real (kind=RKIND) :: x, r, layerSum, bulkRichardsonNumberStop, sfc_layer_depth
+      real (kind=RKIND) :: x, bulkRichardsonNumberStop, sfc_layer_depth
       real (kind=RKIND) :: normalVelocityAv, delU2, areaSum, blTemp
-      real (kind=RKIND) :: sigma, turbulentScalarVelocityScalePoint
+      real (kind=RKIND) :: sigma
       real (kind=RKIND), dimension(:), allocatable :: Nsqr_iface, turbulentScalarVelocityScale, &
                                                       deltaVelocitySquared, normalVelocitySum, &
                                                       potentialDensitySum, RiTemp,              &
@@ -522,13 +523,13 @@ contains
                  deltaVelocitySquared(1:minLevelCell(iCell)) = 0.0_RKIND
 
                  normalVelocitySum(minLevelCell(iCell)) = normalVelocity(minLevelCell(iCell), iEdge)* &
-                                                          layerThickEdge(minLevelCell(iCell),iEdge)
-                 layerThicknessEdgeSum(minLevelCell(iCell)) = layerThickEdge(minLevelCell(iCell),iEdge)
+                                                          layerThickEdgeMean(minLevelCell(iCell),iEdge)
+                 layerThicknessEdgeSum(minLevelCell(iCell)) = layerThickEdgeMean(minLevelCell(iCell),iEdge)
 
                  do kIndexOBL = minLevelCell(iCell)+1, maxLevelCell(iCell)
                     normalVelocitySum(kIndexOBL) = normalVelocitySum(kIndexOBL-1) + &
-                                      layerThickEdge(kIndexOBL, iEdge)*normalVelocity(kIndexOBL, iEdge)
-                    layerThicknessEdgeSum(kIndexOBL) = layerThicknessEdgeSum(kIndexOBL-1) + layerThickEdge(kIndexOBL, iEdge)
+                                      layerThickEdgeMean(kIndexOBL, iEdge)*normalVelocity(kIndexOBL, iEdge)
+                    layerThicknessEdgeSum(kIndexOBL) = layerThicknessEdgeSum(kIndexOBL-1) + layerThickEdgeMean(kIndexOBL, iEdge)
                  end do
 
                  do kIndexOBL = minLevelCell(iCell), maxLevelCell(iCell)
@@ -832,7 +833,6 @@ contains
       integer, intent(out) :: err !< Output: error flag
 
       integer, pointer :: nVertLevels
-      type (block_type), pointer :: block
 
       !
       ! assume no errors during initialization and set to 1 when error is encountered
