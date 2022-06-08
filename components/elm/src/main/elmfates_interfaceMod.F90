@@ -803,9 +803,6 @@ verbose_output = .false.
       type(frictionvel_type)  , intent(inout)        :: frictionvel_inst
 
       ! !LOCAL VARIABLES:
-      !YL-------
-      integer  :: g                        ! gridcell index
-      !---------
       integer  :: s                        ! site index
       integer  :: c                        ! column index (HLM)
       integer  :: t                        ! topounit index (HLM)
