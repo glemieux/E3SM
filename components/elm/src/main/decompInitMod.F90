@@ -320,6 +320,40 @@ contains
           ldecomp%jxy(ag) = aj
           !write(iulog,*) 'ldecomp%ixy(ag), ldecomp%jxy(ag): ', ldecomp%ixy(ag), ldecomp%jxy(ag)
           !--------
+          
+          ! Determine set of neighbors
+          ! For nearest neighbor we only need to check backwards by ai+1 iterations backwards
+          ! assuming that lnj and lni form a cartesian grid
+          
+          
+          if (ag .lt. lni+1) then
+            endag = ag
+          else
+            endag = lni + 1
+          end if
+          
+          do agn = 1,endag
+
+            agi = ag - agn
+            
+            do ci = 0,1
+               do cj = 0,1
+                  if (.not.(ci == 0 .and. cj == 0)) then
+                     if (ldecomp%ixy(ag) == ldecomp%ixy(agi) - ci .and. &
+                         ldecomp%jxy(ag) == ldecomp%jxy(agi) - cj) then
+                         
+                         ! Add neighbor index to current grid cell index list (are pointers reasonable to use here?)
+                         ldecomp%neighbors(ag)
+                         
+                         ! Add current grid cell index to the neighbor's list
+                         ldecomp%neighbors(agi)
+                           
+                     end if
+                  end if
+               end do
+            end do
+          end do
+          
           clumpcnt(cid) = clumpcnt(cid) + 1
        end if
     end do
