@@ -171,7 +171,7 @@ module decompMod
   end type decomp_type
   public decomp_type
   type(decomp_type),public,target :: ldecomp
-
+ 
   !------------------------------------------------------------------------------
 
 contains

@@ -22,17 +22,11 @@ module GridcellType
   save
   private
   
-  ! Linked list of global indeces of nearest neighbors
-  type, public :: gridcell_neighbor_type
-    type(gricell_neighbor_type), pointer :: grc_next => null() 
-    integer :: gindex
-  end type gridcell_neighbor_type
- 
   !
   type, public :: gridcell_physical_properties_type
   
      ! nearest neighbor linked list
-     type(gricell_neighbor_type), pointer :: grc_nn(:) => null()
+     type(neighbor_type), pointer :: grc_nn(:) => null()
 
      ! topological mapping functionality, local 1d gdc arrays
      integer , pointer :: gindex       (:) => null() ! global index
@@ -136,6 +130,8 @@ contains
     allocate(this%MaxElevation (begg:endg)) ; this%MaxElevation (:) = nan
 
     allocate(this%landunit_indices(1:max_lunit, begg:endg)); this%landunit_indices(:,:) = ispval
+    
+    allocate(this%grc_nn (begg:endg)) ; this%grc_nn (:) => null()
 	
    ! allocate(this%topounit_indices (begg:endg,1:max_topounits)) ; this%topounit_indices (:,:) = ispval
 

@@ -214,6 +214,7 @@ contains
        ! Set some other gridcell-level variables
 
        do gdc = bounds_clump%begg,bounds_clump%endg
+          grc_pp%grc_nn(gdc) = ldecomp%neighbors(gdc) ! Is this correct?  Can you assign an array of derived pointer types this way?
           grc_pp%gindex(gdc) = ldecomp%gdc2glo(gdc)
           grc_pp%area(gdc)   = ldomain%area(gdc)
           grc_pp%latdeg(gdc) = ldomain%latc(gdc) 

@@ -166,19 +166,26 @@ module decompMod
   public clump_type
   type(clump_type),public, allocatable :: clumps(:)
 
+  ! Linked list of global indeces of nearest neighbors
+  type, public :: neighbor_type
+    type(neighbor_type), pointer :: next_neighbor => null() 
+    integer :: gindex
+  end type neighbor_type
+  
   !---global information on each pe
   !--- glo = 1d global sn ordered
   !--- gdc = 1d global dc ordered compressed
-  type decomp_type
+  type, public :: decomp_type
      integer,pointer :: gdc2glo(:)    ! 1d gdc to 1d glo
      !YL-------
      integer,pointer :: ixy(:)        ! i and j indices
      integer,pointer :: jxy(:)        ! relative to the grid cell vector
      !---------
+     integer :: neighbor_count(:)
+     type(neighbor_type), pointer :: neighbors(:)
   end type decomp_type
-  public decomp_type
+  
   type(decomp_type),public,target :: ldecomp
-
   type(mct_gsMap)  ,public,target :: gsMap_lnd_gdc2glo
   type(mct_gsMap)  ,public,target :: gsMap_gce_gdc2glo
   type(mct_gsMap)  ,public,target :: gsMap_top_gdc2glo

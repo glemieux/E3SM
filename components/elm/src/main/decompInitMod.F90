@@ -279,6 +279,7 @@ contains
     allocate(ldecomp%ixy(numg), stat=ier)
     allocate(ldecomp%jxy(numg), stat=ier)
     !----------
+    allocate(ldecomp%neighbors(numg), stat=ier)
 
     if (ier /= 0) then
        write(iulog,*) 'decompInit_lnd(): allocation error1 for ldecomp, etc'
@@ -296,6 +297,8 @@ contains
     ldecomp%ixy(:) = 0
     ldecomp%jxy(:) = 0
     !-----------
+    ldecomp%neighbor_count(:) = 0
+    ldecomp%neighbors(:) => null()
     ag = 0
 
     ! clumpcnt is the start gdc index of each clump
@@ -324,29 +327,34 @@ contains
           ! Determine set of neighbors
           ! For nearest neighbor we only need to check backwards by ai+1 iterations backwards
           ! assuming that lnj and lni form a cartesian grid
-          
-          
           if (ag .lt. lni+1) then
             endag = ag
           else
             endag = lni + 1
           end if
           
+          ! Search backwards through the ldecomp array
           do agn = 1,endag
-
             agi = ag - agn
-            
             do ci = 0,1
                do cj = 0,1
                   if (.not.(ci == 0 .and. cj == 0)) then
                      if (ldecomp%ixy(ag) == ldecomp%ixy(agi) - ci .and. &
                          ldecomp%jxy(ag) == ldecomp%jxy(agi) - cj) then
                          
-                         ! Add neighbor index to current grid cell index list (are pointers reasonable to use here?)
-                         ldecomp%neighbors(ag)
+                         ! Add neighbor index to current grid cell index list
+                         allocate(new_neighbor)
+                         new_neighbor%next_neighbor => null()
+                         new_neighbor%gindex = agi
+                         ldecomp%neighbors(ag)%next_neighbor => new_neighbor
+                         ldecomp%neighbor_count(ag) = ldecomp%neighbor_count(ag) + 1
                          
                          ! Add current grid cell index to the neighbor's list
-                         ldecomp%neighbors(agi)
+                         allocate(back_neighbor)
+                         back_neighbor%next_neighbor => null()
+                         back_neighbor%gindex = ag
+                         ldecomp%neighbors(agi)%next_neighbor => back_neighbor
+                         ldecomp%neighbor_count(agi) = ldecomp%neighbor_count(agi) + 1
                            
                      end if
                   end if
