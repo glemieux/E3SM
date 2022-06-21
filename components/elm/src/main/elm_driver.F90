@@ -1419,9 +1419,8 @@ contains
 
        do g_id = 1, numg
 
-         !  
-         do while (associated(grc_pp%grc_nn))
-            seed_id_global(g_id) = seed_id_global(g_id) + seed_od_global(grc_pp%grc_nn%gindex) / grc_pp%grc_nn%neighbor_count
+         do while (associated(ldecomp%neighbors(g_id)))
+            seed_id_global(g_id) = seed_id_global(g_id) + seed_od_global(ldecomp%neighbors(g_id)%gindex) / ldecomp%neighbor_count(g_id)
 
             ! diagnose seed exchange
             write(iulog,*) 'g_id, g_od, seed_od_global(g_od), neighbors_count(g_od), seed_id_global(g_id): ', g_id, g_od, seed_od_global(g_od), neighbors_count(g_od), seed_id_global(g_id)

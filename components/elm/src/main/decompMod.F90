@@ -181,7 +181,7 @@ module decompMod
      integer,pointer :: ixy(:)        ! i and j indices
      integer,pointer :: jxy(:)        ! relative to the grid cell vector
      !---------
-     integer :: neighbor_count(:)
+     integer,pointer :: neighbor_count(:)
      type(neighbor_type), pointer :: neighbors(:)
   end type decomp_type
   

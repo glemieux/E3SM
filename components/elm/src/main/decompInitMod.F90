@@ -279,6 +279,7 @@ contains
     allocate(ldecomp%ixy(numg), stat=ier)
     allocate(ldecomp%jxy(numg), stat=ier)
     !----------
+    allocate(ldecomp%neighbor_count(numg), stat=ier)
     allocate(ldecomp%neighbors(numg), stat=ier)
 
     if (ier /= 0) then
