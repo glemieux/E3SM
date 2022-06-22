@@ -58,9 +58,12 @@ contains
     integer , intent(in) :: lni,lnj   ! domain global size
     !
     ! !LOCAL VARIABLES:
+    type (neighbor_type), pointer :: new_neighbor
+    type (neighbor_type), pointer :: back_neighbor
     integer :: lns                    ! global domain size
     integer :: ln,lj                  ! indices
     integer :: ag,an,ai,aj            ! indices
+    integer :: agi,agn,ci,cj,endag    ! indices
     integer :: numg                   ! number of land gridcells
     logical :: seglen1                ! is segment length one
     real(r8):: seglen                 ! average segment length
@@ -299,7 +302,6 @@ contains
     ldecomp%jxy(:) = 0
     !-----------
     ldecomp%neighbor_count(:) = 0
-    ldecomp%neighbors(:) => null()
     ag = 0
 
     ! clumpcnt is the start gdc index of each clump

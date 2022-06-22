@@ -1419,7 +1419,7 @@ contains
 
        do g_id = 1, numg
 
-         do while (associated(ldecomp%neighbors(g_id)))
+         do while (associated(ldecomp%neighbors(g_id)%next_neighbor))
             seed_id_global(g_id) = seed_id_global(g_id) + seed_od_global(ldecomp%neighbors(g_id)%gindex) / ldecomp%neighbor_count(g_id)
 
             ! diagnose seed exchange
