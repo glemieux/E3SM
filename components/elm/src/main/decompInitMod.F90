@@ -340,7 +340,7 @@ contains
             agi = ag - agn
            
             write(iulog,*) 'ag, agn, agi: ', ag, agn, agi
-            write(iulog,*) 'ixy(ag), jxy(ag), ixy(agi), jxy(agi): ', ixy(ag), jxy(ag), ixy(agi), jxy(agi)
+            write(iulog,*) 'ldecomp%ixy(agi), ldecomp%jxy(agi): ', ldecomp%ixy(agi), ldecomp%jxy(agi)
             
             if ((ldecomp%ixy(ag) == ldecomp%ixy(agi) - 1 .and. &
                 ldecomp%jxy(ag) == ldecomp%jxy(agi) - 1)  .or. &
