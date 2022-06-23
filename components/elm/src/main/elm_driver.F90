@@ -1418,7 +1418,10 @@ contains
        write(iulog,*) 'seed_od_long, seed_od_global: ', seed_od_long,seed_od_global
 
        do g_id = 1, numg
-
+          
+         write(iulog,*) 'numg, g_id loop index: ', numg, g_id
+         write(iulog,*) 'has neighbors: ', associated(ldecomp%neighbors(g_id)%next_neighbor)
+     
          do while (associated(ldecomp%neighbors(g_id)%next_neighbor))
             seed_id_global(g_id) = seed_id_global(g_id) + seed_od_global(ldecomp%neighbors(g_id)%gindex) / ldecomp%neighbor_count(g_id)
 

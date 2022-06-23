@@ -324,7 +324,7 @@ contains
           !YL------
           ldecomp%ixy(ag) = ai
           ldecomp%jxy(ag) = aj
-          !write(iulog,*) 'ldecomp%ixy(ag), ldecomp%jxy(ag): ', ldecomp%ixy(ag), ldecomp%jxy(ag)
+          write(iulog,*) 'ldecomp%ixy(ag), ldecomp%jxy(ag): ', ldecomp%ixy(ag), ldecomp%jxy(ag)
           !--------
           
           ! Determine set of neighbors
@@ -335,10 +335,11 @@ contains
           else
             endag = lni + 1
           end if
-          
+          write(iulog,*) 'endag: ', endag
           ! Search backwards through the ldecomp array
           do agn = 1,endag
             agi = ag - agn
+            write(iulog,*) 'ag, agn, agi: ', ag, agn, agi
             do ci = 0,1
                do cj = 0,1
                   if (.not.(ci == 0 .and. cj == 0)) then
@@ -358,6 +359,8 @@ contains
                          back_neighbor%gindex = ag
                          ldecomp%neighbors(agi)%next_neighbor => back_neighbor
                          ldecomp%neighbor_count(agi) = ldecomp%neighbor_count(agi) + 1
+                         
+                         write(iulog,*) 'ldecomp%neighbor_count(ag), ldecomp%neighbor_count(agi): ', ldecomp%neighbor_count(ag), ldecomp%neighbor_count(agi)
                            
                      end if
                   end if
