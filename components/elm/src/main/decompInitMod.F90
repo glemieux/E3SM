@@ -282,7 +282,6 @@ contains
     allocate(ldecomp%ixy(numg), stat=ier)
     allocate(ldecomp%jxy(numg), stat=ier)
     !----------
-    allocate(ldecomp%neighbor_count(numg), stat=ier)
     allocate(ldecomp%neighbors(numg), stat=ier)
 
     if (ier /= 0) then
@@ -301,7 +300,7 @@ contains
     ldecomp%ixy(:) = 0
     ldecomp%jxy(:) = 0
     !-----------
-    ldecomp%neighbor_count(:) = 0
+    ldecomp%neighbors(:)neighbor_count = 0
     ag = 0
 
     ! clumpcnt is the start gdc index of each clump
@@ -350,17 +349,29 @@ contains
                          allocate(new_neighbor)
                          new_neighbor%next_neighbor => null()
                          new_neighbor%gindex = agi
-                         ldecomp%neighbors(ag)%next_neighbor => new_neighbor
-                         ldecomp%neighbor_count(ag) = ldecomp%neighbor_count(ag) + 1
+                         if associated(ldecomp%neighbors(ag)%first_neighbor) then
+                           ldecomp%neighbors(ag)%last_neighbor%next_neighbor => new_neighbor
+                           ldecomp%neighbors(ag)%last_neighbor => new_neighbor
+                         else
+                           ldecomp%neighbors(ag)%first_neighbor => new_neighbor
+                           ldecomp%neighbors(ag)%last_neighbor => new_neighbor
+                         end if
+                         ldecomp%neighbors(ag)%neighbor_count = ldecomp%neighbors(ag)%neighbor_count + 1
                          
                          ! Add current grid cell index to the neighbor's list
                          allocate(back_neighbor)
                          back_neighbor%next_neighbor => null()
                          back_neighbor%gindex = ag
-                         ldecomp%neighbors(agi)%next_neighbor => back_neighbor
-                         ldecomp%neighbor_count(agi) = ldecomp%neighbor_count(agi) + 1
+                         if associated(ldecomp%neighbors(agi)%first_neighbor) then
+                           ldecomp%neighbors(agi)%last_neighbor%next_neighbor => back_neighbor
+                           ldecomp%neighbors(agi)%last_neighbor => back_neighbor
+                         else
+                           ldecomp%neighbors(agi)%first_neighbor => back_neighbor
+                           ldecomp%neighbors(agi)%last_neighbor => back_neighbor
+                         end if
+                         ldecomp%neighbors(agi)%neighbor_count = ldecomp%neighbors(agi)%neighbor_count + 1
                          
-                         write(iulog,*) 'ldecomp%neighbor_count(ag), ldecomp%neighbor_count(agi): ', ldecomp%neighbor_count(ag), ldecomp%neighbor_count(agi)
+                         write(iulog,*) 'neighbor_count: ag, agi: ', ldecomp%neighbors(ag)%neighbor_count, ldecomp%neighbors(agi)%neighbor_count
                            
                      end if
                   end if

@@ -248,6 +248,9 @@ contains
     real(r8),    pointer :: seed_od_long(:)       ! seed_od array for all grid cells,pfts
     real(r8),    pointer :: seed_od_global(:)     ! seed_od array for all grid cells, pfts
     real(r8),    pointer :: seed_id_global(:)       ! complete grid cell array of seed_id
+    
+    type (neighbor_type), pointer :: neighbors
+    
     call get_proc_global(ng=numg)
     write(iulog,*)'numg', numg
     !-----------
@@ -1419,14 +1422,17 @@ contains
 
        do g_id = 1, numg
           
+         neighbors => ldecomp%neighbors(g_id)%first_neighbor
+         
          write(iulog,*) 'numg, g_id loop index: ', numg, g_id
-         write(iulog,*) 'has neighbors: ', associated(ldecomp%neighbors(g_id)%next_neighbor)
+         write(iulog,*) 'has neighbors: ', associated(neighbors)
      
-         do while (associated(ldecomp%neighbors(g_id)%next_neighbor))
-            seed_id_global(g_id) = seed_id_global(g_id) + seed_od_global(ldecomp%neighbors(g_id)%gindex) / ldecomp%neighbor_count(g_id)
+         do while (associated(neighbors))
+            seed_id_global(g_id) = seed_id_global(g_id) + seed_od_global(neighbors%gindex) / ldecomp%neighbors(g_id)%neighbor_count
 
             ! diagnose seed exchange
-            write(iulog,*) 'g_id, g_od, seed_od_global(g_od), neighbors_count(g_od), seed_id_global(g_id): ', g_id, g_od, seed_od_global(g_od), neighbors_count(g_od), seed_id_global(g_id)
+          !   write(iulog,*) 'g_id, g_od, seed_od_global(g_od), neighbors_count(g_od), seed_id_global(g_id): ', g_id, g_od, seed_od_global(g_od), neighbors_count(g_od), seed_id_global(g_id)
+            neighbors => neighbors%next_neighbor
          end do
 
        end do ! g_od loop

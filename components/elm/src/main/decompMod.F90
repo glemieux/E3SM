@@ -168,9 +168,14 @@ module decompMod
 
   ! Linked list of global indeces of nearest neighbors
   type, public :: neighbor_type
-    type(neighbor_type), pointer :: next_neighbor => null() 
-    integer :: gindex
+     type(neighbor_type), pointer :: next_neighbor => null() 
+     integer :: gindex
   end type neighbor_type
+  type, public :: neighborhood_type
+     type(neighbor_type), pointer :: first_neighbor => null()
+     type(neighbor_type), pointer :: last_neighbor => null()
+     integer :: neighbor_count
+  end type neighborhood_type
   
   !---global information on each pe
   !--- glo = 1d global sn ordered
@@ -181,8 +186,7 @@ module decompMod
      integer,pointer :: ixy(:)        ! i and j indices
      integer,pointer :: jxy(:)        ! relative to the grid cell vector
      !---------
-     integer,pointer :: neighbor_count(:)
-     type(neighbor_type), pointer :: neighbors(:)
+     type(neighborhood_type), pointer :: neighbors(:)
   end type decomp_type
   
   type(decomp_type),public,target :: ldecomp
