@@ -323,7 +323,6 @@ contains
           !YL------
           ldecomp%ixy(ag) = ai
           ldecomp%jxy(ag) = aj
-          write(iulog,*) 'ldecomp%ixy(ag), ldecomp%jxy(ag): ', ldecomp%ixy(ag), ldecomp%jxy(ag)
           !--------
           
           ! Determine set of neighbors
@@ -339,17 +338,19 @@ contains
           do agn = 1,endag
             agi = ag - agn
            
+            if (agi .ne. 0) then
             write(iulog,*) 'ag, agn, agi: ', ag, agn, agi
+            write(iulog,*) 'ldecomp%ixy(ag) ,  ldecomp%jxy(ag): ', ldecomp%ixy(ag), ldecomp%jxy(ag)
             write(iulog,*) 'ldecomp%ixy(agi), ldecomp%jxy(agi): ', ldecomp%ixy(agi), ldecomp%jxy(agi)
             
-            if ((ldecomp%ixy(ag) == ldecomp%ixy(agi) - 1 .and. &
-                ldecomp%jxy(ag) == ldecomp%jxy(agi) - 1)  .or. &
+            if ((ldecomp%ixy(agi) == ldecomp%ixy(ag) - 1 .and. &
+                ldecomp%jxy(agi) == ldecomp%jxy(ag) - 1)  .or. &
                 
-                (ldecomp%ixy(ag) == ldecomp%ixy(agi)     .and. &
-                ldecomp%jxy(ag) == ldecomp%jxy(agi) - 1)  .or. &
+                (ldecomp%ixy(agi) == ldecomp%ixy(ag)     .and. &
+                ldecomp%jxy(agi) == ldecomp%jxy(ag) - 1)  .or. &
                 
-                (ldecomp%ixy(ag) == ldecomp%ixy(agi) - 1 .and. &
-                ldecomp%jxy(ag) == ldecomp%jxy(agi))) then
+                (ldecomp%ixy(agi) == ldecomp%ixy(ag) - 1 .and. &
+                ldecomp%jxy(agi) == ldecomp%jxy(ag))) then
                 
                 ! Add neighbor index to current grid cell index list
                 allocate(new_neighbor)
@@ -380,6 +381,7 @@ contains
                 write(iulog,*) 'neighbor_count: ag, agi: ', ldecomp%neighbors(ag)%neighbor_count, ldecomp%neighbors(agi)%neighbor_count
                      
             end if
+            end if !agi zero check 
           end do !agn
           
           clumpcnt(cid) = clumpcnt(cid) + 1
