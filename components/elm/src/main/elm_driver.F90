@@ -1416,16 +1416,16 @@ contains
     if (is_beg_curr_day()) then
     !if (is_end_curr_month()) then
 
-       write(iulog,*) 'seed_od_long, seed_od_global: ', seed_od_long, seed_od_global
+     !   write(iulog,*) 'seed_od_long, seed_od_global: ', seed_od_long, seed_od_global
        call mpi_allreduce(seed_od_long, seed_od_global, numg, MPI_REAL8, MPI_SUM, mpicom, ier)
-       write(iulog,*) 'seed_od_long, seed_od_global: ', seed_od_long,seed_od_global
+     !   write(iulog,*) 'seed_od_long, seed_od_global: ', seed_od_long,seed_od_global
 
        do g_id = 1, numg
           
          neighbors => ldecomp%neighbors(g_id)%first_neighbor
          
-         write(iulog,*) 'numg, g_id loop index: ', numg, g_id
-         write(iulog,*) 'has neighbors: ', associated(neighbors)
+     !     write(iulog,*) 'numg, g_id loop index: ', numg, g_id
+     !     write(iulog,*) 'has neighbors: ', associated(neighbors)
      
          do while (associated(neighbors))
             seed_id_global(g_id) = seed_id_global(g_id) + seed_od_global(neighbors%gindex) / ldecomp%neighbors(g_id)%neighbor_count

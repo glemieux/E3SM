@@ -333,15 +333,15 @@ contains
           else
             endag = lni + 1
           end if
-          write(iulog,*) 'endag: ', endag
+         !  write(iulog,*) 'endag: ', endag
           ! Search backwards through the ldecomp array
           do agn = 1,endag
             agi = ag - agn
            
             if (agi .ne. 0) then
-            write(iulog,*) 'ag, agn, agi: ', ag, agn, agi
-            write(iulog,*) 'ldecomp%ixy(ag) ,  ldecomp%jxy(ag): ', ldecomp%ixy(ag), ldecomp%jxy(ag)
-            write(iulog,*) 'ldecomp%ixy(agi), ldecomp%jxy(agi): ', ldecomp%ixy(agi), ldecomp%jxy(agi)
+            ! write(iulog,*) 'ag, agn, agi: ', ag, agn, agi
+            ! write(iulog,*) 'ldecomp%ixy(ag) ,  ldecomp%jxy(ag): ', ldecomp%ixy(ag), ldecomp%jxy(ag)
+            ! write(iulog,*) 'ldecomp%ixy(agi), ldecomp%jxy(agi): ', ldecomp%ixy(agi), ldecomp%jxy(agi)
             
             if ((ldecomp%ixy(agi) == ldecomp%ixy(ag) - 1 .and. &
                 ldecomp%jxy(agi) == ldecomp%jxy(ag) - 1)  .or. &
@@ -378,7 +378,7 @@ contains
                 end if
                 ldecomp%neighbors(agi)%neighbor_count = ldecomp%neighbors(agi)%neighbor_count + 1
                 
-                write(iulog,*) 'neighbor_count: ag, agi: ', ldecomp%neighbors(ag)%neighbor_count, ldecomp%neighbors(agi)%neighbor_count
+               !  write(iulog,*) 'neighbor_count: ag, agi: ', ldecomp%neighbors(ag)%neighbor_count, ldecomp%neighbors(agi)%neighbor_count
                      
             end if
             end if !agi zero check 
@@ -406,15 +406,15 @@ contains
     ! Diagnostic output
     !YL--------
     ! if (masterproc) then
-     write(iulog,*)' Surface Grid Characteristics'
-     write(iulog,*)'   longitude points               = ',lni
-     write(iulog,*)'   latitude points                = ',lnj
-     write(iulog,*)'   total number of land gridcells = ',numg
-     write(iulog,*)' Decomposition Characteristics'
-     write(iulog,*)'   clumps per process             = ',clump_pproc
-     write(iulog,*)' gsMap Characteristics'
-     write(iulog,*) '  lnd gsmap glo num of segs      = ',mct_gsMap_ngseg(gsMap_lnd_gdc2glo)
-     write(iulog,*)
+   !   write(iulog,*)' Surface Grid Characteristics'
+   !   write(iulog,*)'   longitude points               = ',lni
+   !   write(iulog,*)'   latitude points                = ',lnj
+   !   write(iulog,*)'   total number of land gridcells = ',numg
+   !   write(iulog,*)' Decomposition Characteristics'
+   !   write(iulog,*)'   clumps per process             = ',clump_pproc
+   !   write(iulog,*)' gsMap Characteristics'
+   !   write(iulog,*) '  lnd gsmap glo num of segs      = ',mct_gsMap_ngseg(gsMap_lnd_gdc2glo)
+   !   write(iulog,*)
     ! end if
     !----------
 
