@@ -300,7 +300,7 @@ contains
     ldecomp%ixy(:) = 0
     ldecomp%jxy(:) = 0
     !-----------
-    ldecomp%neighbors(:)neighbor_count = 0
+    ldecomp%neighbors(:)%neighbor_count = 0
     ag = 0
 
     ! clumpcnt is the start gdc index of each clump
@@ -349,7 +349,7 @@ contains
                          allocate(new_neighbor)
                          new_neighbor%next_neighbor => null()
                          new_neighbor%gindex = agi
-                         if associated(ldecomp%neighbors(ag)%first_neighbor) then
+                         if (associated(ldecomp%neighbors(ag)%first_neighbor)) then
                            ldecomp%neighbors(ag)%last_neighbor%next_neighbor => new_neighbor
                            ldecomp%neighbors(ag)%last_neighbor => new_neighbor
                          else
@@ -362,7 +362,7 @@ contains
                          allocate(back_neighbor)
                          back_neighbor%next_neighbor => null()
                          back_neighbor%gindex = ag
-                         if associated(ldecomp%neighbors(agi)%first_neighbor) then
+                         if (associated(ldecomp%neighbors(agi)%first_neighbor)) then
                            ldecomp%neighbors(agi)%last_neighbor%next_neighbor => back_neighbor
                            ldecomp%neighbors(agi)%last_neighbor => back_neighbor
                          else
