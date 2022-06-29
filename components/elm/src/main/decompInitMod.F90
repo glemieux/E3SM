@@ -20,6 +20,7 @@ module decompInitMod
   use FatesInterfaceTypesMod, only : fates_maxElementsPerSite
   use VegetationType  , only : veg_pp                
   use decompMod
+  use perf_mod
   use mct_mod  
   use topounit_varcon   , only : max_topounits, has_topounit
   use domainMod         , only: ldomain
@@ -312,7 +313,9 @@ contains
 
     ! now go through gridcells one at a time and increment clumpcnt
     ! in order to set gdc2glo
-
+    
+    call t_startf('fates-seed-decompinit')
+    
     do aj = 1,lnj
     do ai = 1,lni
        an = (aj-1)*lni + ai
@@ -389,6 +392,8 @@ contains
     end do
     end do
 
+    call t_stopf('fates-seed-decompinit')
+    
     deallocate(clumpcnt)
 
     ! Set gsMap_lnd_gdc2glo (the global index here includes mask=0 or ocean points)

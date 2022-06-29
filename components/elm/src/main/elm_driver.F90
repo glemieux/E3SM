@@ -252,7 +252,7 @@ contains
     type (neighbor_type), pointer :: neighbors
     
     call get_proc_global(ng=numg)
-    write(iulog,*)'numg', numg
+    !write(iulog,*)'numg', numg
     !-----------
 
     !-----------------------------------------------------------------------
@@ -1412,6 +1412,7 @@ contains
     end do
     !$OMP END PARALLEL DO
 
+    call t_startf('fates-seed')
     !YL-------
     if (is_beg_curr_day()) then
     !if (is_end_curr_month()) then
@@ -1437,6 +1438,7 @@ contains
 
        end do ! g_od loop
     endif    
+    call t_stopf('fates-seed')
     !---------
 
     ! ============================================================================
