@@ -119,6 +119,8 @@ contains
        endif
     endif
 
+    write(iulog,*) 'domain_init: nb, ne',nb,ne
+    
     if (domain%set) then
        call domain_clean(domain)
     endif

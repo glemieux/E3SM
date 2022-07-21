@@ -81,6 +81,7 @@ contains
     use filterMod                 , only: allocFilters
     use reweightMod               , only: reweight_wrapup
     use ELMFatesInterfaceMod      , only: ELMFatesGlobals
+    use ELMFatesInterfaceMod      , only: DetermineGridCellNeighbors, neighborhood_type
     use topounit_varcon           , only: max_topounits, has_topounit, topounit_varcon_init    
     use elm_varctl                , only: use_top_solar_rad
     !
@@ -106,6 +107,8 @@ contains
     integer           :: nclumps                 ! number of clumps on this processor
     integer           :: nc                      ! clump index
     character(len=32) :: subname = 'initialize1' ! subroutine name
+    
+    type(neighborhood_type) :: neighbors
     !-----------------------------------------------------------------------
 
     call t_startf('elm_init1')
@@ -293,7 +296,7 @@ contains
     ! ------------------------------------------------------------------------
 
     call ELMFatesGlobals()
-
+    call DetermineGridCellNeighbors(ldecomp, ldomain, neighbors)
 
     ! ------------------------------------------------------------------------
     ! Determine decomposition of subgrid scale topounits, landunits, topounits, columns, patches

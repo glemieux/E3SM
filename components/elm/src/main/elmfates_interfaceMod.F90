@@ -90,6 +90,8 @@ module ELMFatesInterfaceMod
                                   is_beg_curr_day,   &
                                   get_step_size,     &
                                   get_nstep
+   use perf_mod          , only : t_startf, t_stopf
+
    !YL--------
    ! use clm_time_manager  , only : is_end_curr_year, is_end_curr_month
    !----------
@@ -233,6 +235,34 @@ module ELMFatesInterfaceMod
       procedure, public  :: WrapUpdateFatesRmean
       
    end type hlm_fates_interface_type
+   
+   
+   type, public :: neighbor_type
+      
+      ! Grid cell neighbor
+      type(neighbor_type), pointer :: next_neighbor => null() 
+      
+      integer  :: gindex      = -999  ! grid cell index
+      real(r8) :: gc_dist     = 0._r8 ! distance between source and neighbor
+      real(r8) :: dist_weight = 0._r8 ! distance-based weight scalar
+      
+      contains
+         procedure :: DistWeightCalc
+      
+   end type neighbor_type
+   
+   type, public :: neighborhood_type
+   
+      ! Linked list of neighbors for a given source grid cell
+      type(neighbor_type), pointer :: first_neighbor => null()
+      type(neighbor_type), pointer :: last_neighbor => null()
+      
+      integer  :: neighbor_count  = 0     ! total neighbors near source
+      real(r8) :: dist_weight_tot = 0._r8 ! sum of dist weight scalars
+      
+   end type neighborhood_type
+
+   public :: DetermineGridCellNeighbors
 
    ! hlm_bounds_to_fates_bounds is not currently called outside the interface.
    ! Although there may be good reasons to, I privatized it so that the next
@@ -2082,7 +2112,6 @@ verbose_output = .false.
     use decompMod         , only : bounds_type
     use elm_varcon        , only : rgas, tfrz, namep
     use elm_varctl        , only : iulog
-    use perf_mod          , only : t_startf, t_stopf
     use quadraticMod      , only : quadratic
     use EDtypesMod        , only : ed_patch_type, ed_cohort_type, ed_site_type
 
@@ -2405,7 +2434,152 @@ verbose_output = .false.
 
  !---------------
 
+ subroutine DetermineGridCellNeighbors(ldecomp, ldomain, neighbors)
+   
+   ! This subroutine utilizes information from the decomposition and domain types to determine
+   ! the set of grid cell neighbors within some maximum distance.  It records the distance for each
+   ! neighbor for later use.  This should be called after decompInit_lnd and surf_get_grid
+   ! as it relies on ldecomp and ldomain information.
+   
+   ! Arguments
+   type(decomp_type),intent(in) :: ldecomp     ! land decomp
+   type(domain_type),intent(in) :: ldomain     ! land domain
+   type(neighborhood_type), intent(out) :: neighbors
+ 
+   ! Local variables
+   type (neighbor_type), pointer :: current_neighbor
+   type (neighbor_type), pointer :: another_neighbor
+   
+   integer :: gi,gj  ! indices
+   integer :: numg   ! number of land gridcells
+   integer :: ier    ! error code
+   
+   real(r8) :: g2g_dist ! grid cell distance
+   
+   ! Parameters and constants, to be moved to fates param file
+   ! Both of these should probably be per pft
+   real(r8) :: decay_rate = 1._r8
+   real(r8) :: g2g_dist_max = 2500  ! maximum search distance [km]
+      ! 5 deg = 785.8 km, 10 deg = 1569 km, 15deg = 2345 km assumes cartesian layout with diagonal distance
+      
+   ! Allocate array neighbor type
+   numg = size(ldecomp%gdc2glo)
+   allocate(neighbors(numg), stat=ier)
+   
+   write(iulog,*)'neighborhood: numg: ', numg
+   write(iulog,*)'neighborhood: size ldomain latc/lonc: ', size(ldomain%latc), size(ldomain%lonc)
+      
+   call t_startf('fates-seed-decompinit')
+   
+   ! Iterate through the grid cell indices and determine if any neighboring cells are in range
+   gc_loop: do gi = 1,numg-1
+   
+      ! Seach forward through all indices for neighbors to current grid cell index
+      neighbor_search: do gj = gi+1,numg
+        
+         ! Determine distance to old grid cells to the current one
+         g2g_dist = GetNeighborDistance(gi,gj,ldomain)
+         
+         write(iulog,*)'neighborhood: g2g_dist: ', g2g_dist
+      
+         dist_check: if (g2g_dist .le. g2g_dist_max) then
+         
+            ! Add neighbor index to current grid cell index list
+            allocate(current_neighbor)
+            current_neighbor%next_neighbor => null()
+            
+            ! ldomain and ldecomp indices match per initGridCells
+            current_neighbor%gindex = ldecomp%gdc2glo(gj) 
+            
+            current_neighbor%gc_dist = g2g_dist
+            current_neighbor%dist_weight = current_neighbor%DistWeightCalc(g2g_dist,decay_rate)
+           
+            if (associated(neighbors(gi)%first_neighbor)) then
+              neighbors(gi)%last_neighbor%next_neighbor => current_neighbor
+              neighbors(gi)%last_neighbor => current_neighbor
+            else
+              neighbors(gi)%first_neighbor => current_neighbor
+              neighbors(gi)%last_neighbor => current_neighbor
+            end if
+            
+            neighbors(gi)%neighbor_count = neighbors(gi)%neighbor_count + 1
+            neighbors(gi)%dist_weight_tot = neighbors(gi)%dist_weight_tot + current_neighbor%dist_weight
+            
+            ! Add current grid cell index to the neighbor's list as well
+            allocate(another_neighbor)
+            another_neighbor%next_neighbor => null()
+            
+            ! ldomain and ldecomp indices match per initGridCells
+            another_neighbor%gindex = ldecomp%gdc2glo(gi) 
+            
+            another_neighbor%gc_dist = current_neighbor%gc_dist
+            another_neighbor%dist_weight = current_neighbor%dist_weight
+            
+            if (associated(neighbors(gj)%first_neighbor)) then
+              neighbors(gj)%last_neighbor%next_neighbor => another_neighbor
+              neighbors(gj)%last_neighbor => another_neighbor
+            else
+              neighbors(gj)%first_neighbor => another_neighbor
+              neighbors(gj)%last_neighbor => another_neighbor
+            end if
+            
+            neighbors(gj)%neighbor_count = neighbors(gj)%neighbor_count + 1
+            neighbors(gj)%dist_weight_tot = neighbors(gj)%dist_weight_tot + another_neighbor%dist_weight
+         
+         end if dist_check
+      end do neighbor_search
+   end do gc_loop
+   
+   call t_stopf('fates-seed-decompinit')
 
+   ! Diagnostic output
+   !YL--------
+   ! if (masterproc) then
+   !   write(iulog,*)' Surface Grid Characteristics'
+   !   write(iulog,*)'   longitude points               = ',lni
+   !   write(iulog,*)'   latitude points                = ',lnj
+   !   write(iulog,*)'   total number of land gridcells = ',numg
+   !   write(iulog,*)' Decomposition Characteristics'
+   !   write(iulog,*)'   clumps per process             = ',clump_pproc
+   !   write(iulog,*)' gsMap Characteristics'
+   !   write(iulog,*) '  lnd gsmap glo num of segs      = ',mct_gsMap_ngseg(gsMap_lnd_gdc2glo)
+   !   write(iulog,*)
+   ! end if
+   !----------
+   
+ end subroutine DetermineGridCellNeighbors
+
+ ! ======================================================================================
+ 
+ function DistWeightCalc(g2g_dist, decay_rate) result(dist_weight)
+   
+   ! Arguments
+   real(r8), intent(in) :: g2g_dist
+   real(r8), intent(in) :: decay_rate
+   real(r8)             :: dist_weight
+ 
+   ! Assuming simple exponential decay.  In the future perhaps this could be an interface
+   ! for different weight calculations (and could be held only in fates)
+   
+   dist_weight = exp(-decay_rate*g2g_dist)
+      
+ end function DistWeightCalc
+  
+ ! ======================================================================================
+ 
+ function GetNeighborDistance(gi,gj,ldomain) result(gcd)
+   
+   use FatesUtilsMod, only : GreatCircleDist
+   
+   type(domain_type),intent(in) :: ldomain   ! land domain
+   integer, intent(in)          :: gi,gj     ! indices of gridcells
+   integer :: gcd
+ 
+   gcd = GreatCircleDist(ldomain%lonc(gi),ldomain%lonc(gj), &
+                         ldomain%latc(gi),ldomain%latc(gj))
+   
+ end function GetNeighborDistance
+ 
  ! ======================================================================================
 
 

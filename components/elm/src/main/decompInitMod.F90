@@ -20,7 +20,6 @@ module decompInitMod
   use FatesInterfaceTypesMod, only : fates_maxElementsPerSite
   use VegetationType  , only : veg_pp                
   use decompMod
-  use perf_mod
   use mct_mod  
   use topounit_varcon   , only : max_topounits, has_topounit
   use domainMod         , only: ldomain
@@ -59,12 +58,9 @@ contains
     integer , intent(in) :: lni,lnj   ! domain global size
     !
     ! !LOCAL VARIABLES:
-    type (neighbor_type), pointer :: new_neighbor
-    type (neighbor_type), pointer :: back_neighbor
     integer :: lns                    ! global domain size
     integer :: ln,lj                  ! indices
     integer :: ag,an,ai,aj            ! indices
-    integer :: agi,agn,ci,cj,endag    ! indices
     integer :: numg                   ! number of land gridcells
     logical :: seglen1                ! is segment length one
     real(r8):: seglen                 ! average segment length
@@ -279,12 +275,6 @@ contains
 
     allocate(ldecomp%gdc2glo(numg), stat=ier)
 
-    !YL--------
-    allocate(ldecomp%ixy(numg), stat=ier)
-    allocate(ldecomp%jxy(numg), stat=ier)
-    !----------
-    allocate(ldecomp%neighbors(numg), stat=ier)
-
     if (ier /= 0) then
        write(iulog,*) 'decompInit_lnd(): allocation error1 for ldecomp, etc'
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -296,12 +286,7 @@ contains
     end if
 
     ldecomp%gdc2glo(:) = 0
-    
-    !YL---------
-    ldecomp%ixy(:) = 0
-    ldecomp%jxy(:) = 0
-    !-----------
-    ldecomp%neighbors(:)%neighbor_count = 0
+
     ag = 0
 
     ! clumpcnt is the start gdc index of each clump
@@ -323,77 +308,11 @@ contains
        if (cid > 0) then
           ag = clumpcnt(cid)
           ldecomp%gdc2glo(ag) = an
-          !YL------
-          ldecomp%ixy(ag) = ai
-          ldecomp%jxy(ag) = aj
-          !--------
-          
-          ! Determine set of neighbors
-          ! For nearest neighbor we only need to check backwards by ai+1 iterations backwards
-          ! assuming that lnj and lni form a cartesian grid
-          if (ag .lt. lni+1) then
-            endag = ag
-          else
-            endag = lni + 1
-          end if
-         !  write(iulog,*) 'endag: ', endag
-          ! Search backwards through the ldecomp array
-          do agn = 1,endag
-            agi = ag - agn
-           
-            if (agi .ne. 0) then
-            ! write(iulog,*) 'ag, agn, agi: ', ag, agn, agi
-            ! write(iulog,*) 'ldecomp%ixy(ag) ,  ldecomp%jxy(ag): ', ldecomp%ixy(ag), ldecomp%jxy(ag)
-            ! write(iulog,*) 'ldecomp%ixy(agi), ldecomp%jxy(agi): ', ldecomp%ixy(agi), ldecomp%jxy(agi)
-            
-            if ((ldecomp%ixy(agi) == ldecomp%ixy(ag) - 1 .and. &
-                ldecomp%jxy(agi) == ldecomp%jxy(ag) - 1)  .or. &
-                
-                (ldecomp%ixy(agi) == ldecomp%ixy(ag)     .and. &
-                ldecomp%jxy(agi) == ldecomp%jxy(ag) - 1)  .or. &
-                
-                (ldecomp%ixy(agi) == ldecomp%ixy(ag) - 1 .and. &
-                ldecomp%jxy(agi) == ldecomp%jxy(ag))) then
-                
-                ! Add neighbor index to current grid cell index list
-                allocate(new_neighbor)
-                new_neighbor%next_neighbor => null()
-                new_neighbor%gindex = agi
-                if (associated(ldecomp%neighbors(ag)%first_neighbor)) then
-                  ldecomp%neighbors(ag)%last_neighbor%next_neighbor => new_neighbor
-                  ldecomp%neighbors(ag)%last_neighbor => new_neighbor
-                else
-                  ldecomp%neighbors(ag)%first_neighbor => new_neighbor
-                  ldecomp%neighbors(ag)%last_neighbor => new_neighbor
-                end if
-                ldecomp%neighbors(ag)%neighbor_count = ldecomp%neighbors(ag)%neighbor_count + 1
-                
-                ! Add current grid cell index to the neighbor's list
-                allocate(back_neighbor)
-                back_neighbor%next_neighbor => null()
-                back_neighbor%gindex = ag
-                if (associated(ldecomp%neighbors(agi)%first_neighbor)) then
-                  ldecomp%neighbors(agi)%last_neighbor%next_neighbor => back_neighbor
-                  ldecomp%neighbors(agi)%last_neighbor => back_neighbor
-                else
-                  ldecomp%neighbors(agi)%first_neighbor => back_neighbor
-                  ldecomp%neighbors(agi)%last_neighbor => back_neighbor
-                end if
-                ldecomp%neighbors(agi)%neighbor_count = ldecomp%neighbors(agi)%neighbor_count + 1
-                
-               !  write(iulog,*) 'neighbor_count: ag, agi: ', ldecomp%neighbors(ag)%neighbor_count, ldecomp%neighbors(agi)%neighbor_count
-                     
-            end if
-            end if !agi zero check 
-          end do !agn
-          
           clumpcnt(cid) = clumpcnt(cid) + 1
        end if
     end do
     end do
-
-    call t_stopf('fates-seed-decompinit')
-    
+   
     deallocate(clumpcnt)
 
     ! Set gsMap_lnd_gdc2glo (the global index here includes mask=0 or ocean points)
@@ -407,21 +326,6 @@ contains
     gsize = lni * lnj
     call mct_gsMap_init(gsMap_lnd_gdc2glo, gindex, mpicom, comp_id, lsize, gsize)
     deallocate(gindex)
-
-    ! Diagnostic output
-    !YL--------
-    ! if (masterproc) then
-   !   write(iulog,*)' Surface Grid Characteristics'
-   !   write(iulog,*)'   longitude points               = ',lni
-   !   write(iulog,*)'   latitude points                = ',lnj
-   !   write(iulog,*)'   total number of land gridcells = ',numg
-   !   write(iulog,*)' Decomposition Characteristics'
-   !   write(iulog,*)'   clumps per process             = ',clump_pproc
-   !   write(iulog,*)' gsMap Characteristics'
-   !   write(iulog,*) '  lnd gsmap glo num of segs      = ',mct_gsMap_ngseg(gsMap_lnd_gdc2glo)
-   !   write(iulog,*)
-    ! end if
-    !----------
 
     call shr_sys_flush(iulog)
 
