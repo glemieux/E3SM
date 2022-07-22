@@ -64,6 +64,7 @@ contains
     use soilorder_varcon          , only: soilorder_conrd
     use decompInitMod             , only: decompInit_lnd, decompInit_clumps, decompInit_gtlcp
     use domainMod                 , only: domain_check, ldomain, domain_init
+    use decompMod                 , only: ldecomp
     use surfrdMod                 , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data,surfrd_get_topo_for_solar_rad
     use controlMod                , only: control_init, control_print, NLFilename
     use ncdio_pio                 , only: ncd_pio_init
@@ -108,7 +109,7 @@ contains
     integer           :: nc                      ! clump index
     character(len=32) :: subname = 'initialize1' ! subroutine name
     
-    type(neighborhood_type) :: neighbors
+    type(neighborhood_type), allocatable :: neighbors(:)
     !-----------------------------------------------------------------------
 
     call t_startf('elm_init1')

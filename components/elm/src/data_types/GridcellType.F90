@@ -16,7 +16,6 @@ module GridcellType
   use landunit_varcon, only : max_lunit
   use elm_varcon     , only : ispval, spval
   use topounit_varcon, only : max_topounits
-  use decompMod      , only : neighbor_type
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -26,9 +25,6 @@ module GridcellType
   !
   type, public :: gridcell_physical_properties_type
   
-     ! nearest neighbor linked list, why use this if ldecomp is available?
-    !  type(neighbor_type), pointer :: grc_nn(:) => null()
-
      ! topological mapping functionality, local 1d gdc arrays
      integer , pointer :: gindex       (:) => null() ! global index
      real(r8), pointer :: area         (:) => null() ! total land area, gridcell (km^2)

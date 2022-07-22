@@ -2440,11 +2440,14 @@ verbose_output = .false.
    ! the set of grid cell neighbors within some maximum distance.  It records the distance for each
    ! neighbor for later use.  This should be called after decompInit_lnd and surf_get_grid
    ! as it relies on ldecomp and ldomain information.
+
+   use domainMod, only : domain_type
+   use decompMod, only : decomp_type
    
    ! Arguments
    type(decomp_type),intent(in) :: ldecomp     ! land decomp
    type(domain_type),intent(in) :: ldomain     ! land domain
-   type(neighborhood_type), intent(out) :: neighbors
+   type(neighborhood_type), intent(out), allocatable :: neighbors(:)
  
    ! Local variables
    type (neighbor_type), pointer :: current_neighbor
@@ -2551,9 +2554,11 @@ verbose_output = .false.
 
  ! ======================================================================================
  
- function DistWeightCalc(g2g_dist, decay_rate) result(dist_weight)
+ function DistWeightCalc(this, g2g_dist, decay_rate) result(dist_weight)
+
    
    ! Arguments
+   class(neighbor_type) :: this
    real(r8), intent(in) :: g2g_dist
    real(r8), intent(in) :: decay_rate
    real(r8)             :: dist_weight
@@ -2569,6 +2574,7 @@ verbose_output = .false.
  
  function GetNeighborDistance(gi,gj,ldomain) result(gcd)
    
+   use domainMod    , only : domain_type
    use FatesUtilsMod, only : GreatCircleDist
    
    type(domain_type),intent(in) :: ldomain   ! land domain
