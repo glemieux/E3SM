@@ -236,7 +236,7 @@ module ELMFatesInterfaceMod
       
    end type hlm_fates_interface_type
    
-   
+   ! Neighbor node
    type, public :: neighbor_type
       
       ! Grid cell neighbor
@@ -251,6 +251,7 @@ module ELMFatesInterfaceMod
       
    end type neighbor_type
    
+   ! Neighborhood linked list
    type, public :: neighborhood_type
    
       ! Linked list of neighbors for a given source grid cell
@@ -262,6 +263,7 @@ module ELMFatesInterfaceMod
       
    end type neighborhood_type
 
+   type(neighborhood_type), public, pointer :: lneighbors(:)
    public :: DetermineGridCellNeighbors
 
    ! hlm_bounds_to_fates_bounds is not currently called outside the interface.
@@ -2434,20 +2436,17 @@ contains
 
  !---------------
 
- subroutine DetermineGridCellNeighbors(ldecomp, ldomain, neighbors)
+ subroutine DetermineGridCellNeighbors(neighbors)
    
    ! This subroutine utilizes information from the decomposition and domain types to determine
    ! the set of grid cell neighbors within some maximum distance.  It records the distance for each
    ! neighbor for later use.  This should be called after decompInit_lnd and surf_get_grid
    ! as it relies on ldecomp and ldomain information.
 
-   use domainMod, only : domain_type
-   use decompMod, only : decomp_type
+   use decompMod, only : ldecomp
    
    ! Arguments
-   type(decomp_type),intent(in) :: ldecomp     ! land decomp
-   type(domain_type),intent(in) :: ldomain     ! land domain
-   type(neighborhood_type), intent(out), allocatable :: neighbors(:)
+   type(neighborhood_type), intent(inout), pointer :: neighbors(:)
  
    ! Local variables
    type (neighbor_type), pointer :: current_neighbor
@@ -2470,7 +2469,6 @@ contains
    allocate(neighbors(numg), stat=ier)
    
    write(iulog,*)'neighborhood: numg: ', numg
-   write(iulog,*)'neighborhood: size ldomain latc/lonc: ', size(ldomain%latc), size(ldomain%lonc)
       
    call t_startf('fates-seed-decompinit')
    
@@ -2481,7 +2479,7 @@ contains
       neighbor_search: do gj = gi+1,numg
         
          ! Determine distance to old grid cells to the current one
-         g2g_dist = GetNeighborDistance(gi,gj,ldomain)
+         g2g_dist = GetNeighborDistance(gi,gj)
          
          write(iulog,*)'neighborhood: g2g_dist: ', g2g_dist
       
@@ -2572,15 +2570,16 @@ contains
   
  ! ======================================================================================
  
- function GetNeighborDistance(gi,gj,ldomain) result(gcd)
+ function GetNeighborDistance(gi,gj) result(gcd)
    
-   use domainMod    , only : domain_type
+   use domainMod    , only : ldomain
    use FatesUtilsMod, only : GreatCircleDist
    
-   type(domain_type),intent(in) :: ldomain   ! land domain
    integer, intent(in)          :: gi,gj     ! indices of gridcells
    integer :: gcd
  
+   write(iulog,*)'neighborhood: size ldomain latc/lonc: ', size(ldomain%latc), size(ldomain%lonc)
+   
    gcd = GreatCircleDist(ldomain%lonc(gi),ldomain%lonc(gj), &
                          ldomain%latc(gi),ldomain%latc(gj))
    
