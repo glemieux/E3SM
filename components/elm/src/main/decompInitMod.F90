@@ -299,8 +299,6 @@ contains
     ! now go through gridcells one at a time and increment clumpcnt
     ! in order to set gdc2glo
     
-    call t_startf('fates-seed-decompinit')
-    
     do aj = 1,lnj
     do ai = 1,lni
        an = (aj-1)*lni + ai
