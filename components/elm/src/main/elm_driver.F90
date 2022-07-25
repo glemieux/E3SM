@@ -206,6 +206,7 @@ contains
     ! the calling tree is given in the description of this module.
     !
     ! !USES:
+    use ELMFatesInterfaceMod, only: lneighbors, neighbor_type
     !
     ! !ARGUMENTS:
     implicit none
@@ -249,7 +250,7 @@ contains
     real(r8),    pointer :: seed_od_global(:)     ! seed_od array for all grid cells, pfts
     real(r8),    pointer :: seed_id_global(:)       ! complete grid cell array of seed_id
     
-    type (neighbor_type), pointer :: neighbors
+    type (neighbor_type), pointer :: neighbor
     
     call get_proc_global(ng=numg)
     !write(iulog,*)'numg', numg
@@ -1423,17 +1424,14 @@ contains
 
        do g_id = 1, numg
           
-         neighbors => ldecomp%neighbors(g_id)%first_neighbor
+         neighbor => lneighbors(g_id)%first_neighbor
          
-     !     write(iulog,*) 'numg, g_id loop index: ', numg, g_id
-     !     write(iulog,*) 'has neighbors: ', associated(neighbors)
-     
-         do while (associated(neighbors))
-            seed_id_global(g_id) = seed_id_global(g_id) + seed_od_global(neighbors%gindex) / ldecomp%neighbors(g_id)%neighbor_count
+         do while (associated(neighbor))
+            seed_id_global(g_id) = seed_id_global(g_id) + seed_od_global(neighbor%gindex) / lneighbors(g_id)%neighbor_count
 
             ! diagnose seed exchange
           !   write(iulog,*) 'g_id, g_od, seed_od_global(g_od), neighbors_count(g_od), seed_id_global(g_id): ', g_id, g_od, seed_od_global(g_od), neighbors_count(g_od), seed_id_global(g_id)
-            neighbors => neighbors%next_neighbor
+            neighbor => neighbor%next_neighbor
          end do
 
        end do ! g_od loop
