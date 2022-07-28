@@ -2474,7 +2474,7 @@ contains
    ! Parameters and constants, to be moved to fates param file
    ! Both of these should probably be per pft
    real(r8) :: decay_rate = 1._r8
-   real(r8) :: g2g_dist_max = 2500  ! maximum search distance [km]
+   real(r8) :: g2g_dist_max = 2500._r8 * 1000._r8 ! maximum search distance [m]
       ! 5 deg = 785.8 km, 10 deg = 1569 km, 15deg = 2345 km assumes cartesian layout with diagonal distance
       
    ! Allocate array neighbor type
