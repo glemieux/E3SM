@@ -206,7 +206,8 @@ contains
     ! the calling tree is given in the description of this module.
     !
     ! !USES:
-    use ELMFatesInterfaceMod, only: lneighbors, neighbor_type
+    use FatesInterfaceTypesMod, only : neighbor_type
+    use FatesInterfaceTypesMod, only : lneighbors
     !
     ! !ARGUMENTS:
     implicit none

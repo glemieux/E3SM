@@ -83,7 +83,6 @@ contains
     use filterMod                 , only: allocFilters
     use reweightMod               , only: reweight_wrapup
     use ELMFatesInterfaceMod      , only: ELMFatesGlobals
-    use ELMFatesInterfaceMod      , only: DetermineGridCellNeighbors, lneighbors
     use topounit_varcon           , only: max_topounits, has_topounit, topounit_varcon_init    
     use elm_varctl                , only: use_top_solar_rad
     !
@@ -297,7 +296,6 @@ contains
     ! ------------------------------------------------------------------------
 
     call ELMFatesGlobals()
-    call DetermineGridCellNeighbors(lneighbors)
 
     ! ------------------------------------------------------------------------
     ! Determine decomposition of subgrid scale topounits, landunits, topounits, columns, patches

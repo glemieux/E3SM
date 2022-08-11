@@ -130,12 +130,14 @@ module ELMFatesInterfaceMod
    use FatesInterfaceMod     , only : FatesInterfaceInit
    use FatesInterfaceMod     , only : UpdateFatesRMeansTStep
    use FatesInterfaceMod     , only : InitTimeAveragingGlobals
+   use FatesInterfaceMod     , only : DetermineGridCellNeighbors
    
    use FatesHistoryInterfaceMod, only : fates_hist
    use FatesRestartInterfaceMod, only : fates_restart_interface_type
 
    use PRTGenericMod         , only : num_elements
    use EDTypesMod            , only : ed_patch_type
+   use FatesInterfaceTypesMod, only : lneighbors
    use FatesInterfaceTypesMod, only : hlm_stepsize
    use EDMainMod             , only : ed_ecosystem_dynamics
    use EDMainMod             , only : ed_update_site
@@ -238,38 +240,6 @@ module ELMFatesInterfaceMod
       
    end type hlm_fates_interface_type
    
-   ! Neighbor node
-   type, public :: neighbor_type
-      
-      ! Grid cell neighbor
-      type(neighbor_type), pointer :: next_neighbor => null() 
-      
-      integer  :: gindex      ! grid cell index
-      real(r8) :: gc_dist     ! distance between source and neighbor
-      real(r8) :: dist_weight ! distance-based weight scalar
-      
-      contains
-         procedure :: DistWeightCalc
-      
-   end type neighbor_type
-   
-   ! Neighborhood linked list
-   type, public :: neighborhood_type
-   
-      ! Linked list of neighbors for a given source grid cell
-      type(neighbor_type), pointer :: first_neighbor => null()
-      type(neighbor_type), pointer :: last_neighbor => null()
-      
-      integer  :: neighbor_count   ! total neighbors near source
-      real(r8) :: dist_weight_tot  ! sum of dist weight scalars
-      ! real(r8) :: gclat            ! source gridcell latitude (deg)
-      ! real(r8) :: gclon            ! source gridcell longitude (deg)
-      
-   end type neighborhood_type
-
-   type(neighborhood_type), public, pointer :: lneighbors(:)
-   public :: DetermineGridCellNeighbors
-
    ! hlm_bounds_to_fates_bounds is not currently called outside the interface.
    ! Although there may be good reasons to, I privatized it so that the next
    ! developer will at least question its usage (RGK)
@@ -535,6 +505,12 @@ contains
      ! it will return some nominal dimension sizes of 1
 
      call SetFatesGlobalElements(use_fates)
+     
+     ! Initialize the array of nearest neighbors for fates-driven grid cell communications
+     ! This must be called after surfrd_get_data and decompInit_lnd
+     if (use_fates) then
+        call DetermineGridCellNeighbors(lneighbors)
+     end if
 
      return
    end subroutine ELMFatesGlobals
@@ -2370,8 +2346,8 @@ contains
 
  end subroutine wrap_canopy_radiation
 
+ ! ======================================================================================
 
- !YL-------------
  subroutine wrap_seed_dispersal(this,bounds_clump,seed_id_global)
 
     ! This subroutine pass seed_id_global to bc_in and reset seed_out
@@ -2406,7 +2382,7 @@ contains
 
  end subroutine wrap_seed_dispersal
 
-
+ ! ======================================================================================
 
  subroutine wrap_seed_dispersal_reset(this,bounds_clump)
 
@@ -2437,205 +2413,6 @@ contains
     end do
 
  end subroutine wrap_seed_dispersal_reset
-
- !---------------
-
- subroutine DetermineGridCellNeighbors(neighbors)
-   
-   ! This subroutine utilizes information from the decomposition and domain types to determine
-   ! the set of grid cell neighbors within some maximum distance.  It records the distance for each
-   ! neighbor for later use.  This should be called after decompInit_lnd and surf_get_grid
-   ! as it relies on ldecomp and ldomain information.
-
-   use decompMod, only : ldecomp, procinfo, get_proc_global
-   use domainMod, only : ldomain
-   use spmdMod,   only : MPI_REAL8, MPI_INTEGER, mpicom, npes, masterproc, iam
-   
-   ! Arguments
-   type(neighborhood_type), intent(inout), pointer :: neighbors(:)
- 
-   ! Local variables
-   type (neighbor_type), pointer :: current_neighbor
-   type (neighbor_type), pointer :: another_neighbor
-   
-   integer :: gi,gj  ! indices
-   integer :: numg   ! number of land gridcells
-   integer :: ngcheck   ! number of land gridcells, globally
-   integer :: numproc   ! number of processors, globally
-   integer :: ier,mpierr    ! error code
-   integer :: i
-   
-   integer :: ldsize ! ldomain size
-   integer, allocatable :: ncells_array(:), begg_array(:)
-   real(r8), allocatable :: gclat(:), gclon(:)
-   
-   real(r8) :: g2g_dist ! grid cell distance
-   
-   ! Parameters and constants, to be moved to fates param file
-   ! Both of these should probably be per pft
-   real(r8) :: decay_rate = 1._r8
-   real(r8) :: g2g_dist_max = 2500._r8 * 1000._r8 ! maximum search distance [m]
-      ! 5 deg = 785.8 km, 10 deg = 1569 km, 15deg = 2345 km assumes cartesian layout with diagonal distance
-      
-   ! Allocate array neighbor type
-   numg = size(ldecomp%gdc2glo)
-   ! call get_proc_global(ng=ngcheck,np=numproc)
-   
-   ! write(iulog,*)'DGCN: numg, ngcheck: ', numg, ngcheck
-   ! write(iulog,*)'DGCN: npes, numproc: ', npes, numproc
-   
-   allocate(neighbors(numg), stat=ier)
-   neighbors(:)%dist_weight_tot = nan
-   neighbors(:)%neighbor_count = 0
-   
-   allocate(gclat(numg))
-   allocate(gclon(numg))
-   gclon = nan
-   gclat = nan
-   
-   allocate(ncells_array(0:npes-1))
-   allocate(begg_array(0:npes-1))
-   ncells_array = -999
-   begg_array = -999
-   
-   write(iulog,*)'DGCN: procinfo%ncells: ', procinfo%ncells
-   write(iulog,*)'DGCN: procinfo%begg: ', procinfo%begg
-   
-   call t_startf('fates-seed-init-allgather')
-   ! Gather the sizes of the ldomain that each mpi rank is passing
-   call MPI_Allgather(procinfo%ncells,1,MPI_INTEGER,ncells_array,1,MPI_INTEGER,mpicom,mpierr)
-   
-   ! Gather the starting index for each ldomain (reduce begging index by one for mpi rank conversion)
-   call MPI_Allgather(procinfo%begg-1,1,MPI_INTEGER,begg_array,1,MPI_INTEGER,mpicom,mpierr)
-   
-   ! Gather the domain information together into the neighbor type
-   call MPI_Allgatherv(ldomain%latc,procinfo%ncells,MPI_REAL8,gclat,ncells_array,begg_array,MPI_REAL8,mpicom,mpierr)
-   call MPI_Allgatherv(ldomain%lonc,procinfo%ncells,MPI_REAL8,gclon,ncells_array,begg_array,MPI_REAL8,mpicom,mpierr)
-   
-   if (iam==1) then
-      write(iulog,*)'DGCN: ncells_array: ', ncells_array
-      write(iulog,*)'DGCN: begg_array: ', begg_array
-      write(iulog,*)'DGCN: sum(gclat):, sum(gclon): ', sum(gclat), sum(gclon)
-      do i = 1,numg
-         write(iulog,*)'DGCN: i, gclat, gclon: ', i, gclat(i), gclon(i)
-      end do
-   end if
-   
-   call t_stopf('fates-seed-init-allgather')
-   
-   call t_startf('fates-seed-init-decomp')
-   
-   ! Iterate through the grid cell indices and determine if any neighboring cells are in range
-   gc_loop: do gi = 1,numg-1
-   
-      ! Seach forward through all indices for neighbors to current grid cell index
-      neighbor_search: do gj = gi+1,numg
-        
-         ! Determine distance to old grid cells to the current one
-         g2g_dist = GetNeighborDistance(gi,gj,gclat,gclon)
-         
-         dist_check: if (g2g_dist .le. g2g_dist_max) then
-         
-            ! Add neighbor index to current grid cell index list
-            allocate(current_neighbor)
-            current_neighbor%next_neighbor => null()
-            
-            ! ldomain and ldecomp indices match per initGridCells
-            current_neighbor%gindex = ldecomp%gdc2glo(gj) 
-            
-            current_neighbor%gc_dist = g2g_dist
-            current_neighbor%dist_weight = current_neighbor%DistWeightCalc(g2g_dist,decay_rate)
-           
-            if (associated(neighbors(gi)%first_neighbor)) then
-              neighbors(gi)%last_neighbor%next_neighbor => current_neighbor
-              neighbors(gi)%last_neighbor => current_neighbor
-            else
-              neighbors(gi)%first_neighbor => current_neighbor
-              neighbors(gi)%last_neighbor => current_neighbor
-            end if
-            
-            neighbors(gi)%neighbor_count = neighbors(gi)%neighbor_count + 1
-            neighbors(gi)%dist_weight_tot = neighbors(gi)%dist_weight_tot + current_neighbor%dist_weight
-            
-            ! Add current grid cell index to the neighbor's list as well
-            allocate(another_neighbor)
-            another_neighbor%next_neighbor => null()
-            
-            ! ldomain and ldecomp indices match per initGridCells
-            another_neighbor%gindex = ldecomp%gdc2glo(gi) 
-            
-            another_neighbor%gc_dist = current_neighbor%gc_dist
-            another_neighbor%dist_weight = current_neighbor%dist_weight
-            
-            if (associated(neighbors(gj)%first_neighbor)) then
-              neighbors(gj)%last_neighbor%next_neighbor => another_neighbor
-              neighbors(gj)%last_neighbor => another_neighbor
-            else
-              neighbors(gj)%first_neighbor => another_neighbor
-              neighbors(gj)%last_neighbor => another_neighbor
-            end if
-            
-            neighbors(gj)%neighbor_count = neighbors(gj)%neighbor_count + 1
-            neighbors(gj)%dist_weight_tot = neighbors(gj)%dist_weight_tot + another_neighbor%dist_weight
-         
-         end if dist_check
-      end do neighbor_search
-   end do gc_loop
-   
-   call t_stopf('fates-seed-init-decomp')
-
-   ! Diagnostic output
-   !YL--------
-   ! if (masterproc) then
-   !   write(iulog,*)' Surface Grid Characteristics'
-   !   write(iulog,*)'   longitude points               = ',lni
-   !   write(iulog,*)'   latitude points                = ',lnj
-   !   write(iulog,*)'   total number of land gridcells = ',numg
-   !   write(iulog,*)' Decomposition Characteristics'
-   !   write(iulog,*)'   clumps per process             = ',clump_pproc
-   !   write(iulog,*)' gsMap Characteristics'
-   !   write(iulog,*) '  lnd gsmap glo num of segs      = ',mct_gsMap_ngseg(gsMap_lnd_gdc2glo)
-   !   write(iulog,*)
-   ! end if
-   !----------
-   
- end subroutine DetermineGridCellNeighbors
-
- ! ======================================================================================
- 
- function DistWeightCalc(this, g2g_dist, decay_rate) result(dist_weight)
-
-   
-   ! Arguments
-   class(neighbor_type) :: this
-   real(r8), intent(in) :: g2g_dist
-   real(r8), intent(in) :: decay_rate
-   real(r8)             :: dist_weight
- 
-   ! Assuming simple exponential decay.  In the future perhaps this could be an interface
-   ! for different weight calculations (and could be held only in fates)
-   
-   dist_weight = exp(-decay_rate*g2g_dist)
-      
- end function DistWeightCalc
-  
- ! ======================================================================================
- 
- function GetNeighborDistance(gi,gj,latc,lonc) result(gcd)
-   
-   use domainMod    , only : ldomain
-   use FatesUtilsMod, only : GreatCircleDist
-   
-   integer,  intent(in) :: gi,gj     ! indices of gridcells
-   real(r8), intent(in) :: latc(:),lonc(:) ! lat/lon of gridcells
-   real(r8) :: gcd
- 
-   ! write(iulog,*)'neighborhood: size ldomain latc/lonc: ', size(ldomain%latc), size(ldomain%lonc)
-   
-   gcd = GreatCircleDist(lonc(gi),lonc(gj), &
-                         latc(gi),latc(gj))
-   
- end function GetNeighborDistance
  
  ! ======================================================================================
 
