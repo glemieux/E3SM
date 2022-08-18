@@ -137,7 +137,7 @@ module ELMFatesInterfaceMod
 
    use PRTGenericMod         , only : num_elements
    use EDTypesMod            , only : ed_patch_type
-   use FatesInterfaceTypesMod, only : lneighbors
+   use FatesDispersalMod, only : lneighbors
    use FatesInterfaceTypesMod, only : hlm_stepsize
    use EDMainMod             , only : ed_ecosystem_dynamics
    use EDMainMod             , only : ed_update_site

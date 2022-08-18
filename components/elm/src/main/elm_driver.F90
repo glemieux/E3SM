@@ -206,8 +206,8 @@ contains
     ! the calling tree is given in the description of this module.
     !
     ! !USES:
-    use FatesInterfaceTypesMod, only : neighbor_type
-    use FatesInterfaceTypesMod, only : lneighbors
+    use FatesDispersalMod, only : neighbor_type
+    use FatesDispersalMod, only : lneighbors
     !
     ! !ARGUMENTS:
     implicit none
