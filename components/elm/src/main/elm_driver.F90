@@ -1415,32 +1415,9 @@ contains
     end do
     !$OMP END PARALLEL DO
 
-    call t_startf('fates-seed')
-    !YL-------
-    if (is_beg_curr_day()) then
-    !if (is_end_curr_month()) then
-
-     !   write(iulog,*) 'seed_od_long, seed_od_global: ', seed_od_long, seed_od_global
-       call mpi_allreduce(seed_od_long, seed_od_global, numg, MPI_REAL8, MPI_SUM, mpicom, ier)
-     !   write(iulog,*) 'seed_od_long, seed_od_global: ', seed_od_long,seed_od_global
-
-       do g_id = 1, numg
-          
-         neighbor => lneighbors(g_id)%first_neighbor
-         
-         do while (associated(neighbor))
-            seed_id_global(g_id) = seed_id_global(g_id) + seed_od_global(neighbor%gindex) / lneighbors(g_id)%neighbor_count
-
-            ! diagnose seed exchange
-          !   write(iulog,*) 'g_id, g_od, seed_od_global(g_od), neighbors_count(g_od), seed_id_global(g_id): ', g_id, g_od, seed_od_global(g_od), neighbors_count(g_od), seed_id_global(g_id)
-            neighbor => neighbor%next_neighbor
-         end do
-
-       end do ! g_od loop
-    endif    
-    call t_stopf('fates-seed')
-    !---------
-
+    ! Pass fates seed dispersal information to all nodes
+    if (use_fates) call alm_fates%WrapSeedGlobalAccumulation()
+    
     ! ============================================================================
     ! Determine gridcell averaged properties to send to atm
     ! ============================================================================

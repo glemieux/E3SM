@@ -137,7 +137,7 @@ module ELMFatesInterfaceMod
 
    use PRTGenericMod         , only : num_elements
    use EDTypesMod            , only : ed_patch_type
-   use FatesDispersalMod, only : lneighbors
+   use FatesDispersalMod     , only : lneighbors, dispersal_type
    use FatesInterfaceTypesMod, only : hlm_stepsize
    use EDMainMod             , only : ed_ecosystem_dynamics
    use EDMainMod             , only : ed_update_site
@@ -208,7 +208,10 @@ module ELMFatesInterfaceMod
 
       ! fates_restart is the inteface calss for restarting the model
       type(fates_restart_interface_type) :: fates_restart
-
+      
+      ! Type structure that holds allocatable arrays for mpi-based seed dispersal
+      type(dispersal_type), allocatable :: fates_seeds
+      
    contains
 
       procedure, public :: init
@@ -231,10 +234,9 @@ module ELMFatesInterfaceMod
       procedure, public  :: ComputeRootSoilFlux
       procedure, public  :: wrap_hydraulics_drive
 
-      !YL----------
+      procedure, public  :: WrapSeedGlobalAccumulation
       procedure, public  :: wrap_seed_dispersal
       procedure, public  :: wrap_seed_dispersal_reset
-      !------------
 
       procedure, public  :: WrapUpdateFatesRmean
       
@@ -2346,6 +2348,40 @@ contains
 
  end subroutine wrap_canopy_radiation
 
+ ! ======================================================================================
+ 
+ subroutine WrapSeedGlobalAccumulation(this)
+   
+   ! Call mpi procedure to provide the seed output distribution array to each gridcell 
+   ! to provide global knowledge.  This could be conducted with a more sophisticated
+   ! halo-type structure or distributed graph.
+   
+   use FatesDispersalMod, only : lneighbors
+   
+   class(hlm_fates_interface_type), intent(inout) :: this
+ 
+   call t_startf('fates-seed')
+
+   if (is_beg_curr_day()) then
+
+      call mpi_allreduce(seed_od_long, seed_od_global, numg, MPI_REAL8, MPI_SUM, mpicom, ier)
+
+      do g_id = 1, numg
+         
+        neighbor => lneighbors(g_id)%first_neighbor
+        
+        do while (associated(neighbor))
+           this%fates_seed%incoming_global(g_id) = this%fates_seed%incoming_global(g_id) + &
+                                                   this%fates_seed%outgoing_global(neighbor%gindex) / lneighbors(g_id)%neighbor_count
+           neighbor => neighbor%next_neighbor
+        end do
+
+      end do ! g_od loop
+   endif    
+   call t_stopf('fates-seed')
+   
+ end subroutine WrapSeedGlobalAccumulation
+ 
  ! ======================================================================================
 
  subroutine wrap_seed_dispersal(this,bounds_clump,seed_id_global)
