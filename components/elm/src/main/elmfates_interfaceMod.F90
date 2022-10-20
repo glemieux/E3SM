@@ -34,7 +34,7 @@ module ELMFatesInterfaceMod
    ! Used CLM Modules
    use VegetationType    , only : veg_pp
    use shr_kind_mod      , only : r8 => shr_kind_r8
-   use decompMod         , only : bounds_type
+   use decompMod         , only : bounds_type, get_proc_global
    use WaterStateType    , only : waterstate_type
    use WaterFluxType     , only : waterflux_type
    use CanopyStateType   , only : canopystate_type
@@ -88,6 +88,7 @@ module ELMFatesInterfaceMod
                                   get_ref_date,      &
                                   timemgr_datediff,  &
                                   is_beg_curr_day,   &
+                                  is_end_curr_month, &
                                   get_step_size,     &
                                   get_nstep
    use perf_mod          , only : t_startf, t_stopf
@@ -210,7 +211,7 @@ module ELMFatesInterfaceMod
       type(fates_restart_interface_type) :: fates_restart
       
       ! Type structure that holds allocatable arrays for mpi-based seed dispersal
-      type(dispersal_type), allocatable :: fates_seeds
+      type(dispersal_type) :: fates_seed
       
    contains
 
@@ -234,7 +235,7 @@ module ELMFatesInterfaceMod
       procedure, public  :: ComputeRootSoilFlux
       procedure, public  :: wrap_hydraulics_drive
 
-      procedure, public  :: WrapSeedGlobalAccumulation
+      procedure, public  :: WrapSeedGlobal
       procedure, public  :: wrap_seed_dispersal
       procedure, public  :: wrap_seed_dispersal_reset
 
@@ -575,6 +576,7 @@ contains
       type(bounds_type)                              :: bounds_clump
       integer                                        :: nmaxcol
       integer                                        :: ndecomp
+      integer                                        :: numg
 
       ! Initialize the FATES communicators with the HLM
       ! This involves to stages
@@ -582,17 +584,18 @@ contains
       ! 2) add the history variables defined in clm_inst to the history machinery
       call param_derived%Init( numpft_fates )
 
+      ! To do: skip this if not running seed dispersal
+      ! Initialize fates global seed dispersal array for all nodes
+      call get_proc_global(ng=numg)
+      call this%fates_seed%init(numg)
+
       nclumps = get_proc_clumps()
       allocate(this%fates(nclumps))
       allocate(this%f2hmap(nclumps))
 
-
       if(debug)then
          write(iulog,*) 'alm_fates%init():  allocating for ',nclumps,' threads'
       end if
-
-
-      nclumps = get_proc_clumps()
 
       !$OMP PARALLEL DO PRIVATE (nc,bounds_clump,nmaxcol,s,c,l,g,collist,pi,pf,ft)
       do nc = 1,nclumps
@@ -932,6 +935,10 @@ contains
       ! timestep, here, we unload them from the boundary condition
       ! structures into the cohort structures.
       call UnPackNutrientAquisitionBCs(this%fates(nc)%sites, this%fates(nc)%bc_in)
+      
+      ! Distribute any seeds from neighboring gridcells into the current gridcell
+      ! Global seed availability array populated by WrapSeedGlobal call
+      call this%wrap_seed_dispersal(bounds_clump)
 
       ! ---------------------------------------------------------------------------------
       ! Flush arrays to values defined by %flushval (see registry entry in
@@ -1116,6 +1123,7 @@ contains
      integer :: p       ! HLM patch index
      integer :: s       ! site index
      integer :: c       ! column index
+     integer :: g       ! gridcell index
 
      real(r8) :: areacheck
 
@@ -1131,7 +1139,8 @@ contains
          dleaf_patch => canopystate_inst%dleaf_patch, &
          snow_depth => col_ws%snow_depth, &
          frac_sno_eff => col_ws%frac_sno_eff, &
-         frac_veg_nosno_alb => canopystate_inst%frac_veg_nosno_alb_patch)
+         frac_veg_nosno_alb => canopystate_inst%frac_veg_nosno_alb_patch, &
+         outgoing_seed_local => this%fates_seed%outgoing_local)
 
 
        ! Process input boundary conditions to FATES
@@ -1176,9 +1185,18 @@ contains
        ! variables is to inform patch%wtcol(p).  wt_ed is imposed on wtcol,
        ! but only for FATES columns.
 
+       ! initialize the outgoing seed array
+       outgoing_seed_local(:) = 0._r8
+       
        do s = 1,this%fates(nc)%nsites
 
           c = this%f2hmap(nc)%fcolumn(s)
+          g = col_pp%gridcell(c)
+          
+          ! Accumulate seeds from sites to the gridcell local buffer
+          if (is_beg_curr_day()) then
+            outgoing_seed_local(g) = outgoing_seed_local(g) + this%fates(nc)%bc_out(s)%seed_out(7)
+          end if
 
           veg_pp%is_veg(col_pp%pfti(c):col_pp%pftf(c))        = .false.
           veg_pp%is_bareground(col_pp%pfti(c):col_pp%pftf(c)) = .false.
@@ -1269,6 +1287,8 @@ contains
              z0m(p)    = this%fates(nc)%bc_out(s)%z0m_pa(ifp)
              displa(p) = this%fates(nc)%bc_out(s)%displa_pa(ifp)
              dleaf_patch(p) = this%fates(nc)%bc_out(s)%dleaf_pa(ifp)
+             
+             
 
 
           end do
@@ -2350,71 +2370,109 @@ contains
 
  ! ======================================================================================
  
- subroutine WrapSeedGlobalAccumulation(this)
+ subroutine WrapSeedGlobal(this)
    
-   ! Call mpi procedure to provide the seed output distribution array to each gridcell 
-   ! to provide global knowledge.  This could be conducted with a more sophisticated
-   ! halo-type structure or distributed graph.
+   ! Call mpi procedure to provide the global seed output distribution array to every gridcell.
+   ! This could be conducted with a more sophisticated halo-type structure or distributed graph.
    
-   use FatesDispersalMod, only : lneighbors
+   use spmdMod, only : MPI_REAL8, MPI_SUM, mpicom
+   use FatesDispersalMod, only : lneighbors, neighbor_type
    
+   ! Arguments
    class(hlm_fates_interface_type), intent(inout) :: this
- 
-   call t_startf('fates-seed')
+   
+   ! Local
+   integer :: numg ! total number of gridcells across all processors
+   integer :: ier  ! error code
+   integer :: g    ! gridcell index
+       
+   type (neighbor_type), pointer :: neighbor
+   
+   call t_startf('fates-seed-mpi_reduce')
 
    if (is_beg_curr_day()) then
+      
+      ! Re-initialize the outgoing global seed array buffer
+      this%fates_seed%outgoing_global(:) = 1.e6_r8  ! Is this acting as seed rain?
 
-      call mpi_allreduce(seed_od_long, seed_od_global, numg, MPI_REAL8, MPI_SUM, mpicom, ier)
-
-      do g_id = 1, numg
+      ! Distribute and sum outgoing seed data from all nodes to all nodes
+      call get_proc_global(ng=numg)
+      call mpi_allreduce(this%fates_seed%outgoing_local, this%fates_seed%outgoing_global, &
+                         numg, MPI_REAL8, MPI_SUM, mpicom, ier)
+                                  
+      do g = 1, numg
+                         
+         ! Calculate the current gridcell incoming seed for each gridcell index
+         ! This should be conducted outside of a threaded region to provide access to
+         ! the neighbor%gindex which might not be available in via the clumped index
+         neighbor => lneighbors(g)%first_neighbor
+         do while (associated(neighbor))
+            this%fates_seed%incoming_global(g) = this%fates_seed%incoming_global(g) + &
+                                                 this%fates_seed%outgoing_global(neighbor%gindex) / lneighbors(g)%neighbor_count
+            neighbor => neighbor%next_neighbor
+         end do
          
-        neighbor => lneighbors(g_id)%first_neighbor
-        
-        do while (associated(neighbor))
-           this%fates_seed%incoming_global(g_id) = this%fates_seed%incoming_global(g_id) + &
-                                                   this%fates_seed%outgoing_global(neighbor%gindex) / lneighbors(g_id)%neighbor_count
-           neighbor => neighbor%next_neighbor
-        end do
+      end do
 
-      end do ! g_od loop
    endif    
-   call t_stopf('fates-seed')
+   call t_stopf('fates-seed-mpi_reduce')
    
- end subroutine WrapSeedGlobalAccumulation
+ end subroutine WrapSeedGlobal
  
  ! ======================================================================================
 
- subroutine wrap_seed_dispersal(this,bounds_clump,seed_id_global)
+ subroutine wrap_seed_dispersal(this,bounds_clump)
 
     ! This subroutine pass seed_id_global to bc_in and reset seed_out
-
+   
     ! Arguments
     class(hlm_fates_interface_type), intent(inout) :: this
     type(bounds_type),  intent(in)                 :: bounds_clump
-    real(r8),           intent(in)                 :: seed_id_global(:)
-    ! Local Variables
+    
     integer  :: g                           ! global index of the host gridcell
     integer  :: c                           ! global index of the host column
     integer  :: s                           ! FATES site index
     integer  :: nc                          ! clump index
 
+    call t_startf('fates-seed-disperse')
+
     nc = bounds_clump%clump_index
+    
+    ! Add fates check for seed dispersal mode
+    
+    ! Re-initialize incoming seed buffer for this time step
+    this%fates_seed%incoming_global(:) = 0._r8
     
     do s = 1, this%fates(nc)%nsites
        c = this%f2hmap(nc)%fcolumn(s)
        g = col_pp%gridcell(c)
-       ! loop over pft. Disperse seeds for pft = 9 for now
-       !write(iulog,*) 's, c, g, seed_id_global(g): ', s, c, g, seed_id_global(g)
-       !write(iulog,*) 'BEFORE, this%fates(nc)%bc_in(s)%seed_in(9), this%fates(nc)%bc_out(s)%seed_out(9): ', this%fates(nc)%bc_in(s)%seed_in(9), this%fates(nc)%bc_out(s)%seed_out(9)
 
-       ! need to devide seed_id_global by the number of sites in one grid
+       ! Check that it is the beginning of the current dispersal time step
+       if (is_beg_curr_day() .and. is_end_curr_month()) then
+       
+          ! Future work: Determine the number of fates sites in the gridcell and distribute over fates sites on gridcell
+          
+          ! loop over pft. Disperse seeds for pft = 9 for now
+          !write(iulog,*) 's, c, g, seed_id_global(g): ', s, c, g, seed_id_global(g)
+          !write(iulog,*) 'BEFORE, this%fates(nc)%bc_in(s)%seed_in(9), this%fates(nc)%bc_out(s)%seed_out(9): ', this%fates(nc)%bc_in(s)%seed_in(9), this%fates(nc)%bc_out(s)%seed_out(9)
 
-       this%fates(nc)%bc_in(s)%seed_in(9) = seed_id_global(g)   !/this%fates(nc)%nsites ! assuming equal area for all sites, seed_id_global in [kg/grid/day], seed_in in [kg/site/day]
-       this%fates(nc)%bc_out(s)%seed_out(9) = 0._r8 ! reset seed_out
+          ! need to devide seed_id_global by the number of sites in one grid
 
-       !write(iulog,*) 'AFTER, this%fates(nc)%bc_in(s)%seed_in(9), this%fates(nc)%bc_out(s)%seed_out(9): ', this%fates(nc)%bc_in(s)%seed_in(9), this%fates(nc)%bc_out(s)%seed_out(9)
+          this%fates(nc)%bc_in(s)%seed_in(9) = this%fates_seed%incoming_global(g)   !/this%fates(nc)%nsites ! assuming equal area for all sites, seed_id_global in [kg/grid/day], seed_in in [kg/site/day]
+          this%fates(nc)%bc_out(s)%seed_out(9) = 0._r8             ! reset seed_out
 
+          !write(iulog,*) 'AFTER, this%fates(nc)%bc_in(s)%seed_in(9), this%fates(nc)%bc_out(s)%seed_out(9): ', this%fates(nc)%bc_in(s)%seed_in(9), this%fates(nc)%bc_out(s)%seed_out(9)
+
+       else
+      
+          ! if it is not the dispersing time, pass in zero
+          this%fates(nc)%bc_in(s)%seed_in(:) = 0._r8 
+            
+       end if      
+   
     end do
+    
+    call t_stopf('fates-seed-disperse')
 
  end subroutine wrap_seed_dispersal
 

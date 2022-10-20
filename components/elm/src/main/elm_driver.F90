@@ -1294,28 +1294,28 @@ contains
            end if
 
            !YL-------           
-           if (is_beg_curr_day()) then
-!           if (is_end_curr_month()) then
-               allocate(seed_id_global(numg))
-               allocate(seed_od_long(numg))
-               allocate(seed_od_global(numg))
+!            if (is_beg_curr_day()) then
+! !           if (is_end_curr_month()) then
+!                allocate(seed_id_global(numg))
+!                allocate(seed_od_long(numg))
+!                allocate(seed_od_global(numg))
 
-               seed_id_global(:) = 0._r8
-               seed_od_long(:) = 0._r8
-               seed_od_global(:) = 1.e6_r8
+!                seed_id_global(:) = 0._r8
+!                seed_od_long(:) = 0._r8
+!                seed_od_global(:) = 1.e6_r8
 
-               do s = 1, alm_fates%fates(nc)%nsites
-                  c = alm_fates%f2hmap(nc)%fcolumn(s)
-                  g = col_pp%gridcell(c)
-                  !write(iulog,*) 'seed_od_long(g): ', seed_od_long(g)
+!                do s = 1, alm_fates%fates(nc)%nsites
+!                   c = alm_fates%f2hmap(nc)%fcolumn(s)
+!                   g = col_pp%gridcell(c)
+!                   !write(iulog,*) 'seed_od_long(g): ', seed_od_long(g)
 
-                  !do pft = 1, numpft_fates
-                  seed_od_long(g) = seed_od_long(g) + alm_fates%fates(nc)%bc_out(s)%seed_out(7)
-                  !end do
-               end do
+!                   !do pft = 1, numpft_fates
+!                   seed_od_long(g) = seed_od_long(g) + alm_fates%fates(nc)%bc_out(s)%seed_out(7)
+!                   !end do
+!                end do
 
                !write(iulog,*) 'seed_od_long', seed_od_long
-           end if
+          !  end if
            !---------
        end if
 
@@ -1416,7 +1416,7 @@ contains
     !$OMP END PARALLEL DO
 
     ! Pass fates seed dispersal information to all nodes
-    if (use_fates) call alm_fates%WrapSeedGlobalAccumulation()
+    if (use_fates) call alm_fates%WrapSeedGlobal()
     
     ! ============================================================================
     ! Determine gridcell averaged properties to send to atm
@@ -1454,16 +1454,16 @@ contains
     ! Write global average diagnostics to standard output
     ! ============================================================================
 
-    !YL-------------
-    if (use_fates) then
-       if (is_beg_curr_day()) then
-!       if (is_end_curr_month()) then
-          call alm_fates%wrap_seed_dispersal(bounds_clump,seed_id_global)       
-       else
-          call alm_fates%wrap_seed_dispersal_reset(bounds_clump)
-       end if
-    end if
-    !YL-------------
+!     !YL-------------
+!     if (use_fates) then
+!        if (is_beg_curr_day()) then
+! !       if (is_end_curr_month()) then
+!           call alm_fates%wrap_seed_dispersal(bounds_clump,seed_id_global)       
+!        else
+!           call alm_fates%wrap_seed_dispersal_reset(bounds_clump)
+!        end if
+!     end if
+!     !YL-------------
 
 
 
