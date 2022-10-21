@@ -587,7 +587,7 @@ contains
       ! To do: skip this if not running seed dispersal
       ! Initialize fates global seed dispersal array for all nodes
       call get_proc_global(ng=numg)
-      call this%fates_seed%init(numg)
+      call this%fates_seed%init(numg,numpft_fates)
 
       nclumps = get_proc_clumps()
       allocate(this%fates(nclumps))
@@ -1186,16 +1186,16 @@ contains
        ! but only for FATES columns.
 
        ! initialize the outgoing seed array
-       outgoing_seed_local(:) = 0._r8
+       outgoing_seed_local(:,:) = 0._r8
        
        do s = 1,this%fates(nc)%nsites
 
           c = this%f2hmap(nc)%fcolumn(s)
           g = col_pp%gridcell(c)
           
-          ! Accumulate seeds from sites to the gridcell local buffer
+          ! Accumulate seeds from sites to the gridcell local outgoing buffer
           if (is_beg_curr_day()) then
-            outgoing_seed_local(g) = outgoing_seed_local(g) + this%fates(nc)%bc_out(s)%seed_out(7)
+            outgoing_seed_local(g,:) = outgoing_seed_local(g,:) + this%fates(nc)%bc_out(s)%seed_out(:)
           end if
 
           veg_pp%is_veg(col_pp%pfti(c):col_pp%pftf(c))        = .false.
@@ -2375,8 +2375,9 @@ contains
    ! Call mpi procedure to provide the global seed output distribution array to every gridcell.
    ! This could be conducted with a more sophisticated halo-type structure or distributed graph.
    
-   use spmdMod, only : MPI_REAL8, MPI_SUM, mpicom
-   use FatesDispersalMod, only : lneighbors, neighbor_type
+   use spmdMod,                  only : MPI_REAL8, MPI_SUM, mpicom
+   use FatesDispersalMod,        only : lneighbors, neighbor_type
+   use FatesInterfaceTypesMod,   only : numpft_fates => numpft
    
    ! Arguments
    class(hlm_fates_interface_type), intent(inout) :: this
@@ -2393,12 +2394,14 @@ contains
    if (is_beg_curr_day()) then
       
       ! Re-initialize the outgoing global seed array buffer
-      this%fates_seed%outgoing_global(:) = 1.e6_r8  ! Is this acting as seed rain?
+      this%fates_seed%outgoing_global(:,:) = 1.e6_r8  ! Is this acting as seed rain?
 
       ! Distribute and sum outgoing seed data from all nodes to all nodes
+      ! mpi_allgather should work here as well since gridcells values are not split across nodes
+      ! This would allow for reduction in the outgoing local array size
       call get_proc_global(ng=numg)
       call mpi_allreduce(this%fates_seed%outgoing_local, this%fates_seed%outgoing_global, &
-                         numg, MPI_REAL8, MPI_SUM, mpicom, ier)
+                         numg*numpft_fates, MPI_REAL8, MPI_SUM, mpicom, ier)
                                   
       do g = 1, numg
                          
@@ -2407,8 +2410,14 @@ contains
          ! the neighbor%gindex which might not be available in via the clumped index
          neighbor => lneighbors(g)%first_neighbor
          do while (associated(neighbor))
-            this%fates_seed%incoming_global(g) = this%fates_seed%incoming_global(g) + &
-                                                 this%fates_seed%outgoing_global(neighbor%gindex) / lneighbors(g)%neighbor_count
+            
+            ! I think this needs to be scaled by the probability density value eventually.
+            ! This also applies the same neighborhood distribution scheme to all pfts.
+            this%fates_seed%incoming_global(g,:) = this%fates_seed%incoming_global(g,:) + &
+                                                 this%fates_seed%outgoing_global(neighbor%gindex,:) / lneighbors(g)%neighbor_count
+
+            ! this%fates_seed%incoming_global(g,ipft) = this%fates_seed%incoming_global(g,ipft) + &
+            !                                      this%fates_seed%outgoing_global(neighbor%gindex,ipft) / lneighbors(g)%neighbor_count
             neighbor => neighbor%next_neighbor
          end do
          
@@ -2441,7 +2450,7 @@ contains
     ! Add fates check for seed dispersal mode
     
     ! Re-initialize incoming seed buffer for this time step
-    this%fates_seed%incoming_global(:) = 0._r8
+    this%fates_seed%incoming_global(:,:) = 0._r8
     
     do s = 1, this%fates(nc)%nsites
        c = this%f2hmap(nc)%fcolumn(s)
@@ -2458,8 +2467,8 @@ contains
 
           ! need to devide seed_id_global by the number of sites in one grid
 
-          this%fates(nc)%bc_in(s)%seed_in(9) = this%fates_seed%incoming_global(g)   !/this%fates(nc)%nsites ! assuming equal area for all sites, seed_id_global in [kg/grid/day], seed_in in [kg/site/day]
-          this%fates(nc)%bc_out(s)%seed_out(9) = 0._r8             ! reset seed_out
+          this%fates(nc)%bc_in(s)%seed_in(:) = this%fates_seed%incoming_global(g,:)   !/this%fates(nc)%nsites ! assuming equal area for all sites, seed_id_global in [kg/grid/day], seed_in in [kg/site/day]
+          this%fates(nc)%bc_out(s)%seed_out(:) = 0._r8             ! reset seed_out
 
           !write(iulog,*) 'AFTER, this%fates(nc)%bc_in(s)%seed_in(9), this%fates(nc)%bc_out(s)%seed_out(9): ', this%fates(nc)%bc_in(s)%seed_in(9), this%fates(nc)%bc_out(s)%seed_out(9)
 
@@ -2500,7 +2509,7 @@ contains
        !write(iulog,*) 's, c, g: ', s, c, g
        !write(iulog,*) 'BEFORE, this%fates(nc)%bc_in(s)%seed_in(9),this%fates(nc)%bc_out(s)%seed_out(9): ', this%fates(nc)%bc_in(s)%seed_in(9), this%fates(nc)%bc_out(s)%seed_out(9)
 
-       this%fates(nc)%bc_in(s)%seed_in(9) = 0 ! reset 
+       this%fates(nc)%bc_in(s)%seed_in(:) = 0 ! reset 
 
        !write(iulog,*) 'AFTER, this%fates(nc)%bc_in(s)%seed_in(9),this%fates(nc)%bc_out(s)%seed_out(9): ', this%fates(nc)%bc_in(s)%seed_in(9), this%fates(nc)%bc_out(s)%seed_out(9)
 
