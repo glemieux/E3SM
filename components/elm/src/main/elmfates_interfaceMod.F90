@@ -2411,10 +2411,11 @@ contains
          neighbor => lneighbors(g)%first_neighbor
          do while (associated(neighbor))
             
-            ! I think this needs to be scaled by the probability density value eventually.
-            ! This also applies the same neighborhood distribution scheme to all pfts.
+            ! This also applies the same neighborhood distribution scheme to all pfts
+            ! This needs to have a per pft density probability value
             this%fates_seed%incoming_global(g,:) = this%fates_seed%incoming_global(g,:) + &
-                                                 this%fates_seed%outgoing_global(neighbor%gindex,:) / lneighbors(g)%neighbor_count
+                                                 this%fates_seed%outgoing_global(neighbor%gindex,:) * &
+                                                 neighbor%density_prob(:) / lneighbors(g)%neighbor_count
 
             ! this%fates_seed%incoming_global(g,ipft) = this%fates_seed%incoming_global(g,ipft) + &
             !                                      this%fates_seed%outgoing_global(neighbor%gindex,ipft) / lneighbors(g)%neighbor_count

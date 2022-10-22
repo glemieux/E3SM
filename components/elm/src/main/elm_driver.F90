@@ -206,8 +206,8 @@ contains
     ! the calling tree is given in the description of this module.
     !
     ! !USES:
-    use FatesDispersalMod, only : neighbor_type
-    use FatesDispersalMod, only : lneighbors
+!     use FatesDispersalMod, only : neighbor_type
+!     use FatesDispersalMod, only : lneighbors
     !
     ! !ARGUMENTS:
     implicit none
@@ -242,18 +242,18 @@ contains
     type(bounds_type)    :: bounds_clump    
     type(bounds_type)    :: bounds_proc     
 
-    !YL---------
-    integer              :: s, pft                ! indices
-    integer              :: numg                  ! total number of gridcells across allprocessors
-    integer              :: g_id, g_od            ! gridcell indices in/out-dispersing cells
-    real(r8),    pointer :: neighbors_count(:)    ! complete grid cell array of count
-    real(r8),    pointer :: seed_od_long(:)       ! seed_od array for all grid cells,pfts
-    real(r8),    pointer :: seed_od_global(:)     ! seed_od array for all grid cells, pfts
-    real(r8),    pointer :: seed_id_global(:)       ! complete grid cell array of seed_id
+!     !YL---------
+!     integer              :: s, pft                ! indices
+!     integer              :: numg                  ! total number of gridcells across allprocessors
+!     integer              :: g_id, g_od            ! gridcell indices in/out-dispersing cells
+!     real(r8),    pointer :: neighbors_count(:)    ! complete grid cell array of count
+!     real(r8),    pointer :: seed_od_long(:)       ! seed_od array for all grid cells,pfts
+!     real(r8),    pointer :: seed_od_global(:)     ! seed_od array for all grid cells, pfts
+!     real(r8),    pointer :: seed_id_global(:)       ! complete grid cell array of seed_id
     
-    type (neighbor_type), pointer :: neighbor
+!     type (neighbor_type), pointer :: neighbor
     
-    call get_proc_global(ng=numg)
+!     call get_proc_global(ng=numg)
     !write(iulog,*)'numg', numg
     !-----------
 
