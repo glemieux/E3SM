@@ -2375,9 +2375,11 @@ contains
    ! Call mpi procedure to provide the global seed output distribution array to every gridcell.
    ! This could be conducted with a more sophisticated halo-type structure or distributed graph.
    
-   use spmdMod,                  only : MPI_REAL8, MPI_SUM, mpicom
-   use FatesDispersalMod,        only : lneighbors, neighbor_type
-   use FatesInterfaceTypesMod,   only : numpft_fates => numpft
+   use spmdMod,                 only : MPI_REAL8, MPI_SUM, mpicom
+   use FatesDispersalMod,       only : lneighbors, neighbor_type
+   use FatesInterfaceTypesMod,  only : numpft_fates => numpft
+   use EDPftvarcon           ,  only : EDPftvarcon_inst
+   use FatesConstantsMod     ,  only : fates_check_param_set
    
    ! Arguments
    class(hlm_fates_interface_type), intent(inout) :: this
@@ -2388,6 +2390,9 @@ contains
    integer :: g    ! gridcell index
        
    type (neighbor_type), pointer :: neighbor
+   
+   ! Check if seed dispersal mode is 'turned on' by checking the parameter values
+   if (EDPftvarcon_inst%fates_seed_dispersal_param_A(ipft) > fates_check_param_set) return 
    
    call t_startf('fates-seed-mpi_reduce')
 
@@ -2435,6 +2440,9 @@ contains
 
     ! This subroutine pass seed_id_global to bc_in and reset seed_out
    
+    use EDPftvarcon           ,  only : EDPftvarcon_inst
+    use FatesConstantsMod     ,  only : fates_check_param_set
+     
     ! Arguments
     class(hlm_fates_interface_type), intent(inout) :: this
     type(bounds_type),  intent(in)                 :: bounds_clump
@@ -2443,6 +2451,9 @@ contains
     integer  :: c                           ! global index of the host column
     integer  :: s                           ! FATES site index
     integer  :: nc                          ! clump index
+
+    ! Check if seed dispersal mode is 'turned on' by checking the parameter values
+    if (EDPftvarcon_inst%fates_seed_dispersal_param_A(ipft) > fates_check_param_set) return 
 
     call t_startf('fates-seed-disperse')
 
@@ -2492,6 +2503,9 @@ contains
 
     ! This subroutine reset seed_in
 
+    use EDPftvarcon           ,  only : EDPftvarcon_inst
+    use FatesConstantsMod     ,  only : fates_check_param_set
+   
     ! Arguments
     class(hlm_fates_interface_type), intent(inout) :: this
     type(bounds_type),  intent(in)                 :: bounds_clump
@@ -2501,6 +2515,9 @@ contains
     integer  :: s                           ! FATES site index
     integer  :: nc                          ! clump index
 
+    ! Check if seed dispersal mode is 'turned on' by checking the parameter values
+    if (EDPftvarcon_inst%fates_seed_dispersal_param_A(ipft) > fates_check_param_set) return 
+   
     nc = bounds_clump%clump_index
 
     do s = 1, this%fates(nc)%nsites
