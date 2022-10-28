@@ -2392,7 +2392,7 @@ contains
    type (neighbor_type), pointer :: neighbor
    
    ! Check if seed dispersal mode is 'turned on' by checking the parameter values
-   if (EDPftvarcon_inst%fates_seed_dispersal_param_A(ipft) > fates_check_param_set) return 
+   if (EDPftvarcon_inst%seed_dispersal_param_A(1) > fates_check_param_set) return 
    
    call t_startf('fates-seed-mpi_reduce')
 
@@ -2453,7 +2453,7 @@ contains
     integer  :: nc                          ! clump index
 
     ! Check if seed dispersal mode is 'turned on' by checking the parameter values
-    if (EDPftvarcon_inst%fates_seed_dispersal_param_A(ipft) > fates_check_param_set) return 
+    if (EDPftvarcon_inst%seed_dispersal_param_A(1) > fates_check_param_set) return 
 
     call t_startf('fates-seed-disperse')
 
@@ -2516,7 +2516,7 @@ contains
     integer  :: nc                          ! clump index
 
     ! Check if seed dispersal mode is 'turned on' by checking the parameter values
-    if (EDPftvarcon_inst%fates_seed_dispersal_param_A(ipft) > fates_check_param_set) return 
+    if (EDPftvarcon_inst%seed_dispersal_param_A(1) > fates_check_param_set) return 
    
     nc = bounds_clump%clump_index
 
