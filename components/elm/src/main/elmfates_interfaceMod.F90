@@ -119,6 +119,7 @@ module ELMFatesInterfaceMod
 
    ! Used FATES Modules
    use FatesConstantsMod     , only : ifalse
+   use FatesConstantsMod     , only : fates_check_param_set
    use FatesInterfaceMod     , only : fates_interface_type
    use FatesInterfaceMod     , only : allocate_bcin
    use FatesInterfaceMod     , only : allocate_bcpconst
@@ -1139,8 +1140,7 @@ contains
          dleaf_patch => canopystate_inst%dleaf_patch, &
          snow_depth => col_ws%snow_depth, &
          frac_sno_eff => col_ws%frac_sno_eff, &
-         frac_veg_nosno_alb => canopystate_inst%frac_veg_nosno_alb_patch, &
-         outgoing_seed_local => this%fates_seed%outgoing_local)
+         frac_veg_nosno_alb => canopystate_inst%frac_veg_nosno_alb_patch)
 
 
        ! Process input boundary conditions to FATES
@@ -1185,8 +1185,11 @@ contains
        ! variables is to inform patch%wtcol(p).  wt_ed is imposed on wtcol,
        ! but only for FATES columns.
 
-       ! initialize the outgoing seed array
-       outgoing_seed_local(:,:) = 0._r8
+       ! Check if seed dispersal mode is 'turned on' by checking the parameter values
+       if (EDPftvarcon_inst%seed_dispersal_param_A(1) .lt.  fates_check_param_set) then
+          ! zero the outgoing seed array
+          this%fates_seed%outgoing_local(:,:) = 0._r8
+       end if
        
        do s = 1,this%fates(nc)%nsites
 
@@ -1194,8 +1197,10 @@ contains
           g = col_pp%gridcell(c)
           
           ! Accumulate seeds from sites to the gridcell local outgoing buffer
-          if (is_beg_curr_day()) then
-            outgoing_seed_local(g,:) = outgoing_seed_local(g,:) + this%fates(nc)%bc_out(s)%seed_out(:)
+          if (EDPftvarcon_inst%seed_dispersal_param_A(1) .lt. fates_check_param_set) then
+             if (is_beg_curr_day()) then
+                this%fates_seed%outgoing_local(g,:) = this%fates_seed%outgoing_local(g,:) + this%fates(nc)%bc_out(s)%seed_out(:)
+             end if
           end if
 
           veg_pp%is_veg(col_pp%pfti(c):col_pp%pftf(c))        = .false.
@@ -2378,8 +2383,6 @@ contains
    use spmdMod,                 only : MPI_REAL8, MPI_SUM, mpicom
    use FatesDispersalMod,       only : lneighbors, neighbor_type
    use FatesInterfaceTypesMod,  only : numpft_fates => numpft
-   use EDPftvarcon           ,  only : EDPftvarcon_inst
-   use FatesConstantsMod     ,  only : fates_check_param_set
    
    ! Arguments
    class(hlm_fates_interface_type), intent(inout) :: this
@@ -2440,9 +2443,6 @@ contains
 
     ! This subroutine pass seed_id_global to bc_in and reset seed_out
    
-    use EDPftvarcon           ,  only : EDPftvarcon_inst
-    use FatesConstantsMod     ,  only : fates_check_param_set
-     
     ! Arguments
     class(hlm_fates_interface_type), intent(inout) :: this
     type(bounds_type),  intent(in)                 :: bounds_clump
@@ -2503,9 +2503,6 @@ contains
 
     ! This subroutine reset seed_in
 
-    use EDPftvarcon           ,  only : EDPftvarcon_inst
-    use FatesConstantsMod     ,  only : fates_check_param_set
-   
     ! Arguments
     class(hlm_fates_interface_type), intent(inout) :: this
     type(bounds_type),  intent(in)                 :: bounds_clump
