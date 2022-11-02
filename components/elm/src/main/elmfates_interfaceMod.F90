@@ -175,6 +175,9 @@ module ELMFatesInterfaceMod
    use FatesInterfaceTypesMod , only : bc_in_type, bc_out_type
    use CLMFatesParamInterfaceMod         , only : FatesReadParameters
    
+   use FatesInterfaceTypesMod, only : fates_dispersal_kernel_mode
+   use FatesInterfaceTypesMod, only : fates_dispersal_kernel_none
+   
    use shr_infnan_mod, only : nan => shr_infnan_nan, assignment(=)
 
    implicit none
@@ -1185,8 +1188,8 @@ contains
        ! variables is to inform patch%wtcol(p).  wt_ed is imposed on wtcol,
        ! but only for FATES columns.
 
-       ! Check if seed dispersal mode is 'turned on' by checking the parameter values
-       if (EDPftvarcon_inst%seed_dispersal_param_A(1) .lt.  fates_check_param_set) then
+       ! Check if seed dispersal mode is 'turned on', if not return to calling procedure
+       if (fates_dispersal_kernel_mode .ne. fates_dispersal_kernel_none) then
           ! zero the outgoing seed array
           this%fates_seed%outgoing_local(:,:) = 0._r8
        end if
@@ -1197,7 +1200,7 @@ contains
           g = col_pp%gridcell(c)
           
           ! Accumulate seeds from sites to the gridcell local outgoing buffer
-          if (EDPftvarcon_inst%seed_dispersal_param_A(1) .lt. fates_check_param_set) then
+          if (fates_dispersal_kernel_mode .ne. fates_dispersal_kernel_none) then
              if (is_beg_curr_day()) then
                 this%fates_seed%outgoing_local(g,:) = this%fates_seed%outgoing_local(g,:) + this%fates(nc)%bc_out(s)%seed_out(:)
              end if
@@ -2380,9 +2383,9 @@ contains
    ! Call mpi procedure to provide the global seed output distribution array to every gridcell.
    ! This could be conducted with a more sophisticated halo-type structure or distributed graph.
    
-   use spmdMod,                 only : MPI_REAL8, MPI_SUM, mpicom
-   use FatesDispersalMod,       only : lneighbors, neighbor_type
-   use FatesInterfaceTypesMod,  only : numpft_fates => numpft
+   use spmdMod,                only : MPI_REAL8, MPI_SUM, mpicom
+   use FatesDispersalMod,      only : lneighbors, neighbor_type
+   use FatesInterfaceTypesMod, only : numpft_fates => numpft
    
    ! Arguments
    class(hlm_fates_interface_type), intent(inout) :: this
@@ -2394,8 +2397,8 @@ contains
        
    type (neighbor_type), pointer :: neighbor
    
-   ! Check if seed dispersal mode is 'turned on' by checking the parameter values
-   if (EDPftvarcon_inst%seed_dispersal_param_A(1) > fates_check_param_set) return 
+   ! Check if seed dispersal mode is 'turned on', if not return to calling procedure
+   if (fates_dispersal_kernel_mode .eq. fates_dispersal_kernel_none) return 
    
    call t_startf('fates-seed-mpi_reduce')
 
@@ -2452,8 +2455,8 @@ contains
     integer  :: s                           ! FATES site index
     integer  :: nc                          ! clump index
 
-    ! Check if seed dispersal mode is 'turned on' by checking the parameter values
-    if (EDPftvarcon_inst%seed_dispersal_param_A(1) > fates_check_param_set) return 
+    ! Check if seed dispersal mode is 'turned on', if not return to calling procedure
+    if (fates_dispersal_kernel_mode .eq. fates_dispersal_kernel_none) return 
 
     call t_startf('fates-seed-disperse')
 
@@ -2512,8 +2515,8 @@ contains
     integer  :: s                           ! FATES site index
     integer  :: nc                          ! clump index
 
-    ! Check if seed dispersal mode is 'turned on' by checking the parameter values
-    if (EDPftvarcon_inst%seed_dispersal_param_A(1) > fates_check_param_set) return 
+    ! Check if seed dispersal mode is 'turned on', if not return to calling procedure
+    if (fates_dispersal_kernel_mode .eq. fates_dispersal_kernel_none) return 
    
     nc = bounds_clump%clump_index
 
