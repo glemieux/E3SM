@@ -93,10 +93,6 @@ module ELMFatesInterfaceMod
                                   get_nstep
    use perf_mod          , only : t_startf, t_stopf
 
-   !YL--------
-   ! use clm_time_manager  , only : is_end_curr_year, is_end_curr_month
-   !----------
-
    use spmdMod           , only : masterproc
    use decompMod         , only : get_proc_bounds,   &
                                   get_proc_clumps,   &
@@ -639,12 +635,9 @@ contains
 
          enddo
 
-         !YL--------
-         !if(debug)then
-         !   write(iulog,*) 'alm_fates%init(): thread',nc,': allocated ',s,' sites'
-         !end if
-         write(iulog,*) 'alm_fates%init(): thread',nc,': allocated ',s,' sites'
-         !----------
+         if(debug)then
+           write(iulog,*) 'alm_fates%init(): thread',nc,': allocated ',s,' sites'
+         end if
 
          ! Allocate vectors that match FATES sites with HLM columns
          ! RGK: Sites and fcolumns are forced as args during clm_driv() as of 6/4/2016
@@ -852,10 +845,6 @@ contains
 
       nc = bounds_clump%clump_index
 
-      !YL-----------
-      ! write(iulog,*) 'nc = ',nc
-      !-------------
-
       ! ---------------------------------------------------------------------------------
       ! Part I.
       ! Prepare input boundary conditions for FATES dynamics
@@ -965,12 +954,6 @@ contains
             call ed_update_site(this%fates(nc)%sites(s), &
                   this%fates(nc)%bc_in(s), &
                   this%fates(nc)%bc_out(s))
-
-            !YL----------
-            !c = this%f2hmap(nc)%fcolumn(s)
-            !g = col_pp%gridcell(c)
-            !write(iulog,*) 's, c, p, this%fates(nc)%bc_out(s)%seed_out', s, c, p, this%fates(nc)%bc_out(s)%seed_out 
-            !------------
       enddo
 
       ! ---------------------------------------------------------------------------------

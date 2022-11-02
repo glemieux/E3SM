@@ -173,13 +173,10 @@ module elm_driver
   use CNPBudgetMod                , only : CNPBudget_SetBeginningMonthlyStates, CNPBudget_SetEndingMonthlyStates
   use elm_varctl                  , only : do_budgets, budget_inst, budget_daily, budget_month
   use elm_varctl                  , only : budget_ann, budget_ltann, budget_ltend
-
-  !YL-------
   use clm_time_manager            , only : is_end_curr_year, is_end_curr_month
   use decompMod                   , only : ldecomp, get_proc_global
   use FatesInterfaceTypesMod      , only : numpft_fates => numpft
   use spmdMod                     , only : MPI_REAL8, MPI_SUM, mpicom
-  !--------
 
   use timeinfoMod
   !
@@ -223,7 +220,6 @@ contains
     integer              :: nstep                   ! time step number
     real(r8)             :: dtime                   ! land model time step (sec)
     integer              :: nc, c, p, l, g          ! indices
-    !----------
     integer              :: nclumps                 ! number of clumps on this processor
     integer              :: yrp1                    ! year (0, ...) for nstep+1
     integer              :: monp1                   ! month (1, ..., 12) for nstep+1
@@ -241,21 +237,6 @@ contains
     character(len=256)   :: dateTimeString
     type(bounds_type)    :: bounds_clump    
     type(bounds_type)    :: bounds_proc     
-
-!     !YL---------
-!     integer              :: s, pft                ! indices
-!     integer              :: numg                  ! total number of gridcells across allprocessors
-!     integer              :: g_id, g_od            ! gridcell indices in/out-dispersing cells
-!     real(r8),    pointer :: neighbors_count(:)    ! complete grid cell array of count
-!     real(r8),    pointer :: seed_od_long(:)       ! seed_od array for all grid cells,pfts
-!     real(r8),    pointer :: seed_od_global(:)     ! seed_od array for all grid cells, pfts
-!     real(r8),    pointer :: seed_id_global(:)       ! complete grid cell array of seed_id
-    
-!     type (neighbor_type), pointer :: neighbor
-    
-!     call get_proc_global(ng=numg)
-    !write(iulog,*)'numg', numg
-    !-----------
 
     !-----------------------------------------------------------------------
 
@@ -1285,38 +1266,7 @@ contains
                call alm_fates%dynamics_driv( bounds_clump, top_as,          &
                     top_af, atm2lnd_vars, soilstate_vars, temperature_vars, &
                     canopystate_vars, frictionvel_vars)
-               !YL------
-               !write(iulog,*) 'nc,alm_fates%fates(nc)%nsites: ', nc, alm_fates%fates(nc)%nsites
-               !do s = 1,alm_fates%fates(nc)%nsites
-               !    write(iulog,*) 's, alm_fates%fates(nc)%bc_out(s): ',s, alm_fates%fates(nc)%bc_out(s)%seed_out
-               !end do
-               !--------
            end if
-
-           !YL-------           
-!            if (is_beg_curr_day()) then
-! !           if (is_end_curr_month()) then
-!                allocate(seed_id_global(numg))
-!                allocate(seed_od_long(numg))
-!                allocate(seed_od_global(numg))
-
-!                seed_id_global(:) = 0._r8
-!                seed_od_long(:) = 0._r8
-!                seed_od_global(:) = 1.e6_r8
-
-!                do s = 1, alm_fates%fates(nc)%nsites
-!                   c = alm_fates%f2hmap(nc)%fcolumn(s)
-!                   g = col_pp%gridcell(c)
-!                   !write(iulog,*) 'seed_od_long(g): ', seed_od_long(g)
-
-!                   !do pft = 1, numpft_fates
-!                   seed_od_long(g) = seed_od_long(g) + alm_fates%fates(nc)%bc_out(s)%seed_out(7)
-!                   !end do
-!                end do
-
-               !write(iulog,*) 'seed_od_long', seed_od_long
-          !  end if
-           !---------
        end if
 
        if (use_cn .and. doalb) then
@@ -1449,23 +1399,6 @@ contains
        !$OMP END PARALLEL DO
        call t_stopf('lnd2glc')
     end if
-
-    ! =============seed==============================================================
-    ! Write global average diagnostics to standard output
-    ! ============================================================================
-
-!     !YL-------------
-!     if (use_fates) then
-!        if (is_beg_curr_day()) then
-! !       if (is_end_curr_month()) then
-!           call alm_fates%wrap_seed_dispersal(bounds_clump,seed_id_global)       
-!        else
-!           call alm_fates%wrap_seed_dispersal_reset(bounds_clump)
-!        end if
-!     end if
-!     !YL-------------
-
-
 
     nstep = get_nstep()
     if (wrtdia) call mpi_barrier(mpicom,ier)
