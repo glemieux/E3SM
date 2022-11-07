@@ -22,6 +22,7 @@
 #include "SphereOperators.hpp"
 #include "TimeLevel.hpp"
 #include "Tracers.hpp"
+#include "GllFvRemap.hpp"
 #include "VerticalRemapManager.hpp"
 #include "mpi/BoundaryExchange.hpp"
 #include "mpi/MpiBuffersManager.hpp"
@@ -234,7 +235,6 @@ void push_forcing_to_c (F90Ptr elem_derived_FM,
       elem_derived_FPHI, num_elems);
   sync_to_device(fphi_f90, forcing.m_fphi);
 
-  const SimulationParams &params = Context::singleton().get<SimulationParams>();
   Tracers &tracers = Context::singleton().get<Tracers>();
   if (tracers.fq.data() == nullptr) {
     tracers.fq = decltype(tracers.fq)("fq", num_elems, tracers.num_tracers());
@@ -342,7 +342,9 @@ void init_functors_c (const bool& allocate_buffer)
   // use the create_if_not_there() function.
   auto& caar = c.create_if_not_there<CaarFunctor>(elems,tracers,ref_FE,hvcoord,sph_op,params);
   if (params.transport_alg == 0) c.create_if_not_there<EulerStepFunctor>();
+#ifdef HOMME_ENABLE_COMPOSE
   else                           c.create_if_not_there<ComposeTransport>();
+#endif
   auto& hvf  = c.create_if_not_there<HyperviscosityFunctor>();
   auto& ff   = c.create_if_not_there<ForcingFunctor>();
   auto& diag = c.create_if_not_there<Diagnostics> (elems.num_elems(),params.theta_hydrostatic_mode);
@@ -360,8 +362,10 @@ void init_functors_c (const bool& allocate_buffer)
     auto& esf = c.get<EulerStepFunctor>();
     if (esf.setup_needed()) esf.setup();
   } else {
+#ifdef HOMME_ENABLE_COMPOSE	  
     auto& ct = c.get<ComposeTransport>();
     if (ct.setup_needed()) ct.setup();
+#endif    
   }
   if (hvf.setup_needed()) {
     hvf.setup(geometry, state, derived);
@@ -389,8 +393,10 @@ void init_functors_c (const bool& allocate_buffer)
     fbm.request_size(caar.requested_buffer_size());
     if (params.transport_alg == 0)
       fbm.request_size(c.get<EulerStepFunctor>().requested_buffer_size());
-    else
+#ifdef HOMME_ENABLE_COMPOSE
+    else	    
       fbm.request_size(c.get<ComposeTransport>().requested_buffer_size());
+#endif
     fbm.request_size(hvf.requested_buffer_size());
     fbm.request_size(diag.requested_buffer_size());
     fbm.request_size(ff.requested_buffer_size());
@@ -407,8 +413,10 @@ void init_functors_c (const bool& allocate_buffer)
   caar.init_buffers(fbm);
   if (params.transport_alg == 0)
     Context::singleton().get<EulerStepFunctor>().init_buffers(fbm);
+#ifdef HOMME_ENABLE_COMPOSE
   else
     Context::singleton().get<ComposeTransport>().init_buffers(fbm);
+#endif
   hvf.init_buffers(fbm);
   diag.init_buffers(fbm);
   ff.init_buffers(fbm);
@@ -416,6 +424,14 @@ void init_functors_c (const bool& allocate_buffer)
   if (need_dirk) {
     auto& dirk = Context::singleton().get<DirkFunctor>();
     dirk.init_buffers(fbm);
+  }
+  // The SCREAM-side Hommexx interface will initialize GllFvRemap if it's
+  // needed. But it expects the Homme-side Hommexx interface to init buffers, so
+  // do that here.
+  if (c.has<GllFvRemap>()) {
+    auto& gfr = c.get<GllFvRemap>();
+    gfr.setup();
+    gfr.init_buffers(fbm);
   }
 }
 
@@ -554,9 +570,11 @@ void init_boundary_exchanges_c ()
     esf.reset(params);
     esf.init_boundary_exchanges();
   } else {
+#ifdef HOMME_ENABLE_COMPOSE	  
     auto& ct = c.get<ComposeTransport>();
     ct.reset(params);
     ct.init_boundary_exchanges();
+#endif    
   }
 
   // RK stages BE's
@@ -566,6 +584,12 @@ void init_boundary_exchanges_c ()
   // HyperviscosityFunctor's BE's
   auto& hvf = c.get<HyperviscosityFunctor>();
   hvf.init_boundary_exchanges();
+
+  if (c.has<GllFvRemap>()) {
+    auto& gfr = c.get<GllFvRemap>();
+    gfr.reset(params);
+    gfr.init_boundary_exchanges();
+  }
 }
 
 } // extern "C"

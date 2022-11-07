@@ -4,8 +4,11 @@ if (compile_threaded)
   string(APPEND CXXFLAGS " -fopenmp")
   string(APPEND LDFLAGS " -fopenmp")
 endif()
-
-string(APPEND FFLAGS " -O1 -hfp0")
+if (COMP_NAME STREQUAL elm)
+  string(APPEND FFLAGS " -hfp0")
+endif()
+string(APPEND FFLAGS " -hipa0 -hzero")
+string(APPEND FFLAGS " -em -ef")
 
 string(APPEND SLIBS " -L$ENV{PNETCDF_PATH}/lib -lpnetcdf")
 set(NETCDF_PATH "$ENV{NETCDF_DIR}")
