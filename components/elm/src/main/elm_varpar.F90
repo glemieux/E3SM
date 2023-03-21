@@ -119,6 +119,7 @@ contains
     natpft_ub = natpft_lb + natpft_size - 1
     cft_lb = natpft_ub + 1
     cft_ub = cft_lb + cft_size - 1
+    max_patch_per_col= max(natpft_size, numpft+1, numcft, maxpatch_urb)
     
     return
   end subroutine update_pft_array_bounds
