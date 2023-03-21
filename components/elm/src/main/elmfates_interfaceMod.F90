@@ -56,6 +56,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : use_fates_fixed_biogeog
    use elm_varctl        , only : use_fates_nocomp
    use elm_varctl        , only : use_fates_sp
+   use elm_varctl        , only : use_fates_luh
    use elm_varctl        , only : use_fates_tree_damage
    use elm_varctl        , only : nsrest, nsrBranch
    use elm_varctl        , only : fates_inventory_ctrl_filename
@@ -129,6 +130,7 @@ module ELMFatesInterfaceMod
    use FatesInterfaceTypesMod, only : fates_maxPatchesPerSite
    use FatesHistoryInterfaceMod, only : fates_hist
    use FatesRestartInterfaceMod, only : fates_restart_interface_type
+   use FatesInterfaceTypesMod,   only : hlm_num_luh2_states
 
    use PRTGenericMod         , only : num_elements
    use FatesPatchMod         , only : fates_patch_type
@@ -160,16 +162,19 @@ module ELMFatesInterfaceMod
                                        anthro_ignitions, anthro_suppression
 
    use dynHarvestMod          , only : num_harvest_vars, harvest_varnames, wood_harvest_units
-   use dynHarvestMod          , only : harvest_rates ! these are dynamic in space and time
-
+   use dynHarvestMod          , only : harvest_rates  ! these are dynamic in space and time
+   use dynSubgridControlMod   , only : get_do_harvest ! this gets the namelist value
    use FatesConstantsMod      , only : hlm_harvest_area_fraction
    use FatesConstantsMod      , only : hlm_harvest_carbon
 
-   use dynSubgridControlMod, only : get_do_harvest ! this gets the namelist value
+   use dynFATESLandUseChangeMod, only : num_landuse_transition_vars, num_landuse_state_vars
+   use dynFATESLandUseChangeMod, only : landuse_transitions, landuse_states
+   use dynFATESLandUseChangeMod, only : landuse_transition_varnames, landuse_state_varnames
+   use dynFATESLandUseChangeMod, only : dynFatesLandUseInterp
 
-   use FatesInterfaceTypesMod , only : bc_in_type, bc_out_type
-   use CLMFatesParamInterfaceMod         , only : FatesReadParameters
-   
+   use FatesInterfaceTypesMod       , only : bc_in_type, bc_out_type
+   use CLMFatesParamInterfaceMod    , only : FatesReadParameters
+
    use perf_mod          , only : t_startf, t_stopf
 
    implicit none
@@ -363,6 +368,9 @@ contains
      integer                                        :: pass_num_lu_harvest_types
      integer                                        :: pass_lu_harvest
      integer                                        :: pass_tree_damage
+     integer                                        :: pass_use_luh
+     integer                                        :: pass_num_luh_states
+     integer                                        :: pass_num_luh_transitions
      ! ----------------------------------------------------------------------------------
      ! FATES lightning definitions
      ! 1 : use a global constant lightning rate found in fates_params.
@@ -486,10 +494,22 @@ contains
            pass_lu_harvest = 0
            pass_num_lu_harvest_types = 0
         end if
-
         call set_fates_ctrlparms('use_lu_harvest',ival=pass_lu_harvest)
         call set_fates_ctrlparms('num_lu_harvest_cats',ival=pass_num_lu_harvest_types)
         call set_fates_ctrlparms('use_logging',ival=pass_logging)
+
+        if(use_fates_luh) then
+           pass_use_luh = 1
+           pass_num_luh_states = num_landuse_state_vars
+           pass_num_luh_transitions = num_landuse_transition_vars
+        else
+           pass_use_luh = 0
+           pass_num_luh_states = 0
+           pass_num_luh_transitions = 0
+        end if
+        call set_fates_ctrlparms('use_luh2',ival=pass_use_luh)
+        call set_fates_ctrlparms('num_luh2_states',ival=pass_num_luh_states)
+        call set_fates_ctrlparms('num_luh2_transitions',ival=pass_num_luh_transitions)
 
         if(use_fates_ed_st3) then
            pass_ed_st3 = 1
@@ -716,7 +736,9 @@ contains
                ndecomp = 1
             end if
 
-            call allocate_bcin(this%fates(nc)%bc_in(s),col_pp%nlevbed(c),ndecomp,num_harvest_vars,surfpft_lb,surfpft_ub)
+            call allocate_bcin(this%fates(nc)%bc_in(s), col_pp%nlevbed(c), ndecomp, &
+                               num_harvest_vars, num_landuse_state_vars, num_landuse_transition_vars, &
+                               surfpft_lb, surfpft_ub)
             call allocate_bcout(this%fates(nc)%bc_out(s),col_pp%nlevbed(c),ndecomp)
             call zero_bcs(this%fates(nc),s)
 
@@ -839,7 +861,7 @@ contains
          top_af_inst, atm2lnd_inst, soilstate_inst, &
          canopystate_inst, frictionvel_inst, soil_water_retention_curve )
 
-      use FatesConstantsMod     , only : m2_per_km2
+      use FatesConstantsMod       , only : m2_per_km2
 
       ! This wrapper is called daily from clm_driver
       ! This wrapper calls ed_driver, which is the daily dynamics component of FATES
@@ -858,7 +880,7 @@ contains
       class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
       
       ! !LOCAL VARIABLES:
-      integer  :: s                        ! site index
+      integer  :: s, i                     ! site index
       integer  :: c                        ! column index (HLM)
       integer  :: j                        ! Soil layer index
       integer  :: t                        ! topounit index (HLM)
@@ -873,6 +895,8 @@ contains
       
       real(r8), pointer :: lnfm24(:)       ! 24-hour averaged lightning data
       real(r8), pointer :: gdp_lf_col(:)          ! gdp data
+
+      logical  :: do_landuse_update        ! local flag to pass transitions update to fates
 
       !-----------------------------------------------------------------------
 
@@ -1016,6 +1040,15 @@ contains
             this%fates(nc)%bc_in(s)%hlm_harvest_units = wood_harvest_units
          end if
          this%fates(nc)%bc_in(s)%site_area=col_pp%wtgcell(c)*grc_pp%area(g)*m2_per_km2
+
+         if (use_fates_luh) then
+            ! if (do_landuse_update) then
+               this%fates(nc)%bc_in(s)%hlm_luh_states = landuse_states(:,g)
+               this%fates(nc)%bc_in(s)%hlm_luh_state_names = landuse_state_varnames
+               this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,g)
+               this%fates(nc)%bc_in(s)%hlm_luh_transition_names = landuse_transition_varnames
+            ! end if
+         end if
 
       end do
 
@@ -1735,11 +1768,12 @@ contains
      real(r8) :: vol_ice
      real(r8) :: eff_porosity
      integer :: nlevsoil
-     integer :: j
+     integer :: j, i
      integer :: s
-     integer :: c
+     integer :: c, g
      integer :: p   ! HLM patch index
      integer :: ft  ! plant functional type
+     logical  :: do_landuse_update        ! local flag to pass transitions update to fates
 
      ! Set the FATES global time and date variables
      call GetAndSetTime
@@ -1789,7 +1823,6 @@ contains
            if (use_fates_planthydro) then
 
               do s = 1,this%fates(nc)%nsites
-
                  c = this%f2hmap(nc)%fcolumn(s)
                  nlevsoil = this%fates(nc)%bc_in(s)%nlevsoil
 
@@ -1823,8 +1856,22 @@ contains
               call HydrSiteColdStart(this%fates(nc)%sites,this%fates(nc)%bc_in)
            end if
 
+           do s = 1,this%fates(nc)%nsites
+              c = this%f2hmap(nc)%fcolumn(s)
+              g = col_pp%gridcell(c)
+
+              if (use_fates_luh) then
+                    this%fates(nc)%bc_in(s)%hlm_luh_states = landuse_states(:,g)
+                    this%fates(nc)%bc_in(s)%hlm_luh_state_names = landuse_state_varnames
+                    this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,g)
+                    this%fates(nc)%bc_in(s)%hlm_luh_transition_names = landuse_transition_varnames
+              end if
+           end do
+
+           ! Initialize patches
            call init_patches(this%fates(nc)%nsites, this%fates(nc)%sites, &
                              this%fates(nc)%bc_in)
+
 
            do s = 1,this%fates(nc)%nsites
 
@@ -2747,6 +2794,7 @@ end subroutine wrap_update_hifrq_hist
    use FatesIOVariableKindMod, only : site_coage_r8, site_coage_pft_r8
    use FatesIOVariableKindMod, only : site_can_r8, site_cnlf_r8, site_cnlfpft_r8
    use FatesIOVariableKindMod, only : site_cdpf_r8, site_cdsc_r8, site_cdam_r8
+   use FatesIOVariableKindMod, only : site_landuse_r8, site_lulu_r8
    use FatesIODimensionsMod, only : fates_bounds_type
 
 
@@ -2845,7 +2893,8 @@ end subroutine wrap_update_hifrq_hist
              site_can_r8,site_cnlf_r8, site_cnlfpft_r8, site_scag_r8, &
              site_scagpft_r8, site_agepft_r8, site_elem_r8, site_elpft_r8, &
              site_elcwd_r8, site_elage_r8, site_coage_r8, site_coage_pft_r8, &
-             site_agefuel_r8,site_cdsc_r8, site_cdpf_r8, site_cdam_r8)
+             site_agefuel_r8,site_cdsc_r8, site_cdpf_r8, site_cdam_r8, &
+             site_landuse_r8, site_lulu_r8)
 
            d_index = fates_hist%dim_kinds(dk_index)%dim2_index
            dim2name = fates_hist%dim_bounds(d_index)%name
@@ -3112,6 +3161,7 @@ end subroutine wrap_update_hifrq_hist
    use EDParamsMod,       only : nclmax_fates     => nclmax
    use FatesInterfaceTypesMod, only : numpft_fates     => numpft
    use FatesInterfaceTypesMod, only : nlevcoage
+   use FatesConstantsMod, only : n_landuse_cats
 
    implicit none
 
@@ -3195,6 +3245,12 @@ end subroutine wrap_update_hifrq_hist
 
    fates%agefuel_begin = 1
    fates%agefuel_end   = nlevage_fates * nfsc_fates
+
+   fates%landuse_begin = 1
+   fates%landuse_end   = n_landuse_cats
+
+   fates%lulu_begin = 1
+   fates%lulu_end   = n_landuse_cats * n_landuse_cats
 
  end subroutine hlm_bounds_to_fates_bounds
 
