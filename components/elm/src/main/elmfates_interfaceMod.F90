@@ -468,10 +468,22 @@ contains
            pass_lu_harvest = 0
            pass_num_lu_harvest_types = 0
         end if
-
         call set_fates_ctrlparms('use_lu_harvest',ival=pass_lu_harvest)
         call set_fates_ctrlparms('num_lu_harvest_cats',ival=pass_num_lu_harvest_types)
         call set_fates_ctrlparms('use_logging',ival=pass_logging)
+
+        if(use_fates_luh) then
+           pass_use_luh2 = 1
+           ! pass_num_luh2_states = num_landuse_state_vars
+           pass_num_luh2_transitions = num_landuse_transition_vars
+        else
+           pass_use_luh2 = 0
+           pass_num_luh2_states = 0
+           pass_num_luh2_transitions = 0
+        end if
+        call set_fates_ctrlparms('use_luh2',ival=pass_use_luh2)
+        call set_fates_ctrlparms('num_luh2_states',ival=pass_num_luh2_states)
+        call set_fates_ctrlparms('num_luh2_transitions',ival=pass_num_luh2_transitions)
 
         if(use_fates_ed_st3) then
            pass_ed_st3 = 1
