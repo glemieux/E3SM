@@ -21,10 +21,13 @@ module dynLandUseMod
 
   ! To Do: expand the full list of varnames
   ! TO DO: add state and management arrays
-  real(r8), allocatable, public :: landuse_transitions(:,:) ! land use areas
-  integer, public, parameter :: num_landuse_transition_vars = 2
+  real(r8), allocatable, public :: landuse_transitions(:,:)           ! land use areas
+  integer, public, parameter    :: num_landuse_transition_vars = 2
+  logical, private              :: do_landuse_update                  ! update flag
+  !
   character(len=64), public, parameter :: landuse_transition_varnames(num_landuse_transition_vars) = &
        [character(len=64) :: 'PRIMF_TO_SECDN', 'SECDN_TO_SECDf']
+
   type(dyn_var_time_uninterp_type) :: landuse_transition_vars(num_landuse_transition_vars) ! value of each landuse variable
 
   public :: dynLandUseInit
@@ -87,7 +90,45 @@ contains
 
 
   !-----------------------------------------------------------------------
-  subroutine dynLandUseInterp
+  subroutine dynLandUseInterp(bounds)
+
+    use dynTimeInfoMod , only : time_info_type
+    use elm_varctl     , only : use_cn
+
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds  ! proc-level bounds
+
+    ! !LOCAL VARIABLES:
+    integer               :: varnum       ! counter for harvest variables
+    real(r8), allocatable :: this_data(:) ! data for a single harvest variable
+    character(len=*), parameter :: subname = 'dynLandUseInterp'
+    !-----------------------------------------------------------------------
+    SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
+
+    ! This shouldn't be called by cn currently, but return if it is
+    if (use_cn) return ! Use this as a protection in lieu of build namelist check?
+
+    ! input land use data for current year are stored in year+1 in the file
+    call dynLandUse_file%time_info%set_current_year_get_year(1)
+
+    if (dynLandUse_file%time_info%is_before_time_series()) then
+       ! Set the land use flag to false to avoid this update step in elmfates_interface call
+       do_update_landuse = .false.
+
+       ! Reset the land use transitions to zero for safety
+       landuse_transitions(1:num_landuse_tranisitions_vars,bounds%begg:bounds%endg) = 0._r8
+    else
+       do_update_landuse = .true.
+
+       ! Right now we don't account for the topounits
+       allocate(this_data(bounds%begg:bounds%endg))
+       do varnum = 1, num_landuse_transitions_vars
+          call landuse_transition_vars(varnum)%get_current_data(this_data)
+          landuse_transitions(varnum,bounds%begg:bounds%endg) = this_data(bounds%begg:bounds%endg)
+       end do
+       deallocate(this_data)
+    end if
+
   end subroutine dynLandUseInterp
 
 end module dynLandUseMod
