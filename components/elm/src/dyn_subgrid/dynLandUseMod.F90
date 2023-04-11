@@ -23,7 +23,6 @@ module dynLandUseMod
   ! TO DO: add state and management arrays
   real(r8), allocatable, public :: landuse_transitions(:,:)           ! land use areas
   integer, public, parameter    :: num_landuse_transition_vars = 2
-  logical, private              :: do_landuse_update                  ! update flag
   !
   character(len=64), public, parameter :: landuse_transition_varnames(num_landuse_transition_vars) = &
        [character(len=64) :: 'PRIMF_TO_SECDN', 'SECDN_TO_SECDf']
@@ -90,13 +89,14 @@ contains
 
 
   !-----------------------------------------------------------------------
-  subroutine dynLandUseInterp(bounds)
+  subroutine dynLandUseInterp(bounds, do_landuse_update)
 
     use dynTimeInfoMod , only : time_info_type
     use elm_varctl     , only : use_cn
 
     ! !ARGUMENTS:
-    type(bounds_type), intent(in) :: bounds  ! proc-level bounds
+    type(bounds_type), intent(in)  :: bounds            ! proc-level bounds
+    logical          , intent(out) :: do_landuse_update ! land use update flag
 
     ! !LOCAL VARIABLES:
     integer               :: varnum       ! counter for harvest variables
