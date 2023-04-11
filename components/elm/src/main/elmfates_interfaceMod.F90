@@ -845,6 +845,7 @@ contains
       integer  :: g                        ! HLM grid index
       integer  :: nc                       ! clump index
       integer  :: nlevsoil                 ! number of soil layers at the site
+      logical  :: do_landuse_update        ! local flag to pass transitions update to fates
 
       !-----------------------------------------------------------------------
 
@@ -867,6 +868,11 @@ contains
 
       ! Set the FATES global time and date variables
       call GetAndSetTime
+
+      ! If fates is using LUH2 land use tranistion data, call interpolation and set use flag
+      if (using_transitions) then
+         call dynLandUseInterp(bounds, do_landuse_update)
+      end if
 
       do s=1,this%fates(nc)%nsites
 
@@ -933,6 +939,15 @@ contains
             this%fates(nc)%bc_in(s)%hlm_harvest_units = wood_harvest_units
          end if
          this%fates(nc)%bc_in(s)%site_area=col_pp%wtgcell(c)*grc_pp%area(g)*m2_per_km2
+
+         if (using_transitions) then
+            if (get_do_landuse_update()) then
+               ! this%fates(nc)%bc_in(s)%hlm_luh_states
+               ! this%fates(nc)%bc_in(s)%hlm_luh_state_names
+               this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,g)
+               ! this%fates(nc)%bc_in(s)%hlm_luh_transition_names
+            end if
+         end if
 
       end do
 
