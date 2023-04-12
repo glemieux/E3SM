@@ -2648,11 +2648,14 @@ sub setup_logic_do_harvest {
   # in any of these cases, a fatal error will be generated
   my $cannot_be_true = "";
 
-  if (string_is_undef_or_empty($nl->get_value('flanduse_timeseries'))) {
+  if (string_is_undef_or_empty($nl->get_value('flanduse_timeseries'))) { ww
     $cannot_be_true = "$var can only be set to true when running a transient case (flanduse_timeseries non-blank)";
   }
   elsif (!( value_is_true($nl->get_value('use_cn')) || value_is_true($nl->get_value('use_fates')) )) {
     $cannot_be_true = "$var can only be set to true when running with CN (use_cn == true) or when using FATES (use_fates == true)";
+  }
+  elsif (value_is_true($nl->get_value('use_fates_luh2'))) {
+      $cannot_be_true = "$var has not been integrated to run with fates land use change, so for now can not be used together.";
   }
 
   if ($cannot_be_true) {
