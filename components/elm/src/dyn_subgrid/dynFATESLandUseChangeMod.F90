@@ -60,6 +60,7 @@ module dynFATESLandUseChangeMod
                                           'c3nfx_to_secdf','c3nfx_to_secdn','c3nfx_to_pastr','c3nfx_to_range','c3nfx_to_urban']
 
   type(dyn_var_time_uninterp_type) :: landuse_transition_vars(num_landuse_transition_vars) ! value of each landuse variable
+  type(dyn_var_time_uninterp_type) :: landuse_state_vars(num_landuse_state_vars)           ! value of each landuse variable
 
   public :: dynFatesLandUseInit
   public :: dynFatesLandUseInterp
