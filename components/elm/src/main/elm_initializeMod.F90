@@ -467,6 +467,7 @@ contains
     use clm_time_manager      , only : get_curr_date, get_nstep, advance_timestep
     use clm_time_manager      , only : timemgr_init, timemgr_restart_io, timemgr_restart
     use controlMod            , only : nlfilename
+    use controlMod            , only : fluh_timeseries
     use decompMod             , only : get_proc_clumps, get_proc_bounds, get_clump_bounds, bounds_type
     use domainMod             , only : ldomain
     use initInterpMod         , only : initInterp
@@ -732,6 +733,11 @@ contains
     call init_subgrid_weights_mod(bounds_proc)
     call dynSubgrid_init(bounds_proc, glc2lnd_vars, crop_vars)
     call t_stopf('init_dyn_subgrid')
+
+    ! Initialize fates LUH2 usage
+    if (use_fates_luh) then
+       call dynFatesLandUseInit(bounds_proc, fluh_timeseries)
+    end if
 
     ! ------------------------------------------------------------------------
     ! Initialize modules (after time-manager initialization in most cases)
