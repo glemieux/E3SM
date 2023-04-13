@@ -390,7 +390,7 @@ Full pathname of time varying PFT data file. This causes the land-use types of
 the initial surface dataset to vary over time.
 </entry>
 
-<entry id="luh2_timeseries" type="char*256" category="datasets"
+<entry id="fluh_timeseries" type="char*256" category="datasets"
        input_pathname="abs" group="dynamic_subgrid" valid_values="" >
 Full pathname of unified land use harmonization data file. This causes the land-use
 types to vary over time.
@@ -1726,7 +1726,7 @@ If TRUE, apply harvest from flanduse_timeseries file.
 (Also, only valid for use_cn = true.)
 </entry>
 
-<entry id="use_fates_luh2" type="logical" category="physics"
+<entry id="use_fates_luh" type="logical" category="physics"
        group="dynamic_subgrid" valid_values="" >
 If TRUE, enable use of land use state and transition data from luh_timeseries file.
 (Only valid for fates land use change runs, where there is a luh_timeseries file.)
