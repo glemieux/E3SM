@@ -56,6 +56,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : use_fates_fixed_biogeog
    use elm_varctl        , only : use_fates_nocomp
    use elm_varctl        , only : use_fates_sp
+   use elm_varctl        , only : use_fates_luh
    use elm_varctl        , only : use_fates_tree_damage
    use elm_varctl        , only : nsrest, nsrBranch
    use elm_varctl        , only : fates_inventory_ctrl_filename
@@ -473,17 +474,17 @@ contains
         call set_fates_ctrlparms('use_logging',ival=pass_logging)
 
         if(use_fates_luh) then
-           pass_use_luh2 = 1
+           pass_use_luh = 1
            ! pass_num_luh2_states = num_landuse_state_vars
-           pass_num_luh2_transitions = num_landuse_transition_vars
+           pass_num_luh_transitions = num_landuse_transition_vars
         else
-           pass_use_luh2 = 0
-           pass_num_luh2_states = 0
-           pass_num_luh2_transitions = 0
+           pass_use_luh = 0
+           pass_num_luh_states = 0
+           pass_num_luh_transitions = 0
         end if
-        call set_fates_ctrlparms('use_luh2',ival=pass_use_luh2)
-        call set_fates_ctrlparms('num_luh2_states',ival=pass_num_luh2_states)
-        call set_fates_ctrlparms('num_luh2_transitions',ival=pass_num_luh2_transitions)
+        call set_fates_ctrlparms('use_luh',ival=pass_use_luh)
+        call set_fates_ctrlparms('num_luh_states',ival=pass_num_luh_states)
+        call set_fates_ctrlparms('num_luh_transitions',ival=pass_num_luh_transitions)
 
         if(use_fates_ed_st3) then
            pass_ed_st3 = 1
@@ -829,7 +830,8 @@ contains
          top_af_inst, atm2lnd_inst, soilstate_inst, temperature_inst, &
          canopystate_inst, frictionvel_inst )
 
-      use FatesConstantsMod     , only : m2_per_km2
+      use FatesConstantsMod       , only : m2_per_km2
+      use dynFATESLandUseChangeMod, only : dynFatesLandUseInterp
 
       ! This wrapper is called daily from clm_driver
       ! This wrapper calls ed_driver, which is the daily dynamics component of FATES
@@ -881,9 +883,9 @@ contains
       ! Set the FATES global time and date variables
       call GetAndSetTime
 
-      ! If fates is using LUH2 land use tranistion data, call interpolation and set use flag
-      if (using_transitions) then
-         call dynLandUseInterp(bounds, do_landuse_update)
+      ! If fates is using LUH land use tranistion data, call interpolation and set use flag
+      if (use_fates_luh) then
+         call dynFATESLandUseInterp(bounds, do_landuse_update)
       end if
 
       do s=1,this%fates(nc)%nsites
@@ -952,7 +954,7 @@ contains
          end if
          this%fates(nc)%bc_in(s)%site_area=col_pp%wtgcell(c)*grc_pp%area(g)*m2_per_km2
 
-         if (using_transitions) then
+         if (use_fates_luh) then
             if (get_do_landuse_update()) then
                ! this%fates(nc)%bc_in(s)%hlm_luh_states
                ! this%fates(nc)%bc_in(s)%hlm_luh_state_names

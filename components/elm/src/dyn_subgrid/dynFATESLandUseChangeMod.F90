@@ -1,4 +1,4 @@
-module dynLandUseMod
+module dynFATESLandUseChangeMod
 
 #include "shr_assert.h"
 
@@ -29,13 +29,13 @@ module dynLandUseMod
 
   type(dyn_var_time_uninterp_type) :: landuse_transition_vars(num_landuse_transition_vars) ! value of each landuse variable
 
-  public :: dynLandUseInit
-  public :: dynLandUseInterp
+  public :: dynFatesLandUseInit
+  public :: dynFatesLandUseInterp
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine dynLandUseInit(bounds, landuse_filename)
+  subroutine dynFatesLandUseInit(bounds, landuse_filename)
 
     ! !DESCRIPTION:
     ! Initialize data structures for land use information.
@@ -56,7 +56,7 @@ contains
     integer :: num_points ! number of spatial points
     integer :: ier        ! error code
     !
-    character(len=*), parameter :: subname = 'dynLandUseInit'
+    character(len=*), parameter :: subname = 'dynFatesLandUseInit'
     !-----------------------------------------------------------------------
 
     SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
@@ -72,7 +72,7 @@ contains
 
     ! Generate the dyn_file_type object
     ! TO DO: check whether to initialize with start or end
-    dynLandUse_file = dyn_file_type(landuse_filename, YEAR_POSITION_START_OF_TIMESTEP)
+    dynFatesLandUse_file = dyn_file_type(landuse_filename, YEAR_POSITION_START_OF_TIMESTEP)
 
     ! TO DO: replicate this for each of the landuse types
     ! Get initial land use data
@@ -80,16 +80,16 @@ contains
     landuse_shape(1) = num_points
     do varnum = 1, num_landuse_transition_vars
        landuse_transition_vars(varnum) = dyn_var_time_uninterp_type( &
-            dyn_file=dynLandUse_file, varname=landuse_transition_varnames(varnum), &
+            dyn_file=dynFatesLandUse_file, varname=landuse_transition_varnames(varnum), &
             dim1name=grlnd, conversion_factor=1.0_r8, &
             do_check_sums_equal_1=.false., data_shape=landuse_shape)
     end do
 
-  end subroutine dynLandUseInit
+  end subroutine dynFatesLandUseInit
 
 
   !-----------------------------------------------------------------------
-  subroutine dynLandUseInterp(bounds, do_landuse_update)
+  subroutine dynFatesLandUseInterp(bounds, do_landuse_update)
 
     use dynTimeInfoMod , only : time_info_type
     use elm_varctl     , only : use_cn
@@ -101,7 +101,7 @@ contains
     ! !LOCAL VARIABLES:
     integer               :: varnum       ! counter for harvest variables
     real(r8), allocatable :: this_data(:) ! data for a single harvest variable
-    character(len=*), parameter :: subname = 'dynLandUseInterp'
+    character(len=*), parameter :: subname = 'dynFatesLandUseInterp'
     !-----------------------------------------------------------------------
     SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 
@@ -109,9 +109,9 @@ contains
     if (use_cn) return ! Use this as a protection in lieu of build namelist check?
 
     ! input land use data for current year are stored in year+1 in the file
-    call dynLandUse_file%time_info%set_current_year_get_year(1)
+    call dynFatesLandUse_file%time_info%set_current_year_get_year(1)
 
-    if (dynLandUse_file%time_info%is_before_time_series()) then
+    if (dynFatesLandUse_file%time_info%is_before_time_series()) then
        ! Set the land use flag to false to avoid this update step in elmfates_interface call
        do_update_landuse = .false.
 
@@ -129,6 +129,6 @@ contains
        deallocate(this_data)
     end if
 
-  end subroutine dynLandUseInterp
+  end subroutine dynFatesLandUseInterp
 
-end module dynLandUseMod
+end module dynFATESLandUseChangeMod
