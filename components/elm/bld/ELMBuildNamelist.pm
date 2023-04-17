@@ -2652,7 +2652,7 @@ sub setup_logic_do_harvest {
   # in any of these cases, a fatal error will be generated
   my $cannot_be_true = "";
 
-  if (string_is_undef_or_empty($nl->get_value('flanduse_timeseries'))) { ww
+  if (string_is_undef_or_empty($nl->get_value('flanduse_timeseries'))) {
     $cannot_be_true = "$var can only be set to true when running a transient case (flanduse_timeseries non-blank)";
   }
   elsif (!( value_is_true($nl->get_value('use_cn')) || value_is_true($nl->get_value('use_fates')) )) {
