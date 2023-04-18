@@ -2911,6 +2911,7 @@ end subroutine wrap_update_hifrq_hist
    use EDtypesMod,        only : nclmax_fates     => nclmax
    use FatesInterfaceTypesMod, only : numpft_fates     => numpft
    use FatesInterfaceTypesMod, only : nlevcoage
+   use FatesConstantsMod, only : n_landuse_cats
 
    implicit none
 
@@ -2994,6 +2995,12 @@ end subroutine wrap_update_hifrq_hist
 
    fates%agefuel_begin = 1
    fates%agefuel_end   = nlevage_fates * nfsc_fates
+
+   fates%landuse_begin = 1
+   fates%landuse_end   = n_landuse_cats
+
+   fates%lulu_begin = 1
+   fates%lulu_end   = n_landuse_cats * n_landuse_cats
 
  end subroutine hlm_bounds_to_fates_bounds
 

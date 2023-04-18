@@ -28,6 +28,7 @@ module histFileMod
   use FatesInterfaceTypesMod , only : nlevheight_fates => nlevheight
   use FatesInterfaceTypesMod , only : nlevdamage_fates => nlevdamage
   use FatesInterfaceTypesMod , only : nlevcoage
+  use FatesConstantsMod      , only : n_landuse_cats
   use EDTypesMod        , only : nfsc_fates       => nfsc
   use FatesLitterMod    , only : ncwd_fates       => ncwd
   use FatesInterfaceTypesMod , only : numpft_fates     => numpft
@@ -1950,6 +1951,8 @@ contains
        call ncd_defdim(lnfid, 'fates_levelcwd', nelements_fates * ncwd_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levelage', nelements_fates * nlevage_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levagefuel', nlevage_fates * nfsc_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levlanduse', n_landuse_cats, dimid)
+       call ncd_defdim(lnfid, 'fates_levlulu', n_landuse_cats * n_landuse_cats, dimid)
     end if
 
     if ( .not. lhistrest )then
@@ -2352,6 +2355,7 @@ contains
     use FatesInterfaceTypesMod, only : fates_hdim_camap_levcapf
     use FatesInterfaceTypesMod, only : fates_hdim_levage
     use FatesInterfaceTypesMod, only : fates_hdim_levpft
+    use FatesInterfaceTypesMod, only : fates_hdim_levlanduse
     use FatesInterfaceTypesMod, only : fates_hdim_scmap_levscag
     use FatesInterfaceTypesMod, only : fates_hdim_agmap_levscag
     use FatesInterfaceTypesMod, only : fates_hdim_levfuel
@@ -2462,6 +2466,8 @@ contains
                    long_name='FATES patch age (yr)', ncid=nfid(t))
              call ncd_defvar(varname='fates_levpft',xtype=ncd_int, dim1name='fates_levpft', &
                    long_name='FATES pft number', ncid=nfid(t))
+             call ncd_defvar(varname='fates_levlanduse',xtype=ncd_int, dim1name='fates_levlanduse', &
+                   long_name='FATES land use label', ncid=nfid(t))
              call ncd_defvar(varname='fates_levfuel',xtype=ncd_int, dim1name='fates_levfuel', &
                    long_name='FATES fuel index', ncid=nfid(t))
              call ncd_defvar(varname='fates_levcwdsc',xtype=ncd_int, dim1name='fates_levcwdsc', &
@@ -2547,6 +2553,7 @@ contains
              call ncd_io(varname='fates_scmap_levscpf',data=fates_hdim_scmap_levscpf, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_levage',data=fates_hdim_levage, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_levpft',data=fates_hdim_levpft, ncid=nfid(t), flag='write')
+             call ncd_io(varname='fates_levlanduse',data=fates_hdim_levlanduse, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_levfuel',data=fates_hdim_levfuel, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_levcwdsc',data=fates_hdim_levcwdsc, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_levcan',data=fates_hdim_levcan, ncid=nfid(t), flag='write')
@@ -4827,6 +4834,10 @@ contains
        num2d = nlevcoage*numpft_fates
     case ('fates_levpft')
        num2d = numpft_fates
+    case ('fates_levlanduse')
+       num2d = n_landuse_cats
+    case ('fates_levlulu')
+       num2d = n_landuse_cats * n_landuse_cats
     case ('fates_levage')
        num2d = nlevage_fates
     case ('fates_levfuel')
