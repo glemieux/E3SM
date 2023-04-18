@@ -117,7 +117,7 @@ contains
        do_landuse_update = .false.
 
        ! Reset the land use transitions to zero for safety
-       landuse_transitions(1:num_landuse_tranisition_vars,bounds%begg:bounds%endg) = 0._r8
+       landuse_transitions(1:num_landuse_transition_vars,bounds%begg:bounds%endg) = 0._r8
     else
        do_landuse_update = .true.
 
@@ -125,7 +125,7 @@ contains
        allocate(this_data(bounds%begg:bounds%endg))
        do varnum = 1, num_landuse_transitions_vars
           call landuse_transition_vars(varnum)%get_current_data(this_data)
-          landuse_transitions(varnum,bounds%begg:bounds%endg) = this_data(bounds%begg:bounds%endg)
+          landuse_transtions(varnum,bounds%begg:bounds%endg) = this_data(bounds%begg:bounds%endg)
        end do
        deallocate(this_data)
     end if
