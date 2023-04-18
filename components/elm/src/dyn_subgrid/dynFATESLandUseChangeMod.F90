@@ -23,9 +23,10 @@ module dynFATESLandUseChangeMod
   ! TO DO: add state and management arrays
   real(r8), allocatable, public :: landuse_transitions(:,:)           ! land use areas
   integer, public, parameter    :: num_landuse_transition_vars = 2
+  type(dyn_file_type), target   :: dynFatesLandUse_file
   !
-  character(len=64), public, parameter :: landuse_transition_varnames(num_landuse_transition_vars) = &
-       [character(len=64) :: 'PRIMF_TO_SECDN', 'SECDN_TO_SECDf']
+  character(len=14), public, parameter :: landuse_transition_varnames(num_landuse_transition_vars) = &
+       [character(len=14) :: 'PRIMF_TO_SECDN', 'SECDN_TO_SECDf']
 
   type(dyn_var_time_uninterp_type) :: landuse_transition_vars(num_landuse_transition_vars) ! value of each landuse variable
 
