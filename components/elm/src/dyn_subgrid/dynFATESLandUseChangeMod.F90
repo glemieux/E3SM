@@ -65,7 +65,7 @@ contains
     if (use_cn) return ! Use this as a protection in lieu of build namelist check?
 
     ! Allocate and initialize the land use array
-    allocate(landuse_transitions(num_landuse_transition_vars,bounds%begg:bounds%endg),stat=ierr)
+    allocate(landuse_transitions(num_landuse_transition_vars,bounds%begg:bounds%endg),stat=ier)
     landuse_transitions = 0._r8
     if (ier /= 0) then
        call endrun(msg=' allocation error for landuse_transitions'//errMsg(__FILE__, __LINE__))
@@ -114,12 +114,12 @@ contains
 
     if (dynFatesLandUse_file%time_info%is_before_time_series()) then
        ! Set the land use flag to false to avoid this update step in elmfates_interface call
-       do_update_landuse = .false.
+       do_landuse_update = .false.
 
        ! Reset the land use transitions to zero for safety
-       landuse_transitions(1:num_landuse_tranisitions_vars,bounds%begg:bounds%endg) = 0._r8
+       landuse_transitions(1:num_landuse_tranisition_vars,bounds%begg:bounds%endg) = 0._r8
     else
-       do_update_landuse = .true.
+       do_landuse_update = .true.
 
        ! Right now we don't account for the topounits
        allocate(this_data(bounds%begg:bounds%endg))

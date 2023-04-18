@@ -955,7 +955,7 @@ contains
          this%fates(nc)%bc_in(s)%site_area=col_pp%wtgcell(c)*grc_pp%area(g)*m2_per_km2
 
          if (use_fates_luh) then
-            if (get_do_landuse_update()) then
+            if (do_landuse_update) then
                ! this%fates(nc)%bc_in(s)%hlm_luh_states
                ! this%fates(nc)%bc_in(s)%hlm_luh_state_names
                this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,g)
