@@ -123,9 +123,9 @@ contains
 
        ! Right now we don't account for the topounits
        allocate(this_data(bounds%begg:bounds%endg))
-       do varnum = 1, num_landuse_transitions_vars
+       do varnum = 1, num_landuse_transition_vars
           call landuse_transition_vars(varnum)%get_current_data(this_data)
-          landuse_transtions(varnum,bounds%begg:bounds%endg) = this_data(bounds%begg:bounds%endg)
+          landuse_transitions(varnum,bounds%begg:bounds%endg) = this_data(bounds%begg:bounds%endg)
        end do
        deallocate(this_data)
     end if
