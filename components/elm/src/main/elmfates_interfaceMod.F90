@@ -157,15 +157,16 @@ module ELMFatesInterfaceMod
    use FatesPlantHydraulicsMod, only : RestartHydrStates
 
    use dynHarvestMod          , only : num_harvest_vars, harvest_varnames, wood_harvest_units
-   use dynHarvestMod          , only : harvest_rates ! these are dynamic in space and time
-
+   use dynHarvestMod          , only : harvest_rates  ! these are dynamic in space and time
+   use dynSubgridControlMod   , only : get_do_harvest ! this gets the namelist value
    use FatesConstantsMod      , only : hlm_harvest_area_fraction
    use FatesConstantsMod      , only : hlm_harvest_carbon
 
-   use dynSubgridControlMod, only : get_do_harvest ! this gets the namelist value
+   use dynFATESLandUseChangeMod, only : num_landuse_transition_vars, num_landuse_state_vars
+   use dynFATESLandUseChangeMod, only : landuse_transitions             ! these are dynamic in space and time
 
-   use FatesInterfaceTypesMod , only : bc_in_type, bc_out_type
-   use CLMFatesParamInterfaceMod         , only : FatesReadParameters
+   use FatesInterfaceTypesMod       , only : bc_in_type, bc_out_type
+   use CLMFatesParamInterfaceMod    , only : FatesReadParameters
 
    implicit none
 
@@ -350,6 +351,9 @@ contains
      integer                                        :: pass_num_lu_harvest_types
      integer                                        :: pass_lu_harvest
      integer                                        :: pass_tree_damage
+     integer                                        :: pass_use_luh
+     integer                                        :: pass_num_luh_states
+     integer                                        :: pass_num_luh_transitions
      ! ----------------------------------------------------------------------------------
      ! FATES lightning definitions
      ! 1 : use a global constant lightning rate found in fates_params.
@@ -475,7 +479,7 @@ contains
 
         if(use_fates_luh) then
            pass_use_luh = 1
-           ! pass_num_luh2_states = num_landuse_state_vars
+           pass_num_luh_states = num_landuse_state_vars
            pass_num_luh_transitions = num_landuse_transition_vars
         else
            pass_use_luh = 0
@@ -710,7 +714,9 @@ contains
                ndecomp = 1
             end if
 
-            call allocate_bcin(this%fates(nc)%bc_in(s),col_pp%nlevbed(c),ndecomp,num_harvest_vars,surfpft_lb,surfpft_ub)
+            call allocate_bcin(this%fates(nc)%bc_in(s), col_pp%nlevbed(c), ndecomp, &
+                               num_harvest_vars, num_landuse_state_vars, num_landuse_transition_vars, &
+                               surfpft_lb, surfpft_ub)
             call allocate_bcout(this%fates(nc)%bc_out(s),col_pp%nlevbed(c),ndecomp)
             call zero_bcs(this%fates(nc),s)
 
@@ -885,7 +891,7 @@ contains
 
       ! If fates is using LUH land use tranistion data, call interpolation and set use flag
       if (use_fates_luh) then
-         call dynFATESLandUseInterp(bounds, do_landuse_update)
+         call dynFATESLandUseInterp(bounds_clump, do_landuse_update)
       end if
 
       do s=1,this%fates(nc)%nsites
