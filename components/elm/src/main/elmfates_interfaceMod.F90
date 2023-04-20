@@ -163,7 +163,8 @@ module ELMFatesInterfaceMod
    use FatesConstantsMod      , only : hlm_harvest_carbon
 
    use dynFATESLandUseChangeMod, only : num_landuse_transition_vars, num_landuse_state_vars
-   use dynFATESLandUseChangeMod, only : landuse_transitions             ! these are dynamic in space and time
+   use dynFATESLandUseChangeMod, only : landuse_transitions, landuse_states
+   use dynFATESLandUseChangeMod, only : landuse_transition_varnames, landuse_state_varnames
 
    use FatesInterfaceTypesMod       , only : bc_in_type, bc_out_type
    use CLMFatesParamInterfaceMod    , only : FatesReadParameters
