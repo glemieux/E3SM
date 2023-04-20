@@ -232,6 +232,7 @@ module elm_varctl
   logical, public            :: use_fates_nocomp = .false.              ! true => no competition mode
   logical, public            :: use_fates_sp = .false.                  ! true => FATES satellite phenology mode
   logical, public            :: use_fates_luh = .false.                 ! true => FATES land use transitions mode
+  character(len=256), public :: fluh_timeseries = ''                    ! filename for land use harmonization data
   character(len=256), public :: fates_inventory_ctrl_filename = ''      ! filename for inventory control
   integer, public            :: fates_parteh_mode = -9                  ! 1 => carbon only
                                                                         ! 2 => C+N+P (not enabled yet)

@@ -962,10 +962,10 @@ contains
 
          if (use_fates_luh) then
             if (do_landuse_update) then
-               ! this%fates(nc)%bc_in(s)%hlm_luh_states
-               ! this%fates(nc)%bc_in(s)%hlm_luh_state_names
+               this%fates(nc)%bc_in(s)%hlm_luh_states = landuse_states(:,g)
+               this%fates(nc)%bc_in(s)%hlm_luh_state_names = landuse_state_varnames
                this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,g)
-               this%fates(nc)%bc_in(s)%hlm_luh_transition_names = landuse_transition_varname
+               this%fates(nc)%bc_in(s)%hlm_luh_transition_names = landuse_transition_varnames
             end if
          end if
 

@@ -96,7 +96,7 @@ contains
     if (use_cn) return ! Use this as a protection in lieu of build namelist check?
 
     ! Allocate and initialize the land use arrays
-    allocate(landuse_states(num_landuse_states_vars,bounds%begg:bounds%endg),stat=ier)
+    allocate(landuse_states(num_landuse_state_vars,bounds%begg:bounds%endg),stat=ier)
     if (ier /= 0) then
        call endrun(msg=' allocation error for landuse_states'//errMsg(__FILE__, __LINE__))
     end if
@@ -160,7 +160,7 @@ contains
 
        ! Reset the land use transitions to zero for safety
        landuse_transitions(1:num_landuse_transition_vars,bounds%begg:bounds%endg) = 0._r8
-       landuse_states(1:num_landuse_states_vars,bounds%begg:bounds%endg) = 0._r8
+       landuse_states(1:num_landuse_state_vars,bounds%begg:bounds%endg) = 0._r8
     else
        do_landuse_update = .true.
 
