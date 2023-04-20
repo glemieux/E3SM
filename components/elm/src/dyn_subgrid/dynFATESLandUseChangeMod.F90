@@ -21,13 +21,16 @@ module dynFATESLandUseChangeMod
 
   real(r8), allocatable, public :: landuse_transitions(:,:)
   real(r8), allocatable, public :: landuse_states(:,:)
+
   integer, public, parameter    :: num_landuse_transition_vars = 108
   integer, public, parameter    :: num_landuse_state_vars = 12
+
   type(dyn_file_type), target   :: dynFatesLandUse_file
 
-  character(len=5), public, parameter :: landuse_state_varnames(num_landuse_state_vars) = &
-                    [character(len=5) :: 'PRIMF','PRIMN','SECDF','SECDN','PASTR','RANGE', &
-                                         'URBAN','C3ANN','C4ANN','C3PER','C4PER','C3NFX']
+  ! Land use name arrays
+  character(len=5), public, parameter  :: landuse_state_varnames(num_landuse_state_vars) = &
+                    [character(len=5)  :: 'PRIMF','PRIMN','SECDF','SECDN','PASTR','RANGE', &
+                                          'URBAN','C3ANN','C4ANN','C3PER','C4PER','C3NFX']
 
   character(len=14), public, parameter :: landuse_transition_varnames(num_landuse_transition_vars) = &
                     [character(len=14) :: 'PRIMF_TO_SECDN','PRIMF_TO_PASTR','PRIMF_TO_RANGE','PRIMF_TO_URBAN', &
@@ -92,24 +95,35 @@ contains
 
     if (use_cn) return ! Use this as a protection in lieu of build namelist check?
 
-    ! Allocate and initialize the land use array
+    ! Allocate and initialize the land use arrays
+    allocate(landuse_states(num_landuse_states_vars,bounds%begg:bounds%endg),stat=ier)
+    if (ier /= 0) then
+       call endrun(msg=' allocation error for landuse_states'//errMsg(__FILE__, __LINE__))
+    end if
     allocate(landuse_transitions(num_landuse_transition_vars,bounds%begg:bounds%endg),stat=ier)
-    landuse_transitions = 0._r8
     if (ier /= 0) then
        call endrun(msg=' allocation error for landuse_transitions'//errMsg(__FILE__, __LINE__))
     end if
+
+    landuse_states= 0._r8
+    landuse_transitions = 0._r8
 
     ! Generate the dyn_file_type object
     ! TO DO: check whether to initialize with start or end
     dynFatesLandUse_file = dyn_file_type(landuse_filename, YEAR_POSITION_START_OF_TIMESTEP)
 
-    ! TO DO: replicate this for each of the landuse types
     ! Get initial land use data
     num_points = (bounds%endg - bounds%begg + 1)
-    landuse_shape(1) = num_points
+    landuse_shape(1) = num_points ! Does this need an explicit array shape to be passed to the constructor?
     do varnum = 1, num_landuse_transition_vars
        landuse_transition_vars(varnum) = dyn_var_time_uninterp_type( &
             dyn_file=dynFatesLandUse_file, varname=landuse_transition_varnames(varnum), &
+            dim1name=grlnd, conversion_factor=1.0_r8, &
+            do_check_sums_equal_1=.false., data_shape=landuse_shape)
+    end do
+    do varnum = 1, num_landuse_state_vars
+       landuse_transition_vars(varnum) = dyn_var_time_uninterp_type( &
+            dyn_file=dynFatesLandUse_file, varname=landuse_state_varnames(varnum), &
             dim1name=grlnd, conversion_factor=1.0_r8, &
             do_check_sums_equal_1=.false., data_shape=landuse_shape)
     end do
@@ -146,6 +160,7 @@ contains
 
        ! Reset the land use transitions to zero for safety
        landuse_transitions(1:num_landuse_transition_vars,bounds%begg:bounds%endg) = 0._r8
+       landuse_states(1:num_landuse_states_vars,bounds%begg:bounds%endg) = 0._r8
     else
        do_landuse_update = .true.
 
@@ -154,6 +169,10 @@ contains
        do varnum = 1, num_landuse_transition_vars
           call landuse_transition_vars(varnum)%get_current_data(this_data)
           landuse_transitions(varnum,bounds%begg:bounds%endg) = this_data(bounds%begg:bounds%endg)
+       end do
+       do varnum = 1, num_landuse_state_vars
+          call landuse_state_vars(varnum)%get_current_data(this_data)
+          landuse_states(varnum,bounds%begg:bounds%endg) = this_data(bounds%begg:bounds%endg)
        end do
        deallocate(this_data)
     end if
