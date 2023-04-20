@@ -19,17 +19,44 @@ module dynFATESLandUseChangeMod
 
   private
 
-  ! To Do: expand the full list of varnames
-  ! TO DO: add state and management arrays
-  real(r8), allocatable, public :: landuse_transitions(:,:)           ! land use areas
-  integer, public, parameter    :: num_landuse_transition_vars = 2
-  integer, public, parameter    :: num_landuse_state_vars = 5
+  real(r8), allocatable, public :: landuse_transitions(:,:)
+  real(r8), allocatable, public :: landuse_states(:,:)
+  integer, public, parameter    :: num_landuse_transition_vars = 108
+  integer, public, parameter    :: num_landuse_state_vars = 12
   type(dyn_file_type), target   :: dynFatesLandUse_file
-  !
+
+  character(len=5), public, parameter :: landuse_state_varnames(num_landuse_state_vars) = &
+                    [character(len=5) :: 'PRIMF','PRIMN','SECDF','SECDN','PASTR','RANGE', &
+                                         'URBAN','C3ANN','C4ANN','C3PER','C4PER','C3NFX']
+
   character(len=14), public, parameter :: landuse_transition_varnames(num_landuse_transition_vars) = &
-       [character(len=14) :: 'PRIMF_TO_SECDN', 'SECDN_TO_SECDf']
+                    [character(len=14) :: 'PRIMF_TO_SECDN','PRIMF_TO_PASTR','PRIMF_TO_RANGE','PRIMF_TO_URBAN', &
+                                          'PRIMF_TO_C3ANN','PRIMF_TO_C4ANN','PRIMF_TO_C3PER','PRIMF_TO_C4PER','PRIMF_TO_C3NFX', &
+                                          'PRIMN_TO_SECDF','PRIMN_TO_PASTR','PRIMN_TO_RANGE','PRIMN_TO_URBAN', &
+                                          'PRIMN_TO_C3ANN','PRIMN_TO_C4ANN','PRIMN_TO_C3PER','PRIMN_TO_C4PER','PRIMN_TO_C3NFX', &
+                                          'SECDF_TO_SECDN','SECDF_TO_PASTR','SECDF_TO_RANGE','SECDF_TO_URBAN', &
+                                          'SECDF_TO_C3ANN','SECDF_TO_C4ANN','SECDF_TO_C3PER','SECDF_TO_C4PER','SECDF_TO_C3NFX', &
+                                          'SECDN_TO_SECDF','SECDN_TO_PASTR','SECDN_TO_RANGE','SECDN_TO_URBAN', &
+                                          'SECDN_TO_C3ANN','SECDN_TO_C4ANN','SECDN_TO_C3PER','SECDN_TO_C4PER','SECDN_TO_C3NFX', &
+                                          'PASTR_TO_SECDF','PASTR_TO_SECDN','PASTR_TO_RANGE','PASTR_TO_URBAN', &
+                                          'PASTR_TO_C3ANN','PASTR_TO_C4ANN','PASTR_TO_C3PER','PASTR_TO_C4PER','PASTR_TO_C3NFX', &
+                                          'RANGE_TO_SECDF','RANGE_TO_SECDN','RANGE_TO_PASTR','RANGE_TO_URBAN', &
+                                          'RANGE_TO_C3ANN','RANGE_TO_C4ANN','RANGE_TO_C3PER','RANGE_TO_C4PER','RANGE_TO_C3NFX', &
+                                          'URBAN_TO_SECDF','URBAN_TO_SECDN','URBAN_TO_PASTR','URBAN_TO_RANGE', &
+                                          'URBAN_TO_C3ANN','URBAN_TO_C4ANN','URBAN_TO_C3PER','URBAN_TO_C4PER','URBAN_TO_C3NFX', &
+                                          'C3ANN_TO_C4ANN','C3ANN_TO_C3PER','C3ANN_TO_C4PER','C3ANN_TO_C3NFX', &
+                                          'C3ANN_TO_SECDF','C3ANN_TO_SECDN','C3ANN_TO_PASTR','C3ANN_TO_RANGE','C3ANN_TO_URBAN', &
+                                          'C4ANN_TO_C3ANN','C4ANN_TO_C3PER','C4ANN_TO_C4PER','C4ANN_TO_C3NFX', &
+                                          'C4ANN_TO_SECDF','C4ANN_TO_SECDN','C4ANN_TO_PASTR','C4ANN_TO_RANGE','C4ANN_TO_URBAN', &
+                                          'C3PER_TO_C3ANN','C3PER_TO_C4ANN','C3PER_TO_C4PER','C3PER_TO_C3NFX', &
+                                          'C3PER_TO_SECDF','C3PER_TO_SECDN','C3PER_TO_PASTR','C3PER_TO_RANGE','C3PER_TO_URBAN', &
+                                          'C4PER_TO_C3ANN','C4PER_TO_C4ANN','C4PER_TO_C3PER','C4PER_TO_C3NFX', &
+                                          'C4PER_TO_SECDF','C4PER_TO_SECDN','C4PER_TO_PASTR','C4PER_TO_RANGE','C4PER_TO_URBAN', &
+                                          'C3NFX_TO_C3ANN','C3NFX_TO_C4ANN','C3NFX_TO_C3PER','C3NFX_TO_C4PER', &
+                                          'C3NFX_TO_SECDF','C3NFX_TO_SECDN','C3NFX_TO_PASTR','C3NFX_TO_RANGE','C3NFX_TO_URBAN']
 
   type(dyn_var_time_uninterp_type) :: landuse_transition_vars(num_landuse_transition_vars) ! value of each landuse variable
+  type(dyn_var_time_uninterp_type) :: landuse_state_vars(num_landuse_state_vars)           ! value of each landuse variable
 
   public :: dynFatesLandUseInit
   public :: dynFatesLandUseInterp

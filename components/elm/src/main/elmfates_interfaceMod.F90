@@ -965,7 +965,7 @@ contains
                ! this%fates(nc)%bc_in(s)%hlm_luh_states
                ! this%fates(nc)%bc_in(s)%hlm_luh_state_names
                this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,g)
-               ! this%fates(nc)%bc_in(s)%hlm_luh_transition_names
+               this%fates(nc)%bc_in(s)%hlm_luh_transition_names = landuse_transition_varname
             end if
          end if
 
