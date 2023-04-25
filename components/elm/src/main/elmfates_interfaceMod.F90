@@ -487,9 +487,9 @@ contains
            pass_num_luh_states = 0
            pass_num_luh_transitions = 0
         end if
-        call set_fates_ctrlparms('use_luh',ival=pass_use_luh)
-        call set_fates_ctrlparms('num_luh_states',ival=pass_num_luh_states)
-        call set_fates_ctrlparms('num_luh_transitions',ival=pass_num_luh_transitions)
+        call set_fates_ctrlparms('use_luh2',ival=pass_use_luh)
+        call set_fates_ctrlparms('num_luh2_states',ival=pass_num_luh_states)
+        call set_fates_ctrlparms('num_luh2_transitions',ival=pass_num_luh_transitions)
 
         if(use_fates_ed_st3) then
            pass_ed_st3 = 1
