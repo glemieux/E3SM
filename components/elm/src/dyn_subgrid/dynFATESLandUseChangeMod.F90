@@ -73,7 +73,7 @@ contains
     ! Initialize data structures for land use information.
 
     ! !USES:
-    use elm_varctl            , only : use_cn
+    use elm_varctl            , only : use_cn, use_fates_luh
     use dynVarTimeUninterpMod , only : dyn_var_time_uninterp_type
     use dynTimeInfoMod        , only : YEAR_POSITION_START_OF_TIMESTEP
     use dynTimeInfoMod        , only : YEAR_POSITION_END_OF_TIMESTEP
@@ -105,8 +105,10 @@ contains
        call endrun(msg=' allocation error for landuse_transitions'//errMsg(__FILE__, __LINE__))
     end if
 
-    landuse_states= 0._r8
+    landuse_states = 0._r8
     landuse_transitions = 0._r8
+
+    if (use_fates_luh) then
 
     ! Generate the dyn_file_type object
     ! TO DO: check whether to initialize with start or end
@@ -127,6 +129,7 @@ contains
             dim1name=grlnd, conversion_factor=1.0_r8, &
             do_check_sums_equal_1=.false., data_shape=landuse_shape)
     end do
+    end if
 
   end subroutine dynFatesLandUseInit
 

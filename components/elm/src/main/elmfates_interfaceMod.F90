@@ -892,7 +892,7 @@ contains
 
       ! If fates is using LUH land use tranistion data, call interpolation and set use flag
       if (use_fates_luh) then
-         call dynFATESLandUseInterp(bounds_clump, do_landuse_update)
+         call dynFatesLandUseInterp(bounds_clump, do_landuse_update)
       end if
 
       do s=1,this%fates(nc)%nsites
