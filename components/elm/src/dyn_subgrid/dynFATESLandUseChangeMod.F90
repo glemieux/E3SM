@@ -29,34 +29,34 @@ module dynFATESLandUseChangeMod
 
   ! Land use name arrays
   character(len=5), public, parameter  :: landuse_state_varnames(num_landuse_state_vars) = &
-                    [character(len=5)  :: 'PRIMF','PRIMN','SECDF','SECDN','PASTR','RANGE', &
-                                          'URBAN','C3ANN','C4ANN','C3PER','C4PER','C3NFX']
+                    [character(len=5)  :: 'primf','primn','secdf','secdn','pastr','range', &
+                                          'urban','c3ann','c4ann','c3per','c4per','c3nfx']
 
   character(len=14), public, parameter :: landuse_transition_varnames(num_landuse_transition_vars) = &
-                    [character(len=14) :: 'PRIMF_TO_SECDN','PRIMF_TO_PASTR','PRIMF_TO_RANGE','PRIMF_TO_URBAN', &
-                                          'PRIMF_TO_C3ANN','PRIMF_TO_C4ANN','PRIMF_TO_C3PER','PRIMF_TO_C4PER','PRIMF_TO_C3NFX', &
-                                          'PRIMN_TO_SECDF','PRIMN_TO_PASTR','PRIMN_TO_RANGE','PRIMN_TO_URBAN', &
-                                          'PRIMN_TO_C3ANN','PRIMN_TO_C4ANN','PRIMN_TO_C3PER','PRIMN_TO_C4PER','PRIMN_TO_C3NFX', &
-                                          'SECDF_TO_SECDN','SECDF_TO_PASTR','SECDF_TO_RANGE','SECDF_TO_URBAN', &
-                                          'SECDF_TO_C3ANN','SECDF_TO_C4ANN','SECDF_TO_C3PER','SECDF_TO_C4PER','SECDF_TO_C3NFX', &
-                                          'SECDN_TO_SECDF','SECDN_TO_PASTR','SECDN_TO_RANGE','SECDN_TO_URBAN', &
-                                          'SECDN_TO_C3ANN','SECDN_TO_C4ANN','SECDN_TO_C3PER','SECDN_TO_C4PER','SECDN_TO_C3NFX', &
-                                          'PASTR_TO_SECDF','PASTR_TO_SECDN','PASTR_TO_RANGE','PASTR_TO_URBAN', &
-                                          'PASTR_TO_C3ANN','PASTR_TO_C4ANN','PASTR_TO_C3PER','PASTR_TO_C4PER','PASTR_TO_C3NFX', &
-                                          'RANGE_TO_SECDF','RANGE_TO_SECDN','RANGE_TO_PASTR','RANGE_TO_URBAN', &
-                                          'RANGE_TO_C3ANN','RANGE_TO_C4ANN','RANGE_TO_C3PER','RANGE_TO_C4PER','RANGE_TO_C3NFX', &
-                                          'URBAN_TO_SECDF','URBAN_TO_SECDN','URBAN_TO_PASTR','URBAN_TO_RANGE', &
-                                          'URBAN_TO_C3ANN','URBAN_TO_C4ANN','URBAN_TO_C3PER','URBAN_TO_C4PER','URBAN_TO_C3NFX', &
-                                          'C3ANN_TO_C4ANN','C3ANN_TO_C3PER','C3ANN_TO_C4PER','C3ANN_TO_C3NFX', &
-                                          'C3ANN_TO_SECDF','C3ANN_TO_SECDN','C3ANN_TO_PASTR','C3ANN_TO_RANGE','C3ANN_TO_URBAN', &
-                                          'C4ANN_TO_C3ANN','C4ANN_TO_C3PER','C4ANN_TO_C4PER','C4ANN_TO_C3NFX', &
-                                          'C4ANN_TO_SECDF','C4ANN_TO_SECDN','C4ANN_TO_PASTR','C4ANN_TO_RANGE','C4ANN_TO_URBAN', &
-                                          'C3PER_TO_C3ANN','C3PER_TO_C4ANN','C3PER_TO_C4PER','C3PER_TO_C3NFX', &
-                                          'C3PER_TO_SECDF','C3PER_TO_SECDN','C3PER_TO_PASTR','C3PER_TO_RANGE','C3PER_TO_URBAN', &
-                                          'C4PER_TO_C3ANN','C4PER_TO_C4ANN','C4PER_TO_C3PER','C4PER_TO_C3NFX', &
-                                          'C4PER_TO_SECDF','C4PER_TO_SECDN','C4PER_TO_PASTR','C4PER_TO_RANGE','C4PER_TO_URBAN', &
-                                          'C3NFX_TO_C3ANN','C3NFX_TO_C4ANN','C3NFX_TO_C3PER','C3NFX_TO_C4PER', &
-                                          'C3NFX_TO_SECDF','C3NFX_TO_SECDN','C3NFX_TO_PASTR','C3NFX_TO_RANGE','C3NFX_TO_URBAN']
+                    [character(len=14) :: 'primf_to_secdn','primf_to_pastr','primf_to_range','primf_to_urban', &
+                                          'primf_to_c3ann','primf_to_c4ann','primf_to_c3per','primf_to_c4per','primf_to_c3nfx', &
+                                          'primn_to_secdf','primn_to_pastr','primn_to_range','primn_to_urban', &
+                                          'primn_to_c3ann','primn_to_c4ann','primn_to_c3per','primn_to_c4per','primn_to_c3nfx', &
+                                          'secdf_to_secdn','secdf_to_pastr','secdf_to_range','secdf_to_urban', &
+                                          'secdf_to_c3ann','secdf_to_c4ann','secdf_to_c3per','secdf_to_c4per','secdf_to_c3nfx', &
+                                          'secdn_to_secdf','secdn_to_pastr','secdn_to_range','secdn_to_urban', &
+                                          'secdn_to_c3ann','secdn_to_c4ann','secdn_to_c3per','secdn_to_c4per','secdn_to_c3nfx', &
+                                          'pastr_to_secdf','pastr_to_secdn','pastr_to_range','pastr_to_urban', &
+                                          'pastr_to_c3ann','pastr_to_c4ann','pastr_to_c3per','pastr_to_c4per','pastr_to_c3nfx', &
+                                          'range_to_secdf','range_to_secdn','range_to_pastr','range_to_urban', &
+                                          'range_to_c3ann','range_to_c4ann','range_to_c3per','range_to_c4per','range_to_c3nfx', &
+                                          'urban_to_secdf','urban_to_secdn','urban_to_pastr','urban_to_range', &
+                                          'urban_to_c3ann','urban_to_c4ann','urban_to_c3per','urban_to_c4per','urban_to_c3nfx', &
+                                          'c3ann_to_c4ann','c3ann_to_c3per','c3ann_to_c4per','c3ann_to_c3nfx', &
+                                          'c3ann_to_secdf','c3ann_to_secdn','c3ann_to_pastr','c3ann_to_range','c3ann_to_urban', &
+                                          'c4ann_to_c3ann','c4ann_to_c3per','c4ann_to_c4per','c4ann_to_c3nfx', &
+                                          'c4ann_to_secdf','c4ann_to_secdn','c4ann_to_pastr','c4ann_to_range','c4ann_to_urban', &
+                                          'c3per_to_c3ann','c3per_to_c4ann','c3per_to_c4per','c3per_to_c3nfx', &
+                                          'c3per_to_secdf','c3per_to_secdn','c3per_to_pastr','c3per_to_range','c3per_to_urban', &
+                                          'c4per_to_c3ann','c4per_to_c4ann','c4per_to_c3per','c4per_to_c3nfx', &
+                                          'c4per_to_secdf','c4per_to_secdn','c4per_to_pastr','c4per_to_range','c4per_to_urban', &
+                                          'c3nfx_to_c3ann','c3nfx_to_c4ann','c3nfx_to_c3per','c3nfx_to_c4per', &
+                                          'c3nfx_to_secdf','c3nfx_to_secdn','c3nfx_to_pastr','c3nfx_to_range','c3nfx_to_urban']
 
   type(dyn_var_time_uninterp_type) :: landuse_transition_vars(num_landuse_transition_vars) ! value of each landuse variable
   type(dyn_var_time_uninterp_type) :: landuse_state_vars(num_landuse_state_vars)           ! value of each landuse variable
