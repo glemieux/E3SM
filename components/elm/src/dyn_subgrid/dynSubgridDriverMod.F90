@@ -153,7 +153,8 @@ contains
     ! OUTSIDE any loops over clumps in the driver.
     !
     ! !USES:
-    use elm_varctl           , only : use_cn, create_glacier_mec_landunit, use_fates
+    use elm_varctl           , only : use_cn, create_glacier_mec_landunit
+    use elm_varctl           , only : use_fates, use_fates_luh
     use decompMod            , only : bounds_type, get_proc_clumps, get_clump_bounds
     use decompMod            , only : BOUNDS_LEVEL_PROC
     use dynInitColumnsMod    , only : initialize_new_columns
@@ -161,6 +162,9 @@ contains
     use dynConsBiogeochemMod , only : dyn_cnbal_patch, dyn_cnbal_column
     use dynpftFileMod        , only : dynpft_interp
     use dynHarvestMod        , only : dynHarvest_interp_harvest_types
+
+    use dynFATESLandUseChangeMod, only : dynFatesLandUseInterp
+
     use dynEDMod             , only : dyn_ED
     use reweightMod          , only : reweight_wrapup
     use subgridWeightsMod    , only : compute_higher_order_weights, set_subgrid_diagnostic_fields
@@ -171,6 +175,7 @@ contains
     use dynColumnStateUpdaterMod  , only : set_old_column_weights, set_new_column_weights
     use dynPriorWeightsMod        , only : set_prior_weights
     use clm_time_manager , only : get_step_size
+    use elm_varctl        , only : iulog
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds_proc  ! processor-level bounds
@@ -242,6 +247,10 @@ contains
 
     if (get_do_harvest()) then
        call dynHarvest_interp_harvest_types(bounds_proc)
+    end if
+
+    if (use_fates_luh) then
+       call dynFatesLandUseInterp(bounds_proc)
     end if
 
     ! ==========================================================================

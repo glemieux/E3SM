@@ -14,6 +14,7 @@ module dynFATESLandUseChangeMod
   use dynFileMod            , only : dyn_file_type
   use dynVarTimeUninterpMod , only : dyn_var_time_uninterp_type
   use elm_varcon            , only : grlnd
+  use elm_varctl            , only : iulog
 
   implicit none
 
@@ -83,10 +84,11 @@ contains
     character(len=*) , intent(in) :: landuse_filename  ! name of file containing land use information
 
     ! !LOCAL VARIABLES
-    integer :: varnum     ! counter for harvest variables
+    integer :: varnum, i      ! counter for harvest variables
     integer :: landuse_shape(1)  ! land use shape
     integer :: num_points ! number of spatial points
     integer :: ier        ! error code
+    real(r8), allocatable :: this_data(:) ! data for a single harvest variable
     !
     character(len=*), parameter :: subname = 'dynFatesLandUseInit'
     !-----------------------------------------------------------------------
@@ -113,6 +115,7 @@ contains
     ! Generate the dyn_file_type object
     ! TO DO: check whether to initialize with start or end
     dynFatesLandUse_file = dyn_file_type(landuse_filename, YEAR_POSITION_START_OF_TIMESTEP)
+    ! dynFatesLandUse_file = dyn_file_type(landuse_filename, YEAR_POSITION_END_OF_TIMESTEP)
 
     ! Get initial land use data
     num_points = (bounds%endg - bounds%begg + 1)
@@ -124,29 +127,37 @@ contains
             do_check_sums_equal_1=.false., data_shape=landuse_shape)
     end do
     do varnum = 1, num_landuse_state_vars
-       landuse_transition_vars(varnum) = dyn_var_time_uninterp_type( &
+       landuse_state_vars(varnum) = dyn_var_time_uninterp_type( &
             dyn_file=dynFatesLandUse_file, varname=landuse_state_varnames(varnum), &
             dim1name=grlnd, conversion_factor=1.0_r8, &
             do_check_sums_equal_1=.false., data_shape=landuse_shape)
     end do
     end if
 
+    ! Since fates needs state data during initialization, make sure to call
+    ! the interpolation routine at the start
+    call dynFatesLandUseInterp(bounds,init_state=.true.)
+
   end subroutine dynFatesLandUseInit
 
 
   !-----------------------------------------------------------------------
-  subroutine dynFatesLandUseInterp(bounds, do_landuse_update)
+  subroutine dynFatesLandUseInterp(bounds, init_state)
+  ! subroutine dynFatesLandUseInterp(bounds, do_landuse_update)
 
     use dynTimeInfoMod , only : time_info_type
     use elm_varctl     , only : use_cn
 
     ! !ARGUMENTS:
-    type(bounds_type), intent(in)  :: bounds            ! proc-level bounds
-    logical          , intent(out) :: do_landuse_update ! land use update flag
+    type(bounds_type), intent(in) :: bounds       ! proc-level bounds
+    logical, optional, intent(in) :: init_state   ! fates needs state for initialization
+    ! logical          , intent(out) :: do_landuse_update ! land use update flag
 
     ! !LOCAL VARIABLES:
-    integer               :: varnum       ! counter for harvest variables
-    real(r8), allocatable :: this_data(:) ! data for a single harvest variable
+    integer                     :: varnum
+    integer                     :: i
+    logical                     :: init_flag
+    real(r8), allocatable       :: this_data(:)
     character(len=*), parameter :: subname = 'dynFatesLandUseInterp'
     !-----------------------------------------------------------------------
     SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
@@ -154,18 +165,25 @@ contains
     ! This shouldn't be called by cn currently, but return if it is
     if (use_cn) return ! Use this as a protection in lieu of build namelist check?
 
+    init_flag = .false.
+    if (present(init_state)) then
+       init_flag = init_state
+    end if
+
     ! input land use data for current year are stored in year+1 in the file
     call dynFatesLandUse_file%time_info%set_current_year_get_year(1)
 
-    if (dynFatesLandUse_file%time_info%is_before_time_series()) then
+    if (dynFatesLandUse_file%time_info%is_before_time_series() .and. .not.(init_flag)) then
        ! Set the land use flag to false to avoid this update step in elmfates_interface call
-       do_landuse_update = .false.
+       ! do_landuse_update = .false.
 
        ! Reset the land use transitions to zero for safety
        landuse_transitions(1:num_landuse_transition_vars,bounds%begg:bounds%endg) = 0._r8
        landuse_states(1:num_landuse_state_vars,bounds%begg:bounds%endg) = 0._r8
+       write(iulog, *) 'dynlanduse: before time series'
     else
-       do_landuse_update = .true.
+       write(iulog, *) 'dynlanduse: grab data'
+       ! do_landuse_update = .true.
 
        ! Right now we don't account for the topounits
        allocate(this_data(bounds%begg:bounds%endg))
@@ -176,6 +194,9 @@ contains
        do varnum = 1, num_landuse_state_vars
           call landuse_state_vars(varnum)%get_current_data(this_data)
           landuse_states(varnum,bounds%begg:bounds%endg) = this_data(bounds%begg:bounds%endg)
+          do i = bounds%begg, bounds%endg
+             write(iulog,*) 'dynlanduse: sum states: ', sum(landuse_states(:,i))
+          end do
        end do
        deallocate(this_data)
     end if

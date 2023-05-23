@@ -130,6 +130,7 @@ module ELMFatesInterfaceMod
    use FatesInterfaceTypesMod, only : fates_maxPatchesPerSite
    use FatesHistoryInterfaceMod, only : fates_hist
    use FatesRestartInterfaceMod, only : fates_restart_interface_type
+   use FatesInterfaceTypesMod,   only : hlm_num_luh2_states
 
    use PRTGenericMod         , only : num_elements
    use EDTypesMod            , only : ed_patch_type
@@ -165,6 +166,7 @@ module ELMFatesInterfaceMod
    use dynFATESLandUseChangeMod, only : num_landuse_transition_vars, num_landuse_state_vars
    use dynFATESLandUseChangeMod, only : landuse_transitions, landuse_states
    use dynFATESLandUseChangeMod, only : landuse_transition_varnames, landuse_state_varnames
+   use dynFATESLandUseChangeMod, only : dynFatesLandUseInterp
 
    use FatesInterfaceTypesMod       , only : bc_in_type, bc_out_type
    use CLMFatesParamInterfaceMod    , only : FatesReadParameters
@@ -838,7 +840,6 @@ contains
          canopystate_inst, frictionvel_inst )
 
       use FatesConstantsMod       , only : m2_per_km2
-      use dynFATESLandUseChangeMod, only : dynFatesLandUseInterp
 
       ! This wrapper is called daily from clm_driver
       ! This wrapper calls ed_driver, which is the daily dynamics component of FATES
@@ -857,7 +858,7 @@ contains
       type(frictionvel_type)  , intent(inout)        :: frictionvel_inst
 
       ! !LOCAL VARIABLES:
-      integer  :: s                        ! site index
+      integer  :: s, i                     ! site index
       integer  :: c                        ! column index (HLM)
       integer  :: t                        ! topounit index (HLM)
       integer  :: ifp                      ! patch index
@@ -889,11 +890,6 @@ contains
 
       ! Set the FATES global time and date variables
       call GetAndSetTime
-
-      ! If fates is using LUH land use tranistion data, call interpolation and set use flag
-      if (use_fates_luh) then
-         call dynFatesLandUseInterp(bounds_clump, do_landuse_update)
-      end if
 
       do s=1,this%fates(nc)%nsites
 
@@ -962,12 +958,13 @@ contains
          this%fates(nc)%bc_in(s)%site_area=col_pp%wtgcell(c)*grc_pp%area(g)*m2_per_km2
 
          if (use_fates_luh) then
-            if (do_landuse_update) then
+            ! if (do_landuse_update) then
                this%fates(nc)%bc_in(s)%hlm_luh_states = landuse_states(:,g)
+               write(iulog, *) 'dynamics_driv: state sum: ', sum(landuse_states(:,g))
                this%fates(nc)%bc_in(s)%hlm_luh_state_names = landuse_state_varnames
                this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,g)
                this%fates(nc)%bc_in(s)%hlm_luh_transition_names = landuse_transition_varnames
-            end if
+            ! end if
          end if
 
       end do
@@ -1688,11 +1685,12 @@ contains
      real(r8) :: vol_ice
      real(r8) :: eff_porosity
      integer :: nlevsoil
-     integer :: j
+     integer :: j, i
      integer :: s
-     integer :: c
+     integer :: c, g
      integer :: p   ! HLM patch index
      integer :: ft  ! plant functional type
+     logical  :: do_landuse_update        ! local flag to pass transitions update to fates
 
      ! Set the FATES global time and date variables
      call GetAndSetTime
@@ -1742,7 +1740,6 @@ contains
            if (use_fates_planthydro) then
 
               do s = 1,this%fates(nc)%nsites
-
                  c = this%f2hmap(nc)%fcolumn(s)
                  nlevsoil = this%fates(nc)%bc_in(s)%nlevsoil
 
@@ -1776,8 +1773,27 @@ contains
               call HydrSiteColdStart(this%fates(nc)%sites,this%fates(nc)%bc_in)
            end if
 
+           do s = 1,this%fates(nc)%nsites
+              c = this%f2hmap(nc)%fcolumn(s)
+              g = col_pp%gridcell(c)
+
+              if (use_fates_luh) then
+                    this%fates(nc)%bc_in(s)%hlm_luh_states = landuse_states(:,g)
+                    write(iulog, *) 'init_coldstart: state sum: ', sum(landuse_states(:,g))
+                    write(iulog, *) 'init_coldstart: lat, lon: ', this%fates(nc)%sites(s)%lat, this%fates(nc)%sites(s)%lon
+                    do i = 1, hlm_num_luh2_states
+                       write(iulog, *) 'init_coldstart: state: ', landuse_states(i,g)
+                    end do
+                    this%fates(nc)%bc_in(s)%hlm_luh_state_names = landuse_state_varnames
+                    this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,g)
+                    this%fates(nc)%bc_in(s)%hlm_luh_transition_names = landuse_transition_varnames
+              end if
+           end do
+
+           ! Initialize patches
            call init_patches(this%fates(nc)%nsites, this%fates(nc)%sites, &
                              this%fates(nc)%bc_in)
+
 
            do s = 1,this%fates(nc)%nsites
 
