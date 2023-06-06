@@ -960,7 +960,6 @@ contains
          if (use_fates_luh) then
             ! if (do_landuse_update) then
                this%fates(nc)%bc_in(s)%hlm_luh_states = landuse_states(:,g)
-               write(iulog, *) 'dynamics_driv: state sum: ', sum(landuse_states(:,g))
                this%fates(nc)%bc_in(s)%hlm_luh_state_names = landuse_state_varnames
                this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,g)
                this%fates(nc)%bc_in(s)%hlm_luh_transition_names = landuse_transition_varnames
@@ -1779,11 +1778,6 @@ contains
 
               if (use_fates_luh) then
                     this%fates(nc)%bc_in(s)%hlm_luh_states = landuse_states(:,g)
-                    write(iulog, *) 'init_coldstart: state sum: ', sum(landuse_states(:,g))
-                    write(iulog, *) 'init_coldstart: lat, lon: ', this%fates(nc)%sites(s)%lat, this%fates(nc)%sites(s)%lon
-                    do i = 1, hlm_num_luh2_states
-                       write(iulog, *) 'init_coldstart: state: ', landuse_states(i,g)
-                    end do
                     this%fates(nc)%bc_in(s)%hlm_luh_state_names = landuse_state_varnames
                     this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,g)
                     this%fates(nc)%bc_in(s)%hlm_luh_transition_names = landuse_transition_varnames
