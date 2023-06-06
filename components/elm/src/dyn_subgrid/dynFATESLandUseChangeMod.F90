@@ -143,7 +143,6 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine dynFatesLandUseInterp(bounds, init_state)
-  ! subroutine dynFatesLandUseInterp(bounds, do_landuse_update)
 
     use dynTimeInfoMod , only : time_info_type
     use elm_varctl     , only : use_cn
@@ -151,7 +150,6 @@ contains
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds       ! proc-level bounds
     logical, optional, intent(in) :: init_state   ! fates needs state for initialization
-    ! logical          , intent(out) :: do_landuse_update ! land use update flag
 
     ! !LOCAL VARIABLES:
     integer                     :: varnum
@@ -174,17 +172,10 @@ contains
     call dynFatesLandUse_file%time_info%set_current_year_get_year(1)
 
     if (dynFatesLandUse_file%time_info%is_before_time_series() .and. .not.(init_flag)) then
-       ! Set the land use flag to false to avoid this update step in elmfates_interface call
-       ! do_landuse_update = .false.
-
        ! Reset the land use transitions to zero for safety
        landuse_transitions(1:num_landuse_transition_vars,bounds%begg:bounds%endg) = 0._r8
        landuse_states(1:num_landuse_state_vars,bounds%begg:bounds%endg) = 0._r8
-       write(iulog, *) 'dynlanduse: before time series'
     else
-       write(iulog, *) 'dynlanduse: grab data'
-       ! do_landuse_update = .true.
-
        ! Right now we don't account for the topounits
        allocate(this_data(bounds%begg:bounds%endg))
        do varnum = 1, num_landuse_transition_vars
@@ -194,9 +185,6 @@ contains
        do varnum = 1, num_landuse_state_vars
           call landuse_state_vars(varnum)%get_current_data(this_data)
           landuse_states(varnum,bounds%begg:bounds%endg) = this_data(bounds%begg:bounds%endg)
-          do i = bounds%begg, bounds%endg
-             write(iulog,*) 'dynlanduse: sum states: ', sum(landuse_states(:,i))
-          end do
        end do
        deallocate(this_data)
     end if
