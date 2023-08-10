@@ -112,26 +112,26 @@ contains
 
     if (use_fates_luh) then
 
-    ! Generate the dyn_file_type object
-    ! TO DO: check whether to initialize with start or end
-    dynFatesLandUse_file = dyn_file_type(landuse_filename, YEAR_POSITION_START_OF_TIMESTEP)
-    ! dynFatesLandUse_file = dyn_file_type(landuse_filename, YEAR_POSITION_END_OF_TIMESTEP)
+       ! Generate the dyn_file_type object
+       ! TO DO: check whether to initialize with start or end
+       dynFatesLandUse_file = dyn_file_type(landuse_filename, YEAR_POSITION_START_OF_TIMESTEP)
+       ! dynFatesLandUse_file = dyn_file_type(landuse_filename, YEAR_POSITION_END_OF_TIMESTEP)
 
-    ! Get initial land use data
-    num_points = (bounds%endg - bounds%begg + 1)
-    landuse_shape(1) = num_points ! Does this need an explicit array shape to be passed to the constructor?
-    do varnum = 1, num_landuse_transition_vars
-       landuse_transition_vars(varnum) = dyn_var_time_uninterp_type( &
-            dyn_file=dynFatesLandUse_file, varname=landuse_transition_varnames(varnum), &
-            dim1name=grlnd, conversion_factor=1.0_r8, &
-            do_check_sums_equal_1=.false., data_shape=landuse_shape)
-    end do
-    do varnum = 1, num_landuse_state_vars
-       landuse_state_vars(varnum) = dyn_var_time_uninterp_type( &
-            dyn_file=dynFatesLandUse_file, varname=landuse_state_varnames(varnum), &
-            dim1name=grlnd, conversion_factor=1.0_r8, &
-            do_check_sums_equal_1=.false., data_shape=landuse_shape)
-    end do
+       ! Get initial land use data
+       num_points = (bounds%endg - bounds%begg + 1)
+       landuse_shape(1) = num_points ! Does this need an explicit array shape to be passed to the constructor?
+       do varnum = 1, num_landuse_transition_vars
+          landuse_transition_vars(varnum) = dyn_var_time_uninterp_type( &
+               dyn_file=dynFatesLandUse_file, varname=landuse_transition_varnames(varnum), &
+               dim1name=grlnd, conversion_factor=1.0_r8, &
+               do_check_sums_equal_1=.false., data_shape=landuse_shape)
+       end do
+       do varnum = 1, num_landuse_state_vars
+          landuse_state_vars(varnum) = dyn_var_time_uninterp_type( &
+               dyn_file=dynFatesLandUse_file, varname=landuse_state_varnames(varnum), &
+               dim1name=grlnd, conversion_factor=1.0_r8, &
+               do_check_sums_equal_1=.false., data_shape=landuse_shape)
+       end do
     end if
 
     ! Since fates needs state data during initialization, make sure to call

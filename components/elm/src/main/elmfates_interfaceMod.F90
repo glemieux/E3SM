@@ -1042,12 +1042,10 @@ contains
          this%fates(nc)%bc_in(s)%site_area=col_pp%wtgcell(c)*grc_pp%area(g)*m2_per_km2
 
          if (use_fates_luh) then
-            ! if (do_landuse_update) then
-               this%fates(nc)%bc_in(s)%hlm_luh_states = landuse_states(:,g)
-               this%fates(nc)%bc_in(s)%hlm_luh_state_names = landuse_state_varnames
-               this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,g)
-               this%fates(nc)%bc_in(s)%hlm_luh_transition_names = landuse_transition_varnames
-            ! end if
+            this%fates(nc)%bc_in(s)%hlm_luh_states = landuse_states(:,g)
+            this%fates(nc)%bc_in(s)%hlm_luh_state_names = landuse_state_varnames
+            this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,g)
+            this%fates(nc)%bc_in(s)%hlm_luh_transition_names = landuse_transition_varnames
          end if
 
       end do
