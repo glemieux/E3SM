@@ -9,6 +9,7 @@ module dynFATESLandUseChangeMod
   ! !USES:
   use shr_kind_mod          , only : r8 => shr_kind_r8
   use shr_log_mod           , only : errMsg => shr_log_errMsg
+  use spmdMod               , only : masterproc
   use decompMod             , only : bounds_type, BOUNDS_LEVEL_PROC
   use abortutils            , only : endrun
   use dynFileMod            , only : dyn_file_type
@@ -80,8 +81,8 @@ contains
     use dynTimeInfoMod        , only : YEAR_POSITION_END_OF_TIMESTEP
 
     ! !ARGUMENTS:
-    type(bounds_type), intent(in) :: bounds        ! proc-level bounds
-    character(len=*) , intent(in) :: landuse_filename  ! name of file containing land use information
+    type(bounds_type), intent(in) :: bounds                ! proc-level bounds
+    character(len=*) , intent(in) :: landuse_filename      ! name of file containing landuse timeseries information (fates luh2)
 
     ! !LOCAL VARIABLES
     integer :: varnum, i      ! counter for harvest variables
@@ -107,6 +108,7 @@ contains
        call endrun(msg=' allocation error for landuse_transitions'//errMsg(__FILE__, __LINE__))
     end if
 
+    ! Initialize the states, transitions and mapping percentages as zero by defaut
     landuse_states = 0._r8
     landuse_transitions = 0._r8
 
@@ -114,8 +116,9 @@ contains
 
        ! Generate the dyn_file_type object
        ! TO DO: check whether to initialize with start or end
-       dynFatesLandUse_file = dyn_file_type(landuse_filename, YEAR_POSITION_START_OF_TIMESTEP)
-       ! dynFatesLandUse_file = dyn_file_type(landuse_filename, YEAR_POSITION_END_OF_TIMESTEP)
+       ! Start calls get_prev_date, where as end calls get_curr_date
+       !dynFatesLandUse_file = dyn_file_type(landuse_filename, YEAR_POSITION_START_OF_TIMESTEP)
+        dynFatesLandUse_file = dyn_file_type(landuse_filename, YEAR_POSITION_END_OF_TIMESTEP)
 
        ! Get initial land use data
        num_points = (bounds%endg - bounds%begg + 1)
@@ -132,6 +135,7 @@ contains
                dim1name=grlnd, conversion_factor=1.0_r8, &
                do_check_sums_equal_1=.false., data_shape=landuse_shape)
        end do
+
     end if
 
     ! Since fates needs state data during initialization, make sure to call
@@ -168,8 +172,8 @@ contains
        init_flag = init_state
     end if
 
-    ! input land use data for current year are stored in year+1 in the file
-    call dynFatesLandUse_file%time_info%set_current_year_get_year(1)
+    ! Get the data for the current year
+    call dynFatesLandUse_file%time_info%set_current_year_get_year()
 
     if (dynFatesLandUse_file%time_info%is_before_time_series() .and. .not.(init_flag)) then
        ! Reset the land use transitions to zero for safety
@@ -188,7 +192,8 @@ contains
        end do
        deallocate(this_data)
     end if
-
+ 
   end subroutine dynFatesLandUseInterp
+
 
 end module dynFATESLandUseChangeMod

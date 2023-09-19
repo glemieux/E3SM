@@ -57,6 +57,8 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : use_fates_nocomp
    use elm_varctl        , only : use_fates_sp
    use elm_varctl        , only : use_fates_luh
+   use elm_varctl        , only : use_fates_potentialveg
+   use elm_varctl        , only : flandusepftdat
    use elm_varctl        , only : use_fates_tree_damage
    use elm_varctl        , only : nsrest, nsrBranch
    use elm_varctl        , only : fates_inventory_ctrl_filename
@@ -262,6 +264,8 @@ module ELMFatesInterfaceMod
    character(len=*), parameter, private :: sourcefile = &
         __FILE__
 
+   integer, parameter :: num_landuse_pft_vars = 4
+
    public  :: ELMFatesGlobals1
    public  :: ELMFatesGlobals2
    public  :: ELMFatesTimesteps
@@ -371,8 +375,10 @@ contains
      integer                                        :: pass_lu_harvest
      integer                                        :: pass_tree_damage
      integer                                        :: pass_use_luh
+     integer                                        :: pass_use_potentialveg     
      integer                                        :: pass_num_luh_states
      integer                                        :: pass_num_luh_transitions
+     integer                                        :: pass_lupftdat
      ! ----------------------------------------------------------------------------------
      ! FATES lightning definitions
      ! 1 : use a global constant lightning rate found in fates_params.
@@ -513,6 +519,20 @@ contains
         call set_fates_ctrlparms('num_luh2_states',ival=pass_num_luh_states)
         call set_fates_ctrlparms('num_luh2_transitions',ival=pass_num_luh_transitions)
 
+        if ( use_fates_potentialveg ) then
+           pass_use_potentialveg = 1
+        else
+           pass_use_potentialveg = 0
+        end if
+        call set_fates_ctrlparms('use_fates_potentialveg',ival=pass_use_potentialveg)
+
+        if(flandusepftdat /= '') then
+           pass_lupftdat = 1
+        else
+           pass_lupftdat = 0
+        end if
+        call set_fates_ctrlparms('use_landusepft_data',ival=pass_lupftdat)
+
         if(use_fates_ed_st3) then
            pass_ed_st3 = 1
         else
@@ -584,7 +604,7 @@ contains
    
    ! ====================================================================================
 
-   subroutine init(this, bounds_proc )
+   subroutine init(this, bounds_proc, flandusepftdat)
 
       ! ---------------------------------------------------------------------------------
       ! This initializes the hlm_fates_interface_type
@@ -614,6 +634,7 @@ contains
       ! Input Arguments
       class(hlm_fates_interface_type), intent(inout) :: this
       type(bounds_type),intent(in)                   :: bounds_proc
+      character(len=*), intent(in)                   :: flandusepftdat
 
       ! local variables
       integer                                        :: nclumps   ! Number of threads
@@ -631,6 +652,9 @@ contains
       integer                                        :: nmaxcol
       integer                                        :: ndecomp
 
+      real(r8), allocatable :: landuse_pft_map(:,:,:)
+      real(r8), allocatable :: landuse_bareground(:)
+
       ! Initialize the FATES communicators with the HLM
       ! This involves to stages
       ! 1) allocate the vectors
@@ -641,11 +665,13 @@ contains
       allocate(this%fates(nclumps))
       allocate(this%f2hmap(nclumps))
 
-
       if(debug)then
          write(iulog,*) 'alm_fates%init():  allocating for ',nclumps,' threads'
       end if
 
+      ! Retrieve the landuse x pft static data if the file is present
+      if (flandusepftdat /= '') call GetLandusePFTData(bounds_proc, flandusepftdat, &
+                                                       landuse_pft_map, landuse_bareground)
 
       nclumps = get_proc_clumps()
 
@@ -752,6 +778,12 @@ contains
             this%fates(nc)%sites(s)%lat = grc_pp%latdeg(g)
             this%fates(nc)%sites(s)%lon = grc_pp%londeg(g)
 
+            ! Transfer the landuse x pft data to fates via bc_in if file is given
+            if (flandusepftdat /= '') then
+               this%fates(nc)%bc_in(s)%pft_areafrac_lu(:,1:num_landuse_pft_vars) = landuse_pft_map(g,:,1:num_landuse_pft_vars)
+               this%fates(nc)%bc_in(s)%baregroundfrac = landuse_bareground(g)
+            end if
+
             ! Check whether or not the surface dataset has topounits.  If it doesn't set the
             ! index t to max_topounits, which should be 1.  Otherwise, determine the index
             ! from the columntype
@@ -767,17 +799,19 @@ contains
                endif
             endif
 
+            if (flandusepftdat == '') then
             ! initialize static layers for reduced complexity FATES versions from HLM
-            this%fates(nc)%bc_in(s)%pft_areafrac(:)=0._r8
-            do m = surfpft_lb,surfpft_ub
-               ft = m-surfpft_lb
-               this%fates(nc)%bc_in(s)%pft_areafrac(ft)=wt_nat_patch(g,t,m)
-            end do
+               this%fates(nc)%bc_in(s)%pft_areafrac(:)=0._r8
+               do m = surfpft_lb,surfpft_ub
+                  ft = m-surfpft_lb
+                  this%fates(nc)%bc_in(s)%pft_areafrac(ft)=wt_nat_patch(g,t,m)
+               end do
 
-            if(abs(sum(this%fates(nc)%bc_in(s)%pft_areafrac(surfpft_lb:surfpft_ub))-1.0_r8).gt.1.0e-9)then
-               write(iulog,*) 'pft_area error in interfc ',s, sum(this%fates(nc)%bc_in(s)%pft_areafrac(:))-1.0_r8
-               call endrun(msg=errMsg(sourcefile, __LINE__))
-            endif
+               if(abs(sum(this%fates(nc)%bc_in(s)%pft_areafrac(surfpft_lb:surfpft_ub))-1.0_r8).gt.1.0e-9)then
+                  write(iulog,*) 'pft_area error in interfc ',s, sum(this%fates(nc)%bc_in(s)%pft_areafrac(:))-1.0_r8
+                  call endrun(msg=errMsg(sourcefile, __LINE__))
+               endif
+            end if
 
          end do
 
@@ -795,7 +829,6 @@ contains
             write(iulog,*) 'This will likely cause problems until code is improved'
             call endrun(msg=errMsg(sourcefile, __LINE__))
          end if
-
 
          ! Set patch itypes on natural veg columns to nonsense
          ! This will force a crash if the model outside of FATES tries to think
@@ -818,6 +851,12 @@ contains
       
       ! Fire data to send to FATES
       call create_fates_fire_data_method( this%fates_fire_data_method )
+
+      ! deallocate the local landuse x pft array
+      if (flandusepftdat /= '') then
+         deallocate(landuse_pft_map)
+         deallocate(landuse_bareground)
+      end if
 
     end subroutine init
 
@@ -1753,7 +1792,6 @@ contains
 
    subroutine init_coldstart(this, canopystate_inst, soilstate_inst, frictionvel_inst)
 
-
      ! Arguments
      class(hlm_fates_interface_type), intent(inout) :: this
      type(canopystate_type)         , intent(inout) :: canopystate_inst
@@ -1866,6 +1904,7 @@ contains
                     this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,g)
                     this%fates(nc)%bc_in(s)%hlm_luh_transition_names = landuse_transition_varnames
               end if
+
            end do
 
            ! Initialize patches
@@ -3311,6 +3350,111 @@ end subroutine wrap_update_hifrq_hist
 
  end subroutine GetAndSetTime
 
+! ======================================================================================
 
+ subroutine GetLandusePFTData(bounds, landuse_pft_file, landuse_pft_map, landuse_bareground)
+
+   ! !DESCRIPTION:
+   ! Read in static landuse x pft file
+
+   ! !USES:
+   use fileutils , only : getfil
+   use ncdio_pio , only : file_desc_t, ncd_io, ncd_inqdlen
+   use ncdio_pio , only : ncd_pio_openfile, ncd_pio_closefile
+   use decompMod , only : BOUNDS_LEVEL_PROC
+   use elm_varcon, only : grlnd
+   use FatesConstantsMod, only : fates_unset_r8
+
+
+   ! !ARGUMENTS:
+   type(bounds_type), intent(in)        :: bounds            ! proc-level bounds
+   character(len=*) , intent(in)        :: landuse_pft_file  ! name of file containing static landuse x pft information
+   real(r8), allocatable, intent(inout) :: landuse_pft_map(:,:,:)
+   real(r8), allocatable, intent(inout) :: landuse_bareground(:)
+
+   ! !LOCAL VARIABLES
+   integer            :: varnum                    ! variable number
+   integer            :: dimid, dimlen             ! dimension id number and length
+   integer            :: ier                       ! error id
+   character(len=256) :: locfn                     ! local file name
+   type(file_desc_t)  :: ncid                      ! netcdf id
+   real(r8), pointer  :: arraylocal(:,:)           ! local array for reading fraction data
+   real(r8), pointer  :: arraylocal_bareground(:)  ! local array for reading bareground data
+   logical            :: readvar                   ! true => variable is on dataset
+   !character(len=16), parameter :: grlnd  = 'lndgrid'      ! name of lndgrid
+
+   integer, parameter :: dim_landuse_pft = 14
+
+   ! Land use name arrays
+   character(len=10), parameter  :: landuse_pft_map_varnames(num_landuse_pft_vars) = &
+                    [character(len=10)  :: 'frac_primr','frac_secnd','frac_pastr','frac_range'] !need to move 'frac_surf' to a different variable
+
+   character(len=*), parameter :: subname = 'GetLandusePFTData'
+
+   !-----------------------------------------------------------------------
+
+   ! Check to see if the landuse file name has been provided
+   ! Note: getfile checks this as well
+   if (masterproc) then
+      write(iulog,*) 'Attempting to read landuse x pft data .....'
+      if (landuse_pft_file == ' ') then
+         write(iulog,*)'landuse_pft_file must be specified'
+         call endrun(msg=errMsg(__FILE__, __LINE__))
+      endif
+   endif
+
+   ! Initialize the landuse x pft arrays and initialize to unset
+    allocate(landuse_pft_map(bounds%begg:bounds%endg,dim_landuse_pft,num_landuse_pft_vars),stat=ier)
+    if (ier /= 0) then
+       call endrun(msg=' allocation error for landuse_pft_map'//errMsg(__FILE__, __LINE__))
+    end if
+    landuse_pft_map = fates_unset_r8
+
+    allocate(landuse_bareground(bounds%begg:bounds%endg),stat=ier)
+    if (ier /= 0) then
+       call endrun(msg=' allocation error for landuse_bareground'//errMsg(__FILE__, __LINE__))
+    end if
+    landuse_bareground = fates_unset_r8
+
+
+   ! Get the local filename and open the file
+   call getfil(landuse_pft_file, locfn, 0)
+   call ncd_pio_openfile (ncid, trim(locfn), 0)
+
+   ! Check that natpft dimension on the file matches the target array dimensions
+   call ncd_inqdlen(ncid, dimid, dimlen, 'natpft')
+   if (dimlen /= dim_landuse_pft) then
+      write(iulog,*) 'natpft dimensions on the landuse x pft file do not match target array size'
+      call endrun(msg=errMsg(__FILE__, __LINE__))
+   end if
+
+   ! Allocate a temporary array since ncdio expects a pointer
+   allocate(arraylocal(bounds%begg:bounds%endg,dim_landuse_pft))
+   allocate(arraylocal_bareground(bounds%begg:bounds%endg))
+
+   ! Read the landuse x pft data from file
+   do varnum = 1, num_landuse_pft_vars
+      call ncd_io(ncid=ncid, varname=landuse_pft_map_varnames(varnum), flag='read', &
+                  data=arraylocal, dim1name=grlnd, readvar=readvar)
+      if (.not. readvar) &
+         call endrun(msg='ERROR: '//trim(landuse_pft_map_varnames(varnum))// &
+                         ' NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
+      landuse_pft_map(bounds%begg:bounds%endg,:,varnum) = arraylocal(bounds%begg:bounds%endg,:)
+   end do
+
+   ! Read the bareground data from file.  This is per gridcell only.
+   call ncd_io(ncid=ncid, varname='frac_brgnd', flag='read', &
+               data=arraylocal_bareground, dim1name=grlnd, readvar=readvar)
+   if (.not. readvar) call endrun(msg='ERROR: frac_brgnd NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
+   landuse_bareground(bounds%begg:bounds%endg) = arraylocal_bareground(bounds%begg:bounds%endg)
+
+   ! Deallocate the temporary local array point and close the file
+   deallocate(arraylocal)
+   deallocate(arraylocal_bareground)
+   call ncd_pio_closefile(ncid)
+
+   ! Check that sums equal to unity
+
+ end subroutine GetLandusePFTData
 
 end module ELMFatesInterfaceMod
