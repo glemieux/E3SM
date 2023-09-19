@@ -22,13 +22,18 @@ module dynFATESLandUseChangeMod
 
   real(r8), allocatable, public :: landuse_transitions(:,:)
   real(r8), allocatable, public :: landuse_states(:,:)
+  real(r8), allocatable, public :: landuse_pft_map(:,:,:)
 
   integer, public, parameter    :: num_landuse_transition_vars = 108
   integer, public, parameter    :: num_landuse_state_vars = 12
+  integer, public, parameter    :: num_landuse_pft_vars = 3
 
   type(dyn_file_type), target   :: dynFatesLandUse_file
 
   ! Land use name arrays
+  character(len=5), public, parameter  :: landuse_pft_map_varnames(num_landuse_pft_vars) = &
+                    [character(len=5)  :: 'forst','pastr','other']
+
   character(len=5), public, parameter  :: landuse_state_varnames(num_landuse_state_vars) = &
                     [character(len=5)  :: 'primf','primn','secdf','secdn','pastr','range', &
                                           'urban','c3ann','c4ann','c3per','c4per','c3nfx']
@@ -65,10 +70,12 @@ module dynFATESLandUseChangeMod
   public :: dynFatesLandUseInit
   public :: dynFatesLandUseInterp
 
+  private :: GetLandusePFTFile
+
 contains
 
   !-----------------------------------------------------------------------
-  subroutine dynFatesLandUseInit(bounds, landuse_filename)
+  subroutine dynFatesLandUseInit(bounds, landuse_filename, landuse_pft_filename)
 
     ! !DESCRIPTION:
     ! Initialize data structures for land use information.
@@ -78,10 +85,12 @@ contains
     use dynVarTimeUninterpMod , only : dyn_var_time_uninterp_type
     use dynTimeInfoMod        , only : YEAR_POSITION_START_OF_TIMESTEP
     use dynTimeInfoMod        , only : YEAR_POSITION_END_OF_TIMESTEP
+    use FatesInterfaceTypesMod, only : numpft_fates => numpft
 
     ! !ARGUMENTS:
-    type(bounds_type), intent(in) :: bounds        ! proc-level bounds
-    character(len=*) , intent(in) :: landuse_filename  ! name of file containing land use information
+    type(bounds_type), intent(in) :: bounds                ! proc-level bounds
+    character(len=*) , intent(in) :: landuse_filename      ! name of file containing landuse timeseries information (fates luh2)
+    character(len=*) , intent(in) :: landuse_pft_filename  ! name of file containing static landuse x pft information
 
     ! !LOCAL VARIABLES
     integer :: varnum, i      ! counter for harvest variables
@@ -106,9 +115,15 @@ contains
     if (ier /= 0) then
        call endrun(msg=' allocation error for landuse_transitions'//errMsg(__FILE__, __LINE__))
     end if
+    allocate(landuse_pft_map(num_landuse_pft_vars,numpft,bounds%begg:bounds%endg),stat=ier)
+    if (ier /= 0) then
+       call endrun(msg=' allocation error for landuse_transitions'//errMsg(__FILE__, __LINE__))
+    end if
 
+    ! Initialize the states, transitions and mapping percentages as zero by defaut
     landuse_states = 0._r8
     landuse_transitions = 0._r8
+    landuse_pft_map = 0._r8      ! TODO: make unset by default instead?
 
     if (use_fates_luh) then
 
@@ -132,6 +147,10 @@ contains
                dim1name=grlnd, conversion_factor=1.0_r8, &
                do_check_sums_equal_1=.false., data_shape=landuse_shape)
        end do
+
+       ! If fates is in no competition mode, read in landuse x pft static data
+       if (use_fates_potential_vegetation) call GetLandusePFTData(bounds, landuse_pft_filename)
+
     end if
 
     ! Since fates needs state data during initialization, make sure to call
@@ -190,5 +209,27 @@ contains
     end if
 
   end subroutine dynFatesLandUseInterp
+
+  !-----------------------------------------------------------------------
+  subroutine GetLandusePFTData(bounds, landuse_pft_file)
+
+    ! !DESCRIPTION:
+    ! If fates is in no competition mode with landuse on, read in the
+    ! static landuse x pft file
+
+    ! !USES:
+    use fileutils   , only : getfil
+
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds                ! proc-level bounds
+    character(len=*) , intent(in) :: landuse_pft_filename  ! name of file containing static landuse x pft information
+
+    ! !LOCAL VARIABLES
+    character(len=*), parameter :: subname = 'GetLandusePFTFile'
+    !-----------------------------------------------------------------------
+
+    SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
+
+  end subroutine GetLandusePFTFile
 
 end module dynFATESLandUseChangeMod
