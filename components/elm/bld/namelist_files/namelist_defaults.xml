@@ -2183,6 +2183,7 @@ this mask will have smb calculated over the entire global land surface
 <use_fates_cohort_age_tracking use_fates=".true.">.false.</use_fates_cohort_age_tracking>
 <use_fates_sp                  use_fates=".true.">.false.</use_fates_sp>
 <use_fates_luh                 use_fates=".true.">.false.</use_fates_luh>
+<use_fates_potentialveg        use_fates=".true.">.false.</use_fates_potentialveg>
 <fates_parteh_mode             use_fates=".true.">1</fates_parteh_mode>
 <fates_seeddisp_cadence        use_fates=".true.">0</fates_seeddisp_cadence>
 <use_fates_inventory_init      use_fates=".true.">.false.</use_fates_inventory_init>
