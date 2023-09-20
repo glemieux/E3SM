@@ -26,13 +26,13 @@ module dynFATESLandUseChangeMod
 
   integer, public, parameter    :: num_landuse_transition_vars = 108
   integer, public, parameter    :: num_landuse_state_vars = 12
-  integer, public, parameter    :: num_landuse_pft_vars = 3
+  integer, public, parameter    :: num_landuse_pft_vars = 4
 
   type(dyn_file_type), target   :: dynFatesLandUse_file
 
   ! Land use name arrays
   character(len=5), public, parameter  :: landuse_pft_map_varnames(num_landuse_pft_vars) = &
-                    [character(len=5)  :: 'forst','pastr','other']
+                    [character(len=5)  :: 'forst','pastr','range','brgnd']
 
   character(len=5), public, parameter  :: landuse_state_varnames(num_landuse_state_vars) = &
                     [character(len=5)  :: 'primf','primn','secdf','secdn','pastr','range', &
@@ -115,7 +115,11 @@ contains
     if (ier /= 0) then
        call endrun(msg=' allocation error for landuse_transitions'//errMsg(__FILE__, __LINE__))
     end if
-    allocate(landuse_pft_map(num_landuse_pft_vars,numpft,bounds%begg:bounds%endg),stat=ier)
+    allocate(landuse_pft_map(num_landuse_pft_vars-1,numpft,bounds%begg:bounds%endg),stat=ier)
+    if (ier /= 0) then
+       call endrun(msg=' allocation error for landuse_transitions'//errMsg(__FILE__, __LINE__))
+    end if
+    allocate(landuse_pft_bareground(bounds%begg:bounds%endg),stat=ier)
     if (ier /= 0) then
        call endrun(msg=' allocation error for landuse_transitions'//errMsg(__FILE__, __LINE__))
     end if
