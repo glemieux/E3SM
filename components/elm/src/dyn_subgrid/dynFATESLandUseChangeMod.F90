@@ -23,16 +23,21 @@ module dynFATESLandUseChangeMod
   real(r8), allocatable, public :: landuse_transitions(:,:)
   real(r8), allocatable, public :: landuse_states(:,:)
   real(r8), allocatable, public :: landuse_pft_map(:,:,:)
+  real(r8), allocatable, public :: landuse_bareground(:)
 
   integer, public, parameter    :: num_landuse_transition_vars = 108
   integer, public, parameter    :: num_landuse_state_vars = 12
   integer, public, parameter    :: num_landuse_pft_vars = 4
 
+  integer, parameter            :: idforst = 1
+  integer, parameter            :: idpastr = 2
+  integer, parameter            :: idrange = 3
+
   type(dyn_file_type), target   :: dynFatesLandUse_file
 
   ! Land use name arrays
   character(len=5), public, parameter  :: landuse_pft_map_varnames(num_landuse_pft_vars) = &
-                    [character(len=5)  :: 'forst','pastr','range','brgnd']
+                    [character(len=5)  :: 'pct_forst','pct_pastr','pct_range','pct_brgnd']
 
   character(len=5), public, parameter  :: landuse_state_varnames(num_landuse_state_vars) = &
                     [character(len=5)  :: 'primf','primn','secdf','secdn','pastr','range', &
@@ -117,11 +122,11 @@ contains
     end if
     allocate(landuse_pft_map(num_landuse_pft_vars-1,numpft,bounds%begg:bounds%endg),stat=ier)
     if (ier /= 0) then
-       call endrun(msg=' allocation error for landuse_transitions'//errMsg(__FILE__, __LINE__))
+       call endrun(msg=' allocation error for landuse_pft_map'//errMsg(__FILE__, __LINE__))
     end if
-    allocate(landuse_pft_bareground(bounds%begg:bounds%endg),stat=ier)
+    allocate(landuse_bareground(bounds%begg:bounds%endg),stat=ier)
     if (ier /= 0) then
-       call endrun(msg=' allocation error for landuse_transitions'//errMsg(__FILE__, __LINE__))
+       call endrun(msg=' allocation error for landuse_bareground'//errMsg(__FILE__, __LINE__))
     end if
 
     ! Initialize the states, transitions and mapping percentages as zero by defaut
@@ -229,10 +234,65 @@ contains
     character(len=*) , intent(in) :: landuse_pft_filename  ! name of file containing static landuse x pft information
 
     ! !LOCAL VARIABLES
+    character(len=256) :: locfn                         ! local file name
+    type(file_desc_t)  :: ncid                          ! netcdf id
+    real(r8), pointer  :: arraylocal(:,:)               ! local array
+    logical            :: readvar              ! true => variable is on dataset
+
     character(len=*), parameter :: subname = 'GetLandusePFTFile'
     !-----------------------------------------------------------------------
 
     SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
+
+    ! Check to see if the landuse file name has been provided
+    ! Note: getfile checks this as well
+    if (masterproc) then
+       write(iulog,*) 'Attempting to read landuse x pft data .....'
+       if (landuse_pft_file == ' ') then
+          write(iulog,*)'landuse_pft_file must be specified'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       endif
+    endif
+
+    ! Get the local filename and open the file
+    call getfil(landuse_pft_file, locfn, 0)
+    call ncd_pio_openfile (ncid, trim(locfn), 0)
+
+    ! TODO: Check that expected variables are on the file?
+    ! TODO: Check that dimensions are correct?
+
+    ! Allocate a temporary array since ncdio expects a pointer
+    allocate(arraylocal(numpft,bounds%begg:bounds%endg))
+    allocate(arraylocal_belowground(bounds%begg:bounds%endg))
+
+    ! Read the landuse x pft data from file
+    call ncd_io(ncid=ncid, varname='pct_forst', flag='read', data=arraylocal, &
+         dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) call endrun( msg=' ERROR: pct_forst NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
+    landuse_pft_map(idforst,:,bounds%begg:bounds%endg) = arraylocal(:,bounds%begg:bounds%endg)
+
+    call ncd_io(ncid=ncid, varname='pct_pastr', flag='read', data=arraylocal, &
+         dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) call endrun( msg=' ERROR: pct_pastr NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
+    landuse_pft_map(idpastr,:,bounds%begg:bounds%endg) = arraylocal(:,bounds%begg:bounds%endg)
+
+    call ncd_io(ncid=ncid, varname='pct_range', flag='read', data=arraylocal, &
+         dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) call endrun( msg=' ERROR: pct_range NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
+    landuse_pft_map(idrange,:,bounds%begg:bounds%endg) = arraylocal(:,bounds%begg:bounds%endg)
+
+    ! Read the bareground data from file.  This is per gridcell only.
+    call ncd_io(ncid=ncid, varname='pct_brgrnd', flag='read', data=arraylocal_bareground, &
+         dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) call endrun( msg=' ERROR: pct_brgrnd NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
+    landuse_bareground(bounds%begg:bounds%endg) = arraylocal_baregroud(bounds%begg:bounds%endg)
+
+    ! Deallocate the temporary local array point and close the file
+    deallocate(arraylocal)
+    deallocate(arraylocal_bareground)
+    call ncd_pio_closefile(ncid)
+
+    ! Check that sums equal to unity
 
   end subroutine GetLandusePFTFile
 
