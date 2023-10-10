@@ -337,6 +337,8 @@ contains
     call SetFatesGlobalElements1(use_fates,natpft_size,0)
 
     natpft_size = fates_maxPatchesPerSite
+    numpft = natpft_size - 1
+    max_patch_per_col= max(natpft_size, numcft, maxpatch_urb)
 
 
     return
