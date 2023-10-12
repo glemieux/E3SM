@@ -236,6 +236,7 @@ contains
     character(len=*) , intent(in) :: landuse_pft_filename  ! name of file containing static landuse x pft information
 
     ! !LOCAL VARIABLES
+    integer            :: varnum
     character(len=256) :: locfn                         ! local file name
     type(file_desc_t)  :: ncid                          ! netcdf id
     real(r8), pointer  :: arraylocal(:,:)               ! local array
@@ -268,40 +269,19 @@ contains
     allocate(arraylocal_bareground(bounds%begg:bounds%endg))
 
     ! Read the landuse x pft data from file
-    ! primary lands
-    call ncd_io(ncid=ncid, varname='frac_primr', flag='read', data=arraylocal, &
-         dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) call endrun( msg=' ERROR: frac_primr NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
-    landuse_pft_map(idprimary,:,bounds%begg:bounds%endg) = arraylocal(:,bounds%begg:bounds%endg)
-
-    ! secondary lands
-    call ncd_io(ncid=ncid, varname='frac_secnd', flag='read', data=arraylocal, &
-         dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) call endrun( msg=' ERROR: frac_secnd NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
-    landuse_pft_map(idsecondary,:,bounds%begg:bounds%endg) = arraylocal(:,bounds%begg:bounds%endg)
-
-    ! pasture lands
-    call ncd_io(ncid=ncid, varname='frac_pastr', flag='read', data=arraylocal, &
-         dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) call endrun( msg=' ERROR: frac_pastr NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
-    landuse_pft_map(idpasture,:,bounds%begg:bounds%endg) = arraylocal(:,bounds%begg:bounds%endg)
-
-    ! range lands
-    call ncd_io(ncid=ncid, varname='frac_range', flag='read', data=arraylocal, &
-         dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) call endrun( msg=' ERROR: frac_range NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
-    landuse_pft_map(idrange,:,bounds%begg:bounds%endg) = arraylocal(:,bounds%begg:bounds%endg)
-
-    ! current surface
-    call ncd_io(ncid=ncid, varname='frac_csurf', flag='read', data=arraylocal, &
-         dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) call endrun( msg=' ERROR: frac_csurf NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
-    landuse_pft_map(idcurrentsurface,:,bounds%begg:bounds%endg) = arraylocal(:,bounds%begg:bounds%endg)
+    do varnum = 1, num_landuse_pft_vars
+       call ncd_io(ncid=ncid, varname=landuse_pft_map_varnames(varnum), flag='read', &
+                   data=arraylocal, dim1name=grlnd, readvar=readvar)
+       if (.not. readvar) &
+          call endrun(msg='ERROR: '//trim(landuse_pft_map_varnames(varnum))// &
+                          ' NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
+       landuse_pft_map(varnum,:,bounds%begg:bounds%endg) = arraylocal(:,bounds%begg:bounds%endg)
+    end do
 
     ! Read the bareground data from file.  This is per gridcell only.
     call ncd_io(ncid=ncid, varname='frac_brgnd', flag='read', data=arraylocal_bareground, &
          dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) call endrun( msg=' ERROR: frac_brgnd NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
+    if (.not. readvar) call endrun(msg='ERROR: frac_brgnd NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
     landuse_bareground(bounds%begg:bounds%endg) = arraylocal_baregroud(bounds%begg:bounds%endg)
 
     ! Deallocate the temporary local array point and close the file
