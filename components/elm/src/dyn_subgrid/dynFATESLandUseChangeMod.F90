@@ -161,7 +161,9 @@ contains
        end do
 
        ! If fates is in no competition mode, read in landuse x pft static data
-       if (use_fates_potential_vegetation) call GetLandusePFTData(bounds, landuse_pft_filename)
+       ! TODO: update this logic elsewhere to set use_fates_potential_vegetation
+       if (landuse_pft_filename /= '') call GetLandusePFTData(bounds, landuse_pft_filename)
+       ! if (use_fates_potential_vegetation) call GetLandusePFTData(bounds, landuse_pft_filename)
 
     end if
 
