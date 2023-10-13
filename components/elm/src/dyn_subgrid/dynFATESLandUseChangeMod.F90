@@ -9,12 +9,14 @@ module dynFATESLandUseChangeMod
   ! !USES:
   use shr_kind_mod          , only : r8 => shr_kind_r8
   use shr_log_mod           , only : errMsg => shr_log_errMsg
+  use spmdMod               , only : masterproc
   use decompMod             , only : bounds_type, BOUNDS_LEVEL_PROC
   use abortutils            , only : endrun
   use dynFileMod            , only : dyn_file_type
   use dynVarTimeUninterpMod , only : dyn_var_time_uninterp_type
   use elm_varcon            , only : grlnd
   use elm_varctl            , only : iulog
+  use FatesInterfaceTypesMod, only : numpft_fates => numpft
 
   implicit none
 
@@ -77,7 +79,7 @@ module dynFATESLandUseChangeMod
   public :: dynFatesLandUseInit
   public :: dynFatesLandUseInterp
 
-  private :: GetLandusePFTFile
+  private :: GetLandusePFTData
 
 contains
 
@@ -92,7 +94,6 @@ contains
     use dynVarTimeUninterpMod , only : dyn_var_time_uninterp_type
     use dynTimeInfoMod        , only : YEAR_POSITION_START_OF_TIMESTEP
     use dynTimeInfoMod        , only : YEAR_POSITION_END_OF_TIMESTEP
-    use FatesInterfaceTypesMod, only : numpft_fates => numpft
 
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds                ! proc-level bounds
@@ -122,7 +123,7 @@ contains
     if (ier /= 0) then
        call endrun(msg=' allocation error for landuse_transitions'//errMsg(__FILE__, __LINE__))
     end if
-    allocate(landuse_pft_map(num_landuse_pft_vars-1,numpft,bounds%begg:bounds%endg),stat=ier)
+    allocate(landuse_pft_map(num_landuse_pft_vars,numpft_fates,bounds%begg:bounds%endg),stat=ier)
     if (ier /= 0) then
        call endrun(msg=' allocation error for landuse_pft_map'//errMsg(__FILE__, __LINE__))
     end if
@@ -229,18 +230,20 @@ contains
     ! static landuse x pft file
 
     ! !USES:
-    use fileutils   , only : getfil
+    use fileutils, only : getfil
+    use ncdio_pio, only : file_desc_t, ncd_io, ncd_pio_openfile, ncd_pio_closefile
 
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds                ! proc-level bounds
-    character(len=*) , intent(in) :: landuse_pft_filename  ! name of file containing static landuse x pft information
+    character(len=*) , intent(in) :: landuse_pft_file      ! name of file containing static landuse x pft information
 
     ! !LOCAL VARIABLES
     integer            :: varnum
-    character(len=256) :: locfn                         ! local file name
-    type(file_desc_t)  :: ncid                          ! netcdf id
-    real(r8), pointer  :: arraylocal(:,:)               ! local array
-    logical            :: readvar              ! true => variable is on dataset
+    character(len=256) :: locfn                     ! local file name
+    type(file_desc_t)  :: ncid                      ! netcdf id
+    real(r8), pointer  :: arraylocal(:,:)           ! local array
+    real(r8), pointer  :: arraylocal_bareground(:)  ! local array
+    logical            :: readvar                   ! true => variable is on dataset
 
     character(len=*), parameter :: subname = 'GetLandusePFTFile'
     !-----------------------------------------------------------------------
@@ -265,7 +268,7 @@ contains
     ! TODO: Check that dimensions are correct?
 
     ! Allocate a temporary array since ncdio expects a pointer
-    allocate(arraylocal(numpft,bounds%begg:bounds%endg))
+    allocate(arraylocal(numpft_fates,bounds%begg:bounds%endg))
     allocate(arraylocal_bareground(bounds%begg:bounds%endg))
 
     ! Read the landuse x pft data from file
@@ -282,7 +285,7 @@ contains
     call ncd_io(ncid=ncid, varname='frac_brgnd', flag='read', data=arraylocal_bareground, &
          dim1name=grlnd, readvar=readvar)
     if (.not. readvar) call endrun(msg='ERROR: frac_brgnd NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
-    landuse_bareground(bounds%begg:bounds%endg) = arraylocal_baregroud(bounds%begg:bounds%endg)
+    landuse_bareground(bounds%begg:bounds%endg) = arraylocal_bareground(bounds%begg:bounds%endg)
 
     ! Deallocate the temporary local array point and close the file
     deallocate(arraylocal)
@@ -291,6 +294,6 @@ contains
 
     ! Check that sums equal to unity
 
-  end subroutine GetLandusePFTFile
+  end subroutine GetLandusePFTData
 
 end module dynFATESLandUseChangeMod

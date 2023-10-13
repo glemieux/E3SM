@@ -385,6 +385,11 @@ Full pathname of unified land use harmonization data file. This causes the land-
 types to vary over time.
 </entry>
 
+<entry id="flandusepftdat" type="char*256" category="datasets"
+       input_pathname="abs" group="elm_inparm" valid_values="" >
+Full pathname of fates landuse x pft data map.
+</entry>
+
 <entry id="use_hydrstress" type="logical" category="physics"
         group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on if Kennedy et al plant hydraulics model is used.

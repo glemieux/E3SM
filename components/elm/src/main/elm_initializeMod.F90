@@ -467,7 +467,7 @@ contains
     use elm_time_manager      , only : get_curr_date, get_nstep, advance_timestep
     use elm_time_manager      , only : timemgr_init, timemgr_restart_io, timemgr_restart
     use controlMod            , only : nlfilename
-    use controlMod            , only : fluh_timeseries
+    use controlMod            , only : fluh_timeseries, flandusepftdat
     use decompMod             , only : get_proc_clumps, get_proc_bounds, get_clump_bounds, bounds_type
     use domainMod             , only : ldomain
     use initInterpMod         , only : initInterp
@@ -736,7 +736,7 @@ contains
 
     ! Initialize fates LUH2 usage
     if (use_fates_luh) then
-       call dynFatesLandUseInit(bounds_proc, fluh_timeseries)
+       call dynFatesLandUseInit(bounds_proc, fluh_timeseries, flandusepftdat)
     end if
 
     ! ------------------------------------------------------------------------
