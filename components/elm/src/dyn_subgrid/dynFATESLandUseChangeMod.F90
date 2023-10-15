@@ -234,6 +234,7 @@ contains
     ! !USES:
     use fileutils, only : getfil
     use ncdio_pio, only : file_desc_t, ncd_io, ncd_pio_openfile, ncd_pio_closefile
+    use ncdio_pio, only : ncd_inqdlen
 
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds                ! proc-level bounds
@@ -246,6 +247,8 @@ contains
     real(r8), pointer  :: arraylocal(:,:)           ! local array
     real(r8), pointer  :: arraylocal_bareground(:)  ! local array
     logical            :: readvar                   ! true => variable is on dataset
+    integer            :: dimid                     ! dimension id
+    integer            :: dimlen                    ! dimension length
 
     character(len=*), parameter :: subname = 'GetLandusePFTFile'
     !-----------------------------------------------------------------------
@@ -266,33 +269,38 @@ contains
     call getfil(landuse_pft_file, locfn, 0)
     call ncd_pio_openfile (ncid, trim(locfn), 0)
 
+    ! Check that the dimensionality is correct
+    call ncd_inqdlen(ncid, dimid, dimlen, 'natpft')
+    write(iulog,*) 'natpft dimension: ', dimlen
+
+
     ! TODO: Check that expected variables are on the file?
     ! TODO: Check that dimensions are correct?
 
-    ! Allocate a temporary array since ncdio expects a pointer
-    allocate(arraylocal(numpft_fates,bounds%begg:bounds%endg))
-    allocate(arraylocal_bareground(bounds%begg:bounds%endg))
+    !! Allocate a temporary array since ncdio expects a pointer
+    !allocate(arraylocal(numpft_fates,bounds%begg:bounds%endg))
+    !allocate(arraylocal_bareground(bounds%begg:bounds%endg))
 
-    ! Read the landuse x pft data from file
-    do varnum = 1, num_landuse_pft_vars
-       call ncd_io(ncid=ncid, varname=landuse_pft_map_varnames(varnum), flag='read', &
-                   data=arraylocal, dim1name=grlnd, readvar=readvar)
-       if (.not. readvar) &
-          call endrun(msg='ERROR: '//trim(landuse_pft_map_varnames(varnum))// &
-                          ' NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
-       landuse_pft_map(varnum,:,bounds%begg:bounds%endg) = arraylocal(:,bounds%begg:bounds%endg)
-    end do
+    !! Read the landuse x pft data from file
+    !do varnum = 1, num_landuse_pft_vars
+    !   call ncd_io(ncid=ncid, varname=landuse_pft_map_varnames(varnum), flag='read', &
+    !               data=arraylocal, dim1name=grlnd, readvar=readvar)
+    !   if (.not. readvar) &
+    !      call endrun(msg='ERROR: '//trim(landuse_pft_map_varnames(varnum))// &
+    !                      ' NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
+    !   landuse_pft_map(varnum,:,bounds%begg:bounds%endg) = arraylocal(:,bounds%begg:bounds%endg)
+    !end do
 
-    ! Read the bareground data from file.  This is per gridcell only.
-    call ncd_io(ncid=ncid, varname='frac_brgnd', flag='read', data=arraylocal_bareground, &
-         dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) call endrun(msg='ERROR: frac_brgnd NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
-    landuse_bareground(bounds%begg:bounds%endg) = arraylocal_bareground(bounds%begg:bounds%endg)
+    !! Read the bareground data from file.  This is per gridcell only.
+    !call ncd_io(ncid=ncid, varname='frac_brgnd', flag='read', data=arraylocal_bareground, &
+    !     dim1name=grlnd, readvar=readvar)
+    !if (.not. readvar) call endrun(msg='ERROR: frac_brgnd NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
+    !landuse_bareground(bounds%begg:bounds%endg) = arraylocal_bareground(bounds%begg:bounds%endg)
 
-    ! Deallocate the temporary local array point and close the file
-    deallocate(arraylocal)
-    deallocate(arraylocal_bareground)
-    call ncd_pio_closefile(ncid)
+    !! Deallocate the temporary local array point and close the file
+    !deallocate(arraylocal)
+    !deallocate(arraylocal_bareground)
+    !call ncd_pio_closefile(ncid)
 
     ! Check that sums equal to unity
 
