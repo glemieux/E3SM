@@ -40,8 +40,8 @@ module dynFATESLandUseChangeMod
   type(dyn_file_type), target   :: dynFatesLandUse_file
 
   ! Land use name arrays
-  character(len=5), public, parameter  :: landuse_pft_map_varnames(num_landuse_pft_vars) = &
-                    [character(len=5)  :: 'frac_primr','frac_secnd','frac_pastr','frac_range','frac_csurf']
+  character(len=10), public, parameter  :: landuse_pft_map_varnames(num_landuse_pft_vars) = &
+                    [character(len=10)  :: 'frac_primr','frac_secnd','frac_pastr','frac_range','frac_csurf']
 
   character(len=5), public, parameter  :: landuse_state_varnames(num_landuse_state_vars) = &
                     [character(len=5)  :: 'primf','primn','secdf','secdn','pastr','range', &
