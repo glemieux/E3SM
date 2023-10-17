@@ -736,8 +736,11 @@ contains
 
     ! Initialize fates LUH2 usage
     if (use_fates_luh) then
-       call dynFatesLandUseInit(bounds_proc, fluh_timeseries, flandusepftdat)
+       call dynFatesLandUseInit(bounds_proc, fluh_timeseries)
     end if
+
+    ! Get the landuse x pft data to be passed to fates
+    if (use_fates .and. flandusepftdat /= '') call GetLandusePFTData(bounds, flandusepftdat)
 
     ! ------------------------------------------------------------------------
     ! Initialize modules (after time-manager initialization in most cases)

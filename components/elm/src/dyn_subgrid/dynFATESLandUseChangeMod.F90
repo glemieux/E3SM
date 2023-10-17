@@ -85,7 +85,7 @@ module dynFATESLandUseChangeMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine dynFatesLandUseInit(bounds, landuse_filename, landuse_pft_filename)
+  subroutine dynFatesLandUseInit(bounds, landuse_filename)
 
     ! !DESCRIPTION:
     ! Initialize data structures for land use information.
@@ -160,11 +160,6 @@ contains
                dim1name=grlnd, conversion_factor=1.0_r8, &
                do_check_sums_equal_1=.false., data_shape=landuse_shape)
        end do
-
-       ! If fates is in no competition mode, read in landuse x pft static data
-       ! TODO: update this logic elsewhere to set use_fates_potential_vegetation
-       if (landuse_pft_filename /= '') call GetLandusePFTData(bounds, landuse_pft_filename)
-       ! if (use_fates_potential_vegetation) call GetLandusePFTData(bounds, landuse_pft_filename)
 
     end if
 
