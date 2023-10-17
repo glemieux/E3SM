@@ -3311,5 +3311,98 @@ end subroutine wrap_update_hifrq_hist
  end subroutine GetAndSetTime
 
 
+  !-----------------------------------------------------------------------
+  subroutine GetLandusePFTData(bounds, landuse_pft_file)
+
+    ! !DESCRIPTION:
+    ! If fates is in no competition mode with landuse on, read in the
+    ! static landuse x pft file
+
+    ! !USES:
+    use fileutils, only : getfil
+    use ncdio_pio, only : file_desc_t, ncd_io, ncd_pio_openfile, ncd_pio_closefile
+    use ncdio_pio, only : ncd_inqdlen, ncd_inqvdlen
+    use elm_varcon, only : grlnd
+    use FatesInterfaceTypesMod,   only : numpft_fates => numpft
+
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds                ! proc-level bounds
+    character(len=*) , intent(in) :: landuse_pft_file      ! name of file containing static landuse x pft information
+
+    ! !LOCAL VARIABLES
+    integer            :: varnum
+    character(len=256) :: locfn                     ! local file name
+    type(file_desc_t)  :: ncid                      ! netcdf id
+    real(r8), pointer  :: arraylocal(:,:)           ! local array
+    real(r8), pointer  :: arraylocal_bareground(:)  ! local array
+    logical            :: readvar                   ! true => variable is on dataset
+    integer            :: dimid, vardimid           ! dimension id
+    integer            :: dimlen, vardimlen         ! dimension length
+    integer            :: err_code
+
+    character(len=*), parameter :: subname = 'GetLandusePFTFile'
+    !-----------------------------------------------------------------------
+
+    !SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
+
+    ! Check to see if the landuse file name has been provided
+    ! Note: getfile checks this as well
+    if (masterproc) then
+       write(iulog,*) 'Attempting to read landuse x pft data .....'
+       if (landuse_pft_file == ' ') then
+          write(iulog,*)'landuse_pft_file must be specified'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+       endif
+    endif
+
+    ! Get the local filename and open the file
+    call getfil(landuse_pft_file, locfn, 0)
+    call ncd_pio_openfile (ncid, trim(locfn), 0)
+
+    ! Check that the dimensionality is correct
+    call ncd_inqdlen(ncid, dimid, dimlen, 'natpft')
+
+    ! TODO: Check that expected variables are on the file?
+    ! TODO: Check that dimensions are correct?
+
+    ! Allocate a temporary array since ncdio expects a pointer
+    allocate(arraylocal(bounds%begg:bounds%endg, dimlen))
+    allocate(arraylocal_bareground(bounds%begg:bounds%endg))
+
+    ! Read the landuse x pft data from file
+    do varnum = 1, num_landuse_pft_vars
+       write(iulog,*) 'varnum: ', varnum
+
+       ! Check the variable dimensionality
+       do vardimid = 1,3
+          call ncd_inqvdlen(ncid, landuse_pft_map_varnames(varnum), vardimid, vardimlen, err_code)
+          write(iulog,*) 'check dimid, varname, err: ', vardimid, landuse_pft_map_varnames(varnum), err_code
+          write(iulog,*) 'check dimid, varname, len: ', vardimid, landuse_pft_map_varnames(varnum), vardimlen
+       end do
+
+       call ncd_io(ncid=ncid, varname=landuse_pft_map_varnames(varnum), flag='read', &
+                   data=arraylocal, dim1name=grlnd, readvar=readvar)
+       if (.not. readvar) &
+          call endrun(msg='ERROR: '//trim(landuse_pft_map_varnames(varnum))// &
+                          ' NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
+       landuse_pft_map(bounds%begg:bounds%endg,:,varnum) = arraylocal(bounds%begg:bounds%endg,:)
+       write(iulog,*) 'varnum sum: ', varnum, sum(landuse_pft_map(varnum,:,:))
+    end do
+
+    call ncd_io(ncid=ncid, varname='frac_brgnd', flag='read', data=arraylocal_bareground, &
+         dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) call endrun(msg='ERROR: frac_brgnd NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
+    landuse_bareground(bounds%begg:bounds%endg) = arraylocal_bareground(bounds%begg:bounds%endg)
+    write(iulog,*) 'bareground sum: ', sum(landuse_bareground(:))
+
+    ! Deallocate the temporary local array point and close the file
+    deallocate(arraylocal)
+    deallocate(arraylocal_bareground)
+    call ncd_pio_closefile(ncid)
+
+    ! Check that sums equal to unity
+
+  end subroutine GetLandusePFTData
+
 
 end module ELMFatesInterfaceMod

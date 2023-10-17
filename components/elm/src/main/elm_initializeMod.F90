@@ -505,7 +505,7 @@ contains
     use tracer_varcon         , only : is_active_betr_bgc
     use elm_time_manager      , only : is_restart
     use ELMbetrNLMod          , only : betr_namelist_buffer
-    use ELMFatesInterfaceMod  , only: ELMFatesTimesteps
+    use ELMFatesInterfaceMod  , only: ELMFatesTimesteps, GetLandusePFTData
     use FATESFireFactoryMod   , only : scalar_lightning
     use dynFATESLandUseChangeMod, only : dynFatesLandUseInit
     !
@@ -736,7 +736,9 @@ contains
 
     ! Initialize fates LUH2 usage
     if (use_fates_luh) then
-       call dynFatesLandUseInit(bounds_proc, fluh_timeseries, flandusepftdat)
+       !call dynFatesLandUseInit(bounds_proc, fluh_timeseries, flandusepftdat)
+       call dynFatesLandUseInit(bounds_proc, fluh_timeseries)
+       call GetLandusePFTData(bounds_proc, flandusepftdat)
     end if
 
     ! ------------------------------------------------------------------------

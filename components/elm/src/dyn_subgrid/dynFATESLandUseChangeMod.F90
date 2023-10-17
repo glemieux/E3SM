@@ -84,7 +84,8 @@ module dynFATESLandUseChangeMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine dynFatesLandUseInit(bounds, landuse_filename, landuse_pft_filename)
+  subroutine dynFatesLandUseInit(bounds, landuse_filename)
+  !subroutine dynFatesLandUseInit(bounds, landuse_filename, landuse_pft_filename)
 
     ! !DESCRIPTION:
     ! Initialize data structures for land use information.
@@ -98,7 +99,7 @@ contains
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds                ! proc-level bounds
     character(len=*) , intent(in) :: landuse_filename      ! name of file containing landuse timeseries information (fates luh2)
-    character(len=*) , intent(in) :: landuse_pft_filename  ! name of file containing static landuse x pft information
+    !character(len=*) , intent(in) :: landuse_pft_filename  ! name of file containing static landuse x pft information
 
     ! !LOCAL VARIABLES
     integer :: varnum, i      ! counter for harvest variables
@@ -162,7 +163,7 @@ contains
 
        ! If fates is in no competition mode, read in landuse x pft static data
        ! TODO: update this logic elsewhere to set use_fates_potential_vegetation
-       if (landuse_pft_filename /= '') call GetLandusePFTData(bounds, landuse_pft_filename)
+       !if (landuse_pft_filename /= '') call GetLandusePFTData(bounds, landuse_pft_filename)
        ! if (use_fates_potential_vegetation) call GetLandusePFTData(bounds, landuse_pft_filename)
 
     end if
@@ -234,7 +235,7 @@ contains
     ! !USES:
     use fileutils, only : getfil
     use ncdio_pio, only : file_desc_t, ncd_io, ncd_pio_openfile, ncd_pio_closefile
-    use ncdio_pio, only : ncd_inqdlen
+    use ncdio_pio, only : ncd_inqdlen, ncd_inqvdlen
 
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds                ! proc-level bounds
@@ -247,8 +248,9 @@ contains
     real(r8), pointer  :: arraylocal(:,:)           ! local array
     real(r8), pointer  :: arraylocal_bareground(:)  ! local array
     logical            :: readvar                   ! true => variable is on dataset
-    integer            :: dimid                     ! dimension id
-    integer            :: dimlen                    ! dimension length
+    integer            :: dimid, vardimid           ! dimension id
+    integer            :: dimlen, vardimlen         ! dimension length
+    integer            :: err_code
 
     character(len=*), parameter :: subname = 'GetLandusePFTFile'
     !-----------------------------------------------------------------------
@@ -271,36 +273,59 @@ contains
 
     ! Check that the dimensionality is correct
     call ncd_inqdlen(ncid, dimid, dimlen, 'natpft')
-    write(iulog,*) 'natpft dimension: ', dimlen
-
 
     ! TODO: Check that expected variables are on the file?
     ! TODO: Check that dimensions are correct?
 
-    !! Allocate a temporary array since ncdio expects a pointer
-    !allocate(arraylocal(numpft_fates,bounds%begg:bounds%endg))
-    !allocate(arraylocal_bareground(bounds%begg:bounds%endg))
+    ! Allocate a temporary array since ncdio expects a pointer
+    allocate(arraylocal(bounds%begg:bounds%endg, numpft_fates))
+    allocate(arraylocal_bareground(bounds%begg:bounds%endg))
 
-    !! Read the landuse x pft data from file
+    ! Read the landuse x pft data from file
     !do varnum = 1, num_landuse_pft_vars
+    !   write(iulog,*) 'varnum: ', varnum
+
+    !   ! Check the variable dimensionality
+    !   do vardimid = 1,3
+    !      call ncd_inqvdlen(ncid, landuse_pft_map_varnames(varnum), vardimid, vardimlen, err_code)
+    !      write(iulog,*) 'check dimid, varname, err: ', vardimid, landuse_pft_map_varnames(varnum), err_code
+    !      write(iulog,*) 'check dimid, varname, len: ', vardimid, landuse_pft_map_varnames(varnum), vardimlen
+    !   end do
+
     !   call ncd_io(ncid=ncid, varname=landuse_pft_map_varnames(varnum), flag='read', &
     !               data=arraylocal, dim1name=grlnd, readvar=readvar)
     !   if (.not. readvar) &
     !      call endrun(msg='ERROR: '//trim(landuse_pft_map_varnames(varnum))// &
     !                      ' NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
-    !   landuse_pft_map(varnum,:,bounds%begg:bounds%endg) = arraylocal(:,bounds%begg:bounds%endg)
+    !   !landuse_pft_map(varnum,:,bounds%begg:bounds%endg) = arraylocal(:,bounds%begg:bounds%endg)
+    !   !write(iulog,*) 'varnum sum: ', varnum, sum(landuse_pft_map(varnum,:,:))
     !end do
 
-    !! Read the bareground data from file.  This is per gridcell only.
-    !call ncd_io(ncid=ncid, varname='frac_brgnd', flag='read', data=arraylocal_bareground, &
-    !     dim1name=grlnd, readvar=readvar)
-    !if (.not. readvar) call endrun(msg='ERROR: frac_brgnd NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
-    !landuse_bareground(bounds%begg:bounds%endg) = arraylocal_bareground(bounds%begg:bounds%endg)
+    do vardimid = 1,3
+       call ncd_inqvdlen(ncid, 'frac_range', vardimid, vardimlen, err_code)
+       write(iulog,*) 'check dimid, varname, err: ', vardimid, 'frac_range', err_code
+       write(iulog,*) 'check dimid, varname, len: ', vardimid, 'frac_range', vardimlen
+    end do
+    call ncd_io(ncid=ncid, varname='frac_range', flag='read', &
+                data=arraylocal, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) &
+       call endrun(msg='ERROR: frac_rangeNOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
 
-    !! Deallocate the temporary local array point and close the file
-    !deallocate(arraylocal)
-    !deallocate(arraylocal_bareground)
-    !call ncd_pio_closefile(ncid)
+    ! Get the local filename and open the file
+    call ncd_pio_closefile(ncid)
+    call getfil(landuse_pft_file, locfn, 0)
+    call ncd_pio_openfile (ncid, trim(locfn), 0)
+
+    call ncd_io(ncid=ncid, varname='frac_brgnd', flag='read', data=arraylocal_bareground, &
+         dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) call endrun(msg='ERROR: frac_brgnd NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
+    !landuse_bareground(bounds%begg:bounds%endg) = arraylocal_bareground(bounds%begg:bounds%endg)
+    !write(iulog,*) 'bareground sum: ', sum(landuse_bareground(:))
+
+    ! Deallocate the temporary local array point and close the file
+    deallocate(arraylocal)
+    deallocate(arraylocal_bareground)
+    call ncd_pio_closefile(ncid)
 
     ! Check that sums equal to unity
 
