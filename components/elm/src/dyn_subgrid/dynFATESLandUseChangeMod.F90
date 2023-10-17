@@ -30,6 +30,7 @@ module dynFATESLandUseChangeMod
   integer, public, parameter    :: num_landuse_transition_vars = 108
   integer, public, parameter    :: num_landuse_state_vars = 12
   integer, public, parameter    :: num_landuse_pft_vars = 5
+  integer, parameter            :: dim_landuse_pft = 14
 
   integer, parameter            :: idprimary = 1
   integer, parameter            :: idsecondary = 2
@@ -123,7 +124,7 @@ contains
     if (ier /= 0) then
        call endrun(msg=' allocation error for landuse_transitions'//errMsg(__FILE__, __LINE__))
     end if
-    allocate(landuse_pft_map(num_landuse_pft_vars,numpft_fates,bounds%begg:bounds%endg),stat=ier)
+    allocate(landuse_pft_map(bounds%begg:bounds%endg,dim_landuse_pft,num_landuse_pft_vars),stat=ier)
     if (ier /= 0) then
        call endrun(msg=' allocation error for landuse_pft_map'//errMsg(__FILE__, __LINE__))
     end if
@@ -268,30 +269,33 @@ contains
 
     ! TODO: Check that expected variables are on the file?
     ! TODO: Check that dimensions are correct?
+    call ncd_inqdlen(ncid, dimid, dimlen, 'natpft')
 
     ! Allocate a temporary array since ncdio expects a pointer
-    allocate(arraylocal(numpft_fates,bounds%begg:bounds%endg))
-    allocate(arraylocal_bareground(bounds%begg:bounds%endg))
+    !allocate(arraylocal(numpft_fates,bounds%begg:bounds%endg))
+    !allocate(arraylocal_bareground(bounds%begg:bounds%endg))
 
     ! Read the landuse x pft data from file
     do varnum = 1, num_landuse_pft_vars
        call ncd_io(ncid=ncid, varname=landuse_pft_map_varnames(varnum), flag='read', &
-                   data=arraylocal, dim1name=grlnd, readvar=readvar)
+                   data=landuse_pft_map(bounds%begg:bounds%endg,:,varnum), dim1name=grlnd, readvar=readvar)
+                   !data=arraylocal, dim1name=grlnd, readvar=readvar)
        if (.not. readvar) &
           call endrun(msg='ERROR: '//trim(landuse_pft_map_varnames(varnum))// &
                           ' NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
-       landuse_pft_map(varnum,:,bounds%begg:bounds%endg) = arraylocal(:,bounds%begg:bounds%endg)
+       !landuse_pft_map(varnum,:,bounds%begg:bounds%endg) = arraylocal(:,bounds%begg:bounds%endg)
     end do
 
     ! Read the bareground data from file.  This is per gridcell only.
-    call ncd_io(ncid=ncid, varname='frac_brgnd', flag='read', data=arraylocal_bareground, &
-         dim1name=grlnd, readvar=readvar)
+    call ncd_io(ncid=ncid, varname='frac_brgnd', flag='read', &
+                data=landuse_bareground, dim1name=grlnd, readvar=readvar)
+                !data=arraylocal_bareground, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) call endrun(msg='ERROR: frac_brgnd NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
-    landuse_bareground(bounds%begg:bounds%endg) = arraylocal_bareground(bounds%begg:bounds%endg)
+    !landuse_bareground(bounds%begg:bounds%endg) = arraylocal_bareground(bounds%begg:bounds%endg)
 
     ! Deallocate the temporary local array point and close the file
-    deallocate(arraylocal)
-    deallocate(arraylocal_bareground)
+    !deallocate(arraylocal)
+    !deallocate(arraylocal_bareground)
     call ncd_pio_closefile(ncid)
 
     ! Check that sums equal to unity
