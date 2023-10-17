@@ -269,17 +269,18 @@ contains
     call getfil(landuse_pft_file, locfn, 0)
     call ncd_pio_openfile (ncid, trim(locfn), 0)
 
-    ! TODO: Check that expected variables are on the file?
-    ! TODO: Check that dimensions are correct?
+    ! Check that the natpft dimensions for the landuse x pft
+    ! file match the array to be read into
     call ncd_inqdlen(ncid, dimid, dimlen, 'natpft')
     if (dimlen /= dim_landuse_pft) then
        write(iulog,*) 'natpft dimensions on the landuse x pft file do not match target array size'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
-    ! Allocate a temporary array since ncdio expects a pointer
+    ! Allocate a temporary 2d array for the variables that are dimensioned
+    ! by natpft x lat x lon since ncd_io doesn't have a method to handle
     allocate(arraylocal(bounds%begg:bounds%endg,dim_landuse_pft))
-    allocate(arraylocal_bareground(bounds%begg:bounds%endg))
+    ! allocate(arraylocal_bareground(bounds%begg:bounds%endg))
 
     ! Read the landuse x pft data from file
     do varnum = 1, num_landuse_pft_vars
@@ -294,14 +295,14 @@ contains
 
     ! Read the bareground data from file.  This is per gridcell only.
     call ncd_io(ncid=ncid, varname='frac_brgnd', flag='read', &
-                data=arraylocal_bareground, dim1name=grlnd, readvar=readvar)
-                !data=landuse_bareground, dim1name=grlnd, readvar=readvar)
+                data=landuse_bareground, dim1name=grlnd, readvar=readvar)
+                !data=arraylocal_bareground, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) call endrun(msg='ERROR: frac_brgnd NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
-    landuse_bareground(bounds%begg:bounds%endg) = arraylocal_bareground(bounds%begg:bounds%endg)
+    ! landuse_bareground(bounds%begg:bounds%endg) = arraylocal_bareground(bounds%begg:bounds%endg)
 
     ! Deallocate the temporary local array point and close the file
     deallocate(arraylocal)
-    deallocate(arraylocal_bareground)
+    ! deallocate(arraylocal_bareground)
     call ncd_pio_closefile(ncid)
 
     ! Check that sums equal to unity
