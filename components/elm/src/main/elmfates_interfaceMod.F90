@@ -243,6 +243,7 @@ module ELMFatesInterfaceMod
       procedure, public  :: ComputeRootSoilFlux
       procedure, public  :: wrap_hydraulics_drive
       procedure, public  :: WrapUpdateFatesRmean
+      procedure, public  :: GetLandusePFTData
       
    end type hlm_fates_interface_type
 
@@ -817,6 +818,9 @@ contains
       
       ! Fire data to send to FATES
       call create_fates_fire_data_method( this%fates_fire_data_method )
+
+      ! Retrieve the landuse x pft static data if the file is present
+      call this%GetLandusePFTData(bounds_proc,flandusepftdat)
 
     end subroutine init
 
@@ -3310,6 +3314,110 @@ end subroutine wrap_update_hifrq_hist
 
  end subroutine GetAndSetTime
 
+! ======================================================================================
+ subroutine GetLandusePFTData(bounds, landuse_pft_file)
 
+   ! !DESCRIPTION:
+   ! Read in static landuse x pft file
+
+   ! !USES:
+   use fileutils, only : getfil
+   use ncdio_pio, only : file_desc_t, ncd_io, ncd_inqdlen
+   use ncdio_pio, only : ncd_pio_openfile, ncd_pio_closefile
+   use decompMod, only : BOUNDS_LEVEL_PROC
+   use FatesConstantsMod, only : fates_unset_r8
+
+   ! !ARGUMENTS:
+   type(bounds_type), intent(in) :: bounds            ! proc-level bounds
+   character(len=*) , intent(in) :: landuse_pft_file  ! name of file containing static landuse x pft information
+
+   ! !LOCAL VARIABLES
+   integer            :: varnum                    ! variable number
+   integer            :: dimid, dimlen             ! dimension id number and length
+   character(len=256) :: locfn                     ! local file name
+   type(file_desc_t)  :: ncid                      ! netcdf id
+   real(r8), pointer  :: arraylocal(:,:)           ! local array for reading fraction data
+   real(r8), pointer  :: arraylocal_bareground(:)  ! local array for reading bareground data
+   logical            :: readvar                   ! true => variable is on dataset
+
+   integer, parameter :: num_landuse_pft_vars = 5
+   integer, parameter :: dim_landuse_pft = 14
+
+   real(r8), allocatable, public :: landuse_pft_map(:,:,:)
+   real(r8), allocatable, public :: landuse_bareground(:)
+
+   ! Land use name arrays
+   character(len=10), public, parameter  :: landuse_pft_map_varnames(num_landuse_pft_vars) = &
+                    [character(len=10)  :: 'frac_primr','frac_secnd','frac_pastr','frac_range','frac_csurf']
+
+   character(len=*), parameter :: subname = 'GetLandusePFTData'
+
+   !-----------------------------------------------------------------------
+
+   SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
+
+   ! Check to see if the landuse file name has been provided
+   ! Note: getfile checks this as well
+   if (masterproc) then
+      write(iulog,*) 'Attempting to read landuse x pft data .....'
+      if (landuse_pft_file == ' ') then
+         write(iulog,*)'landuse_pft_file must be specified'
+         call endrun(msg=errMsg(__FILE__, __LINE__))
+      endif
+   endif
+
+   ! Initialize the landuse x pft arrays and initialize to unset
+    allocate(landuse_pft_map(bounds%begg:bounds%endg,dim_landuse_pft,num_landuse_pft_vars),stat=ier)
+    if (ier /= 0) then
+       call endrun(msg=' allocation error for landuse_pft_map'//errMsg(__FILE__, __LINE__))
+    end if
+    landuse_pft_map = fates_unset_r8
+
+    allocate(landuse_bareground(bounds%begg:bounds%endg),stat=ier)
+    if (ier /= 0) then
+       call endrun(msg=' allocation error for landuse_bareground'//errMsg(__FILE__, __LINE__))
+    end if
+    landuse_bareground = fates_unset_r8
+
+
+   ! Get the local filename and open the file
+   call getfil(landuse_pft_file, locfn, 0)
+   call ncd_pio_openfile (ncid, trim(locfn), 0)
+
+   ! Check that natpft dimension on the file matches the target array dimensions
+   call ncd_inqdlen(ncid, dimid, dimlen, 'natpft')
+   if (dimlen /= dim_landuse_pft) then
+      write(iulog,*) 'natpft dimensions on the landuse x pft file do not match target array size'
+      call endrun(msg=errMsg(__FILE__, __LINE__))
+   end if
+
+   ! Allocate a temporary array since ncdio expects a pointer
+   allocate(arraylocal(bounds%begg:bounds%endg,dim_landuse_pft))
+   allocate(arraylocal_bareground(bounds%begg:bounds%endg))
+
+   ! Read the landuse x pft data from file
+   do varnum = 1, num_landuse_pft_vars
+      call ncd_io(ncid=ncid, varname=landuse_pft_map_varnames(varnum), flag='read', &
+                  data=arraylocal, dim1name=grlnd, readvar=readvar)
+      if (.not. readvar) &
+         call endrun(msg='ERROR: '//trim(landuse_pft_map_varnames(varnum))// &
+                         ' NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
+      landuse_pft_map(bounds%begg:bounds%endg,:,varnum) = arraylocal(bounds%begg:bounds%endg,:)
+   end do
+
+   ! Read the bareground data from file.  This is per gridcell only.
+   call ncd_io(ncid=ncid, varname='frac_brgnd', flag='read', &
+               data=arraylocal_bareground, dim1name=grlnd, readvar=readvar)
+   if (.not. readvar) call endrun(msg='ERROR: frac_brgnd NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
+   landuse_bareground(bounds%begg:bounds%endg) = arraylocal_bareground(bounds%begg:bounds%endg)
+
+   ! Deallocate the temporary local array point and close the file
+   deallocate(arraylocal)
+   deallocate(arraylocal_bareground)
+   call ncd_pio_closefile(ncid)
+
+   ! Check that sums equal to unity
+
+ end subroutine GetLandusePFTData
 
 end module ELMFatesInterfaceMod
