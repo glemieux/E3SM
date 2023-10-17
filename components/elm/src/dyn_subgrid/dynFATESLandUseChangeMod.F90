@@ -269,8 +269,7 @@ contains
     call getfil(landuse_pft_file, locfn, 0)
     call ncd_pio_openfile (ncid, trim(locfn), 0)
 
-    ! TODO: Check that expected variables are on the file?
-    ! TODO: Check that dimensions are correct?
+    ! Check that natpft dimension on the file matches the target array dimensions
     call ncd_inqdlen(ncid, dimid, dimlen, 'natpft')
     if (dimlen /= dim_landuse_pft) then
        write(iulog,*) 'natpft dimensions on the landuse x pft file do not match target array size'
@@ -285,7 +284,6 @@ contains
     do varnum = 1, num_landuse_pft_vars
        call ncd_io(ncid=ncid, varname=landuse_pft_map_varnames(varnum), flag='read', &
                    data=arraylocal, dim1name=grlnd, readvar=readvar)
-                   !data=landuse_pft_map(bounds%begg:bounds%endg,:,varnum), dim1name=grlnd, readvar=readvar)
        if (.not. readvar) &
           call endrun(msg='ERROR: '//trim(landuse_pft_map_varnames(varnum))// &
                           ' NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
@@ -295,7 +293,6 @@ contains
     ! Read the bareground data from file.  This is per gridcell only.
     call ncd_io(ncid=ncid, varname='frac_brgnd', flag='read', &
                 data=arraylocal_bareground, dim1name=grlnd, readvar=readvar)
-                !data=landuse_bareground, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) call endrun(msg='ERROR: frac_brgnd NOT on landuse x pft file'//errMsg(__FILE__, __LINE__))
     landuse_bareground(bounds%begg:bounds%endg) = arraylocal_bareground(bounds%begg:bounds%endg)
 
