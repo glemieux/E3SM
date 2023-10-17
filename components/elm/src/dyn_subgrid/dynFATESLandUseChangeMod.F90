@@ -23,8 +23,6 @@ module dynFATESLandUseChangeMod
 
   real(r8), allocatable, public :: landuse_transitions(:,:)
   real(r8), allocatable, public :: landuse_states(:,:)
-  real(r8), allocatable, public :: landuse_pft_map(:,:,:)
-  real(r8), allocatable, public :: landuse_bareground(:)
 
   integer, public, parameter    :: num_landuse_transition_vars = 108
   integer, public, parameter    :: num_landuse_state_vars = 12
@@ -109,19 +107,10 @@ contains
     if (ier /= 0) then
        call endrun(msg=' allocation error for landuse_transitions'//errMsg(__FILE__, __LINE__))
     end if
-    allocate(landuse_pft_map(bounds%begg:bounds%endg,dim_landuse_pft,num_landuse_pft_vars),stat=ier)
-    if (ier /= 0) then
-       call endrun(msg=' allocation error for landuse_pft_map'//errMsg(__FILE__, __LINE__))
-    end if
-    allocate(landuse_bareground(bounds%begg:bounds%endg),stat=ier)
-    if (ier /= 0) then
-       call endrun(msg=' allocation error for landuse_bareground'//errMsg(__FILE__, __LINE__))
-    end if
 
     ! Initialize the states, transitions and mapping percentages as zero by defaut
     landuse_states = 0._r8
     landuse_transitions = 0._r8
-    landuse_pft_map = 0._r8      ! TODO: make unset by default instead?
 
     if (use_fates_luh) then
 
