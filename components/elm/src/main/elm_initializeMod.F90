@@ -507,7 +507,7 @@ contains
     use ELMbetrNLMod          , only : betr_namelist_buffer
     use ELMFatesInterfaceMod  , only: ELMFatesTimesteps
     use FATESFireFactoryMod   , only : scalar_lightning
-    use dynFATESLandUseChangeMod, only : dynFatesLandUseInit
+    use dynFATESLandUseChangeMod, only : dynFatesLandUseInit, GetLandusePFTData
     !
     ! !ARGUMENTS
     implicit none
@@ -740,7 +740,7 @@ contains
     end if
 
     ! Get the landuse x pft data to be passed to fates
-    if (use_fates .and. flandusepftdat /= '') call GetLandusePFTData(bounds, flandusepftdat)
+    if (use_fates .and. flandusepftdat /= '') call GetLandusePFTData(bounds_proc, flandusepftdat)
 
     ! ------------------------------------------------------------------------
     ! Initialize modules (after time-manager initialization in most cases)

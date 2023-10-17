@@ -79,8 +79,7 @@ module dynFATESLandUseChangeMod
 
   public :: dynFatesLandUseInit
   public :: dynFatesLandUseInterp
-
-  private :: GetLandusePFTData
+  public :: GetLandusePFTData
 
 contains
 
@@ -99,7 +98,6 @@ contains
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds                ! proc-level bounds
     character(len=*) , intent(in) :: landuse_filename      ! name of file containing landuse timeseries information (fates luh2)
-    character(len=*) , intent(in) :: landuse_pft_filename  ! name of file containing static landuse x pft information
 
     ! !LOCAL VARIABLES
     integer :: varnum, i      ! counter for harvest variables
@@ -233,8 +231,8 @@ contains
     use ncdio_pio, only : ncd_pio_openfile, ncd_pio_closefile
 
     ! !ARGUMENTS:
-    type(bounds_type), intent(in) :: bounds                ! proc-level bounds
-    character(len=*) , intent(in) :: landuse_pft_file      ! name of file containing static landuse x pft information
+    type(bounds_type), intent(in) :: bounds            ! proc-level bounds
+    character(len=*) , intent(in) :: landuse_pft_file  ! name of file containing static landuse x pft information
 
     ! !LOCAL VARIABLES
     integer            :: varnum                    ! variable number
