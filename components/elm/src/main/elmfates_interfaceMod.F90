@@ -647,9 +647,9 @@ contains
          write(iulog,*) 'alm_fates%init():  allocating for ',nclumps,' threads'
       end if
 
-
       ! Retrieve the landuse x pft static data if the file is present
-      call GetLandusePFTData(bounds_proc, flandusepftdat, landuse_pft_map, landuse_bareground)
+      if (flandusepftdat /= '') call GetLandusePFTData(bounds_proc, flandusepftdat, &
+                                                       landuse_pft_map, landuse_bareground)
 
       nclumps = get_proc_clumps()
 
@@ -756,10 +756,11 @@ contains
             this%fates(nc)%sites(s)%lat = grc_pp%latdeg(g)
             this%fates(nc)%sites(s)%lon = grc_pp%londeg(g)
 
-            ! Transfer the landuse x pft data to fates via bc_in
-            this%fates(nc)%bc_in(s)%pft_areafrac_lu(:,:) = landuse_pft_map(g,:,:)
-            this%fates(nc)%bc_in(s)%baregroundfrac = landuse_bareground(g)
-
+            ! Transfer the landuse x pft data to fates via bc_in if file is given
+            if (flandusepftdat /= '') then
+               this%fates(nc)%bc_in(s)%pft_areafrac_lu(:,:) = landuse_pft_map(g,:,:)
+               this%fates(nc)%bc_in(s)%baregroundfrac = landuse_bareground(g)
+            end if
 
             ! Check whether or not the surface dataset has topounits.  If it doesn't set the
             ! index t to max_topounits, which should be 1.  Otherwise, determine the index
@@ -828,8 +829,10 @@ contains
       call create_fates_fire_data_method( this%fates_fire_data_method )
 
       ! deallocate the local landuse x pft array
-      deallocate(landuse_pft_map)
-      deallocate(landuse_bareground)
+      if (flandusepftdat /= '') then
+         deallocate(landuse_pft_map)
+         deallocate(landuse_bareground)
+      end if
 
     end subroutine init
 

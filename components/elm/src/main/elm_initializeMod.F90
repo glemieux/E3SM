@@ -739,9 +739,6 @@ contains
        call dynFatesLandUseInit(bounds_proc, fluh_timeseries)
     end if
 
-    ! Get the landuse x pft data to be passed to fates
-    !if (use_fates .and. flandusepftdat /= '') call GetLandusePFTData(bounds_proc, flandusepftdat)
-
     ! ------------------------------------------------------------------------
     ! Initialize modules (after time-manager initialization in most cases)
     ! ------------------------------------------------------------------------
