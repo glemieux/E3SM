@@ -507,7 +507,7 @@ contains
     use ELMbetrNLMod          , only : betr_namelist_buffer
     use ELMFatesInterfaceMod  , only: ELMFatesTimesteps
     use FATESFireFactoryMod   , only : scalar_lightning
-    use dynFATESLandUseChangeMod, only : dynFatesLandUseInit, GetLandusePFTData
+    use dynFATESLandUseChangeMod, only : dynFatesLandUseInit
     !
     ! !ARGUMENTS
     implicit none
@@ -740,7 +740,7 @@ contains
     end if
 
     ! Get the landuse x pft data to be passed to fates
-    if (use_fates .and. flandusepftdat /= '') call GetLandusePFTData(bounds_proc, flandusepftdat)
+    !if (use_fates .and. flandusepftdat /= '') call GetLandusePFTData(bounds_proc, flandusepftdat)
 
     ! ------------------------------------------------------------------------
     ! Initialize modules (after time-manager initialization in most cases)
@@ -1019,7 +1019,7 @@ contains
           end do
           !$OMP END PARALLEL DO
        end if
-       call alm_fates%init_coldstart(canopystate_vars, soilstate_vars, frictionvel_vars)
+       call alm_fates%init_coldstart(bounds_proc, flandusepftdat, canopystate_vars, soilstate_vars, frictionvel_vars)
     end if
 
     ! topo_glc_mec was allocated in initialize1, but needed to be kept around through

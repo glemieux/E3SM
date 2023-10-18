@@ -243,7 +243,6 @@ module ELMFatesInterfaceMod
       procedure, public  :: ComputeRootSoilFlux
       procedure, public  :: wrap_hydraulics_drive
       procedure, public  :: WrapUpdateFatesRmean
-      procedure, public  :: GetLandusePFTData
       
    end type hlm_fates_interface_type
 
@@ -641,7 +640,6 @@ contains
       allocate(this%fates(nclumps))
       allocate(this%f2hmap(nclumps))
 
-
       if(debug)then
          write(iulog,*) 'alm_fates%init():  allocating for ',nclumps,' threads'
       end if
@@ -818,9 +816,6 @@ contains
       
       ! Fire data to send to FATES
       call create_fates_fire_data_method( this%fates_fire_data_method )
-
-      ! Retrieve the landuse x pft static data if the file is present
-      call this%GetLandusePFTData(bounds_proc,flandusepftdat)
 
     end subroutine init
 
@@ -1754,14 +1749,17 @@ contains
 
    !=====================================================================================
 
-   subroutine init_coldstart(this, canopystate_inst, soilstate_inst, frictionvel_inst)
+   subroutine init_coldstart(this, bounds_proc, flandusepftdat, &
+                             canopystate_inst, soilstate_inst, frictionvel_inst)
 
 
      ! Arguments
      class(hlm_fates_interface_type), intent(inout) :: this
+     type(bounds_type)              , intent(in)    :: bounds_proc
      type(canopystate_type)         , intent(inout) :: canopystate_inst
      type(soilstate_type)           , intent(inout) :: soilstate_inst
      type(frictionvel_type)  , intent(inout)        :: frictionvel_inst
+     character(len=*), intent(in)                   :: flandusepftdat
 
      ! locals
      integer                                        :: nclumps
@@ -1778,8 +1776,14 @@ contains
      integer :: ft  ! plant functional type
      logical  :: do_landuse_update        ! local flag to pass transitions update to fates
 
+     real(r8), allocatable :: landuse_pft_map(:,:,:)
+     real(r8), allocatable :: landuse_bareground(:)
+
      ! Set the FATES global time and date variables
      call GetAndSetTime
+
+     ! Retrieve the landuse x pft static data if the file is present
+     call GetLandusePFTData(bounds_proc, flandusepftdat, landuse_pft_map, landuse_bareground)
 
      nclumps = get_proc_clumps()
 
@@ -1869,6 +1873,11 @@ contains
                     this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,g)
                     this%fates(nc)%bc_in(s)%hlm_luh_transition_names = landuse_transition_varnames
               end if
+
+              ! Assign the landuse x pft data to the fates sites
+              this%fates(nc)%sites(s)%area_pft(:,:) = landuse_pft_map(g,:,:)
+              this%fates(nc)%sites(s)%area_bareground = landuse_bareground(g)
+
            end do
 
            ! Initialize patches
@@ -3315,39 +3324,43 @@ end subroutine wrap_update_hifrq_hist
  end subroutine GetAndSetTime
 
 ! ======================================================================================
- subroutine GetLandusePFTData(bounds, landuse_pft_file)
+
+ subroutine GetLandusePFTData(bounds, landuse_pft_file, landuse_pft_map, landuse_bareground)
 
    ! !DESCRIPTION:
    ! Read in static landuse x pft file
 
    ! !USES:
-   use fileutils, only : getfil
-   use ncdio_pio, only : file_desc_t, ncd_io, ncd_inqdlen
-   use ncdio_pio, only : ncd_pio_openfile, ncd_pio_closefile
-   use decompMod, only : BOUNDS_LEVEL_PROC
+   use fileutils , only : getfil
+   use ncdio_pio , only : file_desc_t, ncd_io, ncd_inqdlen
+   use ncdio_pio , only : ncd_pio_openfile, ncd_pio_closefile
+   use decompMod , only : BOUNDS_LEVEL_PROC
+   use elm_varcon, only : grlnd
    use FatesConstantsMod, only : fates_unset_r8
 
+
    ! !ARGUMENTS:
-   type(bounds_type), intent(in) :: bounds            ! proc-level bounds
-   character(len=*) , intent(in) :: landuse_pft_file  ! name of file containing static landuse x pft information
+   type(bounds_type), intent(in)        :: bounds            ! proc-level bounds
+   character(len=*) , intent(in)        :: landuse_pft_file  ! name of file containing static landuse x pft information
+   real(r8), allocatable, intent(inout) :: landuse_pft_map(:,:,:)
+   real(r8), allocatable, intent(inout) :: landuse_bareground(:)
 
    ! !LOCAL VARIABLES
    integer            :: varnum                    ! variable number
    integer            :: dimid, dimlen             ! dimension id number and length
+   integer            :: ier                       ! error id
    character(len=256) :: locfn                     ! local file name
    type(file_desc_t)  :: ncid                      ! netcdf id
    real(r8), pointer  :: arraylocal(:,:)           ! local array for reading fraction data
    real(r8), pointer  :: arraylocal_bareground(:)  ! local array for reading bareground data
    logical            :: readvar                   ! true => variable is on dataset
+   !character(len=16), parameter :: grlnd  = 'lndgrid'      ! name of lndgrid
 
    integer, parameter :: num_landuse_pft_vars = 5
    integer, parameter :: dim_landuse_pft = 14
 
-   real(r8), allocatable, public :: landuse_pft_map(:,:,:)
-   real(r8), allocatable, public :: landuse_bareground(:)
-
    ! Land use name arrays
-   character(len=10), public, parameter  :: landuse_pft_map_varnames(num_landuse_pft_vars) = &
+   character(len=10), parameter  :: landuse_pft_map_varnames(num_landuse_pft_vars) = &
                     [character(len=10)  :: 'frac_primr','frac_secnd','frac_pastr','frac_range','frac_csurf']
 
    character(len=*), parameter :: subname = 'GetLandusePFTData'
