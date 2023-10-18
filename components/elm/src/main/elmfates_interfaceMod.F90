@@ -613,6 +613,7 @@ contains
       ! Input Arguments
       class(hlm_fates_interface_type), intent(inout) :: this
       type(bounds_type),intent(in)                   :: bounds_proc
+      character(len=*), intent(in)                   :: flandusepftdat
 
       ! local variables
       integer                                        :: nclumps   ! Number of threads
@@ -3369,8 +3370,6 @@ end subroutine wrap_update_hifrq_hist
    character(len=*), parameter :: subname = 'GetLandusePFTData'
 
    !-----------------------------------------------------------------------
-
-   SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 
    ! Check to see if the landuse file name has been provided
    ! Note: getfile checks this as well

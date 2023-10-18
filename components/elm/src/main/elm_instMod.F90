@@ -145,6 +145,8 @@ contains
     ! initialize biogeochemical variables
     use elm_varcon            , only : c13ratio, c14ratio
     use histFileMod           , only : hist_printflds
+    use elm_varctl            , only : flandusepftdat
+
     implicit none
     type(bounds_type), intent(in) :: bounds_proc
 
@@ -266,7 +268,6 @@ contains
     use domainMod                         , only : ldomain
     use elm_varpar                        , only : nlevsno, numpft
     use elm_varctl                        , only : single_column, fsurdat, scmlat, scmlon, use_extrasnowlayers
-    use elm_varctl                        , only : flandusepftdat
     use controlMod                        , only : nlfilename
     use SoilWaterRetentionCurveFactoryMod , only : create_soil_water_retention_curve
     use fileutils                         , only : getfil
