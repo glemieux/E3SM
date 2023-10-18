@@ -245,7 +245,7 @@ contains
 
     ! Initialize the Functionaly Assembled Terrestrial Ecosystem Simulator (FATES)
     if (use_fates) then
-       call alm_fates%init(bounds_proc)
+       call alm_fates%init(bounds_proc, flandusepftdat)
     end if
 
     call hist_printflds()
@@ -266,6 +266,7 @@ contains
     use domainMod                         , only : ldomain
     use elm_varpar                        , only : nlevsno, numpft
     use elm_varctl                        , only : single_column, fsurdat, scmlat, scmlon, use_extrasnowlayers
+    use elm_varctl                        , only : flandusepftdat
     use controlMod                        , only : nlfilename
     use SoilWaterRetentionCurveFactoryMod , only : create_soil_water_retention_curve
     use fileutils                         , only : getfil

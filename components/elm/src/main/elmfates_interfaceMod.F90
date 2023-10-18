@@ -583,7 +583,7 @@ contains
    
    ! ====================================================================================
 
-   subroutine init(this, bounds_proc )
+   subroutine init(this, bounds_proc, flandusepftdat)
 
       ! ---------------------------------------------------------------------------------
       ! This initializes the hlm_fates_interface_type
@@ -630,6 +630,9 @@ contains
       integer                                        :: nmaxcol
       integer                                        :: ndecomp
 
+      real(r8), allocatable :: landuse_pft_map(:,:,:)
+      real(r8), allocatable :: landuse_bareground(:)
+
       ! Initialize the FATES communicators with the HLM
       ! This involves to stages
       ! 1) allocate the vectors
@@ -644,6 +647,9 @@ contains
          write(iulog,*) 'alm_fates%init():  allocating for ',nclumps,' threads'
       end if
 
+
+      ! Retrieve the landuse x pft static data if the file is present
+      call GetLandusePFTData(bounds_proc, flandusepftdat, landuse_pft_map, landuse_bareground)
 
       nclumps = get_proc_clumps()
 
@@ -750,6 +756,11 @@ contains
             this%fates(nc)%sites(s)%lat = grc_pp%latdeg(g)
             this%fates(nc)%sites(s)%lon = grc_pp%londeg(g)
 
+            ! Transfer the landuse x pft data to fates via bc_in
+            this%fates(nc)%bc_in(s)%pft_areafrac_lu(:,:) = landuse_pft_map(g,:,:)
+            this%fates(nc)%bc_in(s)%baregroundfrac = landuse_bareground(g)
+
+
             ! Check whether or not the surface dataset has topounits.  If it doesn't set the
             ! index t to max_topounits, which should be 1.  Otherwise, determine the index
             ! from the columntype
@@ -794,7 +805,6 @@ contains
             call endrun(msg=errMsg(sourcefile, __LINE__))
          end if
 
-
          ! Set patch itypes on natural veg columns to nonsense
          ! This will force a crash if the model outside of FATES tries to think
          ! of the patch as a PFT.
@@ -816,6 +826,10 @@ contains
       
       ! Fire data to send to FATES
       call create_fates_fire_data_method( this%fates_fire_data_method )
+
+      ! deallocate the local landuse x pft array
+      deallocate(landuse_pft_map)
+      deallocate(landuse_bareground)
 
     end subroutine init
 
@@ -1749,17 +1763,13 @@ contains
 
    !=====================================================================================
 
-   subroutine init_coldstart(this, bounds_proc, flandusepftdat, &
-                             canopystate_inst, soilstate_inst, frictionvel_inst)
-
+   subroutine init_coldstart(this, canopystate_inst, soilstate_inst, frictionvel_inst)
 
      ! Arguments
      class(hlm_fates_interface_type), intent(inout) :: this
-     type(bounds_type)              , intent(in)    :: bounds_proc
      type(canopystate_type)         , intent(inout) :: canopystate_inst
      type(soilstate_type)           , intent(inout) :: soilstate_inst
      type(frictionvel_type)  , intent(inout)        :: frictionvel_inst
-     character(len=*), intent(in)                   :: flandusepftdat
 
      ! locals
      integer                                        :: nclumps
@@ -1776,14 +1786,8 @@ contains
      integer :: ft  ! plant functional type
      logical  :: do_landuse_update        ! local flag to pass transitions update to fates
 
-     real(r8), allocatable :: landuse_pft_map(:,:,:)
-     real(r8), allocatable :: landuse_bareground(:)
-
      ! Set the FATES global time and date variables
      call GetAndSetTime
-
-     ! Retrieve the landuse x pft static data if the file is present
-     call GetLandusePFTData(bounds_proc, flandusepftdat, landuse_pft_map, landuse_bareground)
 
      nclumps = get_proc_clumps()
 
@@ -1873,10 +1877,6 @@ contains
                     this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,g)
                     this%fates(nc)%bc_in(s)%hlm_luh_transition_names = landuse_transition_varnames
               end if
-
-              ! Assign the landuse x pft data to the fates sites
-              this%fates(nc)%sites(s)%area_pft(:,:) = landuse_pft_map(g,:,:)
-              this%fates(nc)%sites(s)%area_bareground = landuse_bareground(g)
 
            end do
 

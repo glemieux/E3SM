@@ -1019,7 +1019,7 @@ contains
           end do
           !$OMP END PARALLEL DO
        end if
-       call alm_fates%init_coldstart(bounds_proc, flandusepftdat, canopystate_vars, soilstate_vars, frictionvel_vars)
+       call alm_fates%init_coldstart(canopystate_vars, soilstate_vars, frictionvel_vars)
     end if
 
     ! topo_glc_mec was allocated in initialize1, but needed to be kept around through
