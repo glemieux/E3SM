@@ -372,6 +372,7 @@ contains
      integer                                        :: pass_use_luh
      integer                                        :: pass_num_luh_states
      integer                                        :: pass_num_luh_transitions
+     integer                                        :: pass_lupftdat
      ! ----------------------------------------------------------------------------------
      ! FATES lightning definitions
      ! 1 : use a global constant lightning rate found in fates_params.
@@ -511,6 +512,13 @@ contains
         call set_fates_ctrlparms('use_luh2',ival=pass_use_luh)
         call set_fates_ctrlparms('num_luh2_states',ival=pass_num_luh_states)
         call set_fates_ctrlparms('num_luh2_transitions',ival=pass_num_luh_transitions)
+
+        if(flandusepftdat /= '') then
+           pass_lupftdat = 1
+        else
+           pass_lupftdat = 0
+        end if
+        call set_fates_ctrlparms('use_landusepft_data',ival=pass_lupftdat)
 
         if(use_fates_ed_st3) then
            pass_ed_st3 = 1
