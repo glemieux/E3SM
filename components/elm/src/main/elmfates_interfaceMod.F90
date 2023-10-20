@@ -778,17 +778,19 @@ contains
                endif
             endif
 
+            if (flandusepftdat == '') then
             ! initialize static layers for reduced complexity FATES versions from HLM
-            this%fates(nc)%bc_in(s)%pft_areafrac(:)=0._r8
-            do m = surfpft_lb,surfpft_ub
-               ft = m-surfpft_lb
-               this%fates(nc)%bc_in(s)%pft_areafrac(ft)=wt_nat_patch(g,t,m)
-            end do
+               this%fates(nc)%bc_in(s)%pft_areafrac(:)=0._r8
+               do m = surfpft_lb,surfpft_ub
+                  ft = m-surfpft_lb
+                  this%fates(nc)%bc_in(s)%pft_areafrac(ft)=wt_nat_patch(g,t,m)
+               end do
 
-            if(abs(sum(this%fates(nc)%bc_in(s)%pft_areafrac(surfpft_lb:surfpft_ub))-1.0_r8).gt.1.0e-9)then
-               write(iulog,*) 'pft_area error in interfc ',s, sum(this%fates(nc)%bc_in(s)%pft_areafrac(:))-1.0_r8
-               call endrun(msg=errMsg(sourcefile, __LINE__))
-            endif
+               if(abs(sum(this%fates(nc)%bc_in(s)%pft_areafrac(surfpft_lb:surfpft_ub))-1.0_r8).gt.1.0e-9)then
+                  write(iulog,*) 'pft_area error in interfc ',s, sum(this%fates(nc)%bc_in(s)%pft_areafrac(:))-1.0_r8
+                  call endrun(msg=errMsg(sourcefile, __LINE__))
+               endif
+            end if
 
          end do
 
