@@ -262,6 +262,8 @@ module ELMFatesInterfaceMod
    character(len=*), parameter, private :: sourcefile = &
         __FILE__
 
+   integer, parameter :: num_landuse_pft_vars = 4
+
    public  :: ELMFatesGlobals1
    public  :: ELMFatesGlobals2
    public  :: ELMFatesTimesteps
@@ -767,7 +769,7 @@ contains
 
             ! Transfer the landuse x pft data to fates via bc_in if file is given
             if (flandusepftdat /= '') then
-               this%fates(nc)%bc_in(s)%pft_areafrac_lu(:,:) = landuse_pft_map(g,:,:)
+               this%fates(nc)%bc_in(s)%pft_areafrac_lu(:,1:num_landuse_pft_vars) = landuse_pft_map(g,:,1:num_landuse_pft_vars)
                this%fates(nc)%bc_in(s)%baregroundfrac = landuse_bareground(g)
             end if
 
@@ -3370,12 +3372,11 @@ end subroutine wrap_update_hifrq_hist
    logical            :: readvar                   ! true => variable is on dataset
    !character(len=16), parameter :: grlnd  = 'lndgrid'      ! name of lndgrid
 
-   integer, parameter :: num_landuse_pft_vars = 5
    integer, parameter :: dim_landuse_pft = 14
 
    ! Land use name arrays
    character(len=10), parameter  :: landuse_pft_map_varnames(num_landuse_pft_vars) = &
-                    [character(len=10)  :: 'frac_primr','frac_secnd','frac_pastr','frac_range','frac_csurf']
+                    [character(len=10)  :: 'frac_primr','frac_secnd','frac_pastr','frac_range'] !need to move 'frac_surf' to a different variable
 
    character(len=*), parameter :: subname = 'GetLandusePFTData'
 
