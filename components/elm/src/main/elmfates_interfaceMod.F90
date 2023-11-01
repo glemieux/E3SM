@@ -57,6 +57,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : use_fates_nocomp
    use elm_varctl        , only : use_fates_sp
    use elm_varctl        , only : use_fates_luh
+   use elm_varctl        , only : flandusepftdat
    use elm_varctl        , only : use_fates_tree_damage
    use elm_varctl        , only : nsrest, nsrBranch
    use elm_varctl        , only : fates_inventory_ctrl_filename
