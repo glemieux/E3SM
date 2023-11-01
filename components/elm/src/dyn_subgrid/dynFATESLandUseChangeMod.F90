@@ -116,8 +116,9 @@ contains
 
        ! Generate the dyn_file_type object
        ! TO DO: check whether to initialize with start or end
-       dynFatesLandUse_file = dyn_file_type(landuse_filename, YEAR_POSITION_START_OF_TIMESTEP)
-       ! dynFatesLandUse_file = dyn_file_type(landuse_filename, YEAR_POSITION_END_OF_TIMESTEP)
+       ! Start calls get_prev_date, where as end calls get_curr_date
+       !dynFatesLandUse_file = dyn_file_type(landuse_filename, YEAR_POSITION_START_OF_TIMESTEP)
+        dynFatesLandUse_file = dyn_file_type(landuse_filename, YEAR_POSITION_END_OF_TIMESTEP)
 
        ! Get initial land use data
        num_points = (bounds%endg - bounds%begg + 1)
@@ -171,8 +172,8 @@ contains
        init_flag = init_state
     end if
 
-    ! input land use data for current year are stored in year+1 in the file
-    call dynFatesLandUse_file%time_info%set_current_year_get_year(1)
+    ! Get the data for the current year
+    call dynFatesLandUse_file%time_info%set_current_year_get_year()
 
     if (dynFatesLandUse_file%time_info%is_before_time_series() .and. .not.(init_flag)) then
        ! Reset the land use transitions to zero for safety
@@ -191,7 +192,7 @@ contains
        end do
        deallocate(this_data)
     end if
-
+ 
   end subroutine dynFatesLandUseInterp
 
 
