@@ -57,6 +57,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : use_fates_nocomp
    use elm_varctl        , only : use_fates_sp
    use elm_varctl        , only : use_fates_luh
+   use elm_varctl        , only : use_fates_potentialveg
    use elm_varctl        , only : flandusepftdat
    use elm_varctl        , only : use_fates_tree_damage
    use elm_varctl        , only : nsrest, nsrBranch
@@ -373,6 +374,7 @@ contains
      integer                                        :: pass_lu_harvest
      integer                                        :: pass_tree_damage
      integer                                        :: pass_use_luh
+     integer                                        :: pass_use_potentialveg     
      integer                                        :: pass_num_luh_states
      integer                                        :: pass_num_luh_transitions
      integer                                        :: pass_lupftdat
@@ -515,6 +517,13 @@ contains
         call set_fates_ctrlparms('use_luh2',ival=pass_use_luh)
         call set_fates_ctrlparms('num_luh2_states',ival=pass_num_luh_states)
         call set_fates_ctrlparms('num_luh2_transitions',ival=pass_num_luh_transitions)
+
+        if ( use_fates_potentialveg ) then
+           pass_use_potentialveg = 1
+        else
+           pass_use_potentialveg = 0
+        end if
+        call set_fates_ctrlparms('use_fates_potentialveg',ival=pass_use_potentialveg)
 
         if(flandusepftdat /= '') then
            pass_lupftdat = 1
