@@ -28,8 +28,7 @@ module dynHarvestMod
   use topounit_varcon       , only : max_topounits
   use VegetationDataType    , only : veg_ps, veg_pf
   use elm_varctl            , only : use_cn, use_fates, iulog
-  use FatesConstantsMod      , only : hlm_harvest_area_fraction
-  use FatesConstantsMod      , only : hlm_harvest_carbon
+  use controlMod            , only : fluh_timeseries
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -69,8 +68,20 @@ module dynHarvestMod
   ! and the carbon units in the input file match that expected by FATES
 
   integer, public, parameter :: num_harvest_vars = 5
-  character(len=64), public, parameter :: harvest_varnames(num_harvest_vars) = &
+
+  ! surface dataset harvest variables
+  character(len=64), parameter :: harvest_varnames_surf(num_harvest_vars) = &
        [character(len=64) :: 'HARVEST_VH1', 'HARVEST_VH2', 'HARVEST_SH1', 'HARVEST_SH2', 'HARVEST_SH3']
+
+  ! LUH2 raw wood harvest area fraction
+  character(len=64), parameter :: harvest_varnames_luh_area(num_harvest_vars) = &
+       [character(len=64) :: 'primf_harv', 'primn_harv', 'secmf_harv', 'secyf_harv', 'secnf_harv']
+
+  ! LUH2 raw wood harvest biomass carbon
+  character(len=64), parameter :: harvest_varnames_luh_mass(num_harvest_vars) = &
+       [character(len=64) :: 'primf_bioh', 'primn_bioh', 'secmf_bioh', 'secyf_bioh', 'secnf_bioh']
+
+  character(len=64), public :: harvest_varnames(num_harvest_vars)
 
   type(dyn_var_time_uninterp_type) :: harvest_vars(num_harvest_vars)   ! value of each harvest variable
 
@@ -86,7 +97,7 @@ module dynHarvestMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine dynHarvest_init(bounds, harvest_filename)
+  subroutine dynHarvest_init(bounds)
     
     ! !DESCRIPTION:
     ! Initialize data structures for harvest information.
@@ -100,14 +111,15 @@ contains
     
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds           ! proc-level bounds
-    character(len=*) , intent(in) :: harvest_filename ! name of file containing harvest information
-    
+
     ! !LOCAL VARIABLES:
     integer :: varnum     ! counter for harvest variables
     integer :: harvest_shape(1)  ! harvest shape 
     integer :: num_points ! number of spatial points
     integer :: ier        ! error code
-    
+
+    character(len=*) :: harvest_filename ! name of file containing harvest information
+
     character(len=*), parameter :: subname = 'dynHarvest_init'
     !-----------------------------------------------------------------------
 
@@ -117,6 +129,21 @@ contains
     harvest_rates(:,bounds%begg:bounds%endg) = 0._r8
     if (ier /= 0) then
        call endrun(msg=' allocation error for harvest_rates'//errMsg(__FILE__, __LINE__))
+    end if
+
+    ! Set the harvest_filename and harvest_varnames depending on the run mode
+    if (use_fates_luh) then
+       harvest_filename = fluh_timeseries
+       if (wood_harvest_units == 1) then
+          harvest_varnames = harvest_varnames_luh_area
+       elseif (wood_harvest_units == 2) then
+          harvest_varnames = harvest_varnames_luh_mass
+       else
+          call endrun(msg=' invalid fates wood harvest units specified'//errMsg(__FILE__, __LINE__))
+       end if
+    else
+       harvest_filename = get_flanduse_timeseries())
+       harvest_varnames = harvest_varnames_surf
     end if
 
     !dynHarvest_file = dyn_file_type(harvest_filename, YEAR_POSITION_START_OF_TIMESTEP)
