@@ -76,6 +76,7 @@ contains
     use dynpftFileMod     , only : dynpft_init
     use dynHarvestMod     , only : dynHarvest_init
     use dynpftFileMod     , only : dynpft_interp
+    use controlMod, only: use_fates_luh, fluh_timeseries
     !
     ! !ARGUMENTS:
     type(bounds_type) , intent(in)    :: bounds  ! processor-level bounds
@@ -86,6 +87,7 @@ contains
     integer           :: nclumps      ! number of clumps on this processor
     integer           :: nc           ! clump index
     type(bounds_type) :: bounds_clump ! clump-level bounds
+    logical :: luh_source = .false.
     character(len=*), parameter :: subname = 'dynSubgrid_init'
     !-----------------------------------------------------------------------
 
@@ -104,7 +106,9 @@ contains
 
     ! Initialize stuff for harvest (currently shares the flanduse_timeseries file)
     if (get_do_harvest()) then
-       call dynHarvest_init(bounds)
+       call dynHarvest_init(bounds, harvest_filename=get_flanduse_timeseries())
+    elseif (use_fates_luh) then
+       call dynHarvest_init(bounds, fluh_timeseries, luh_source=.true.)
     end if
 
     ! Initialize stuff for prescribed transient crops
