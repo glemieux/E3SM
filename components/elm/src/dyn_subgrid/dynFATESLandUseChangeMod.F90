@@ -25,8 +25,31 @@ module dynFATESLandUseChangeMod
 
   integer, public, parameter    :: num_landuse_transition_vars = 108
   integer, public, parameter    :: num_landuse_state_vars = 12
+  integer, public, parameter    :: num_landuse_harvest_vars = 5
 
-  type(dyn_file_type), target   :: dynFatesLandUse_file
+  ! Define the fates landuse namelist mode switch values
+  integer, public, parameter    :: fates_harvest_no_logging   = 0
+  integer, public, parameter    :: fates_harvest_logging_only = 1
+  integer, public, parameter    :: fates_harvest_clmlanduse   = 2
+  integer, public, parameter    :: fates_harvest_luh_area     = 3
+  integer, public, parameter    :: fates_harvest_luh_mass     = 4
+
+  ! Define landuse harvest unit integer representation
+  integer, public, parameter    :: landuse_harvest_area_units = 1
+  integer, public, parameter    :: landuse_harvest_mass_units = 2
+  integer, public               :: landuse_harvest_units
+
+  TYPE(dyn_file_type), target   :: dynFatesLandUse_file
+
+  ! LUH2 raw wood harvest area fraction
+  character(len=10), parameter, target :: landuse_harvest_area_varnames(num_landuse_harvest_vars) = &
+       [character(len=10) :: 'primf_harv', 'primn_harv', 'secmf_harv', 'secyf_harv', 'secnf_harv']
+
+  ! LUH2 raw wood harvest biomass carbon
+  character(len=10), parameter, target :: landuse_harvest_mass_varnames(num_landuse_harvest_vars) = &
+       [character(len=10) :: 'primf_bioh', 'primn_bioh', 'secmf_bioh', 'secyf_bioh', 'secnf_bioh']
+
+  character(len=10), public, pointer :: landuse_harvest_varnames => null()
 
   ! Land use name arrays
   character(len=5), public, parameter  :: landuse_state_varnames(num_landuse_state_vars) = &
@@ -59,8 +82,9 @@ module dynFATESLandUseChangeMod
                                           'c3nfx_to_c3ann','c3nfx_to_c4ann','c3nfx_to_c3per','c3nfx_to_c4per', &
                                           'c3nfx_to_secdf','c3nfx_to_secdn','c3nfx_to_pastr','c3nfx_to_range','c3nfx_to_urban']
 
-  type(dyn_var_time_uninterp_type) :: landuse_transition_vars(num_landuse_transition_vars) ! value of each landuse variable
-  type(dyn_var_time_uninterp_type) :: landuse_state_vars(num_landuse_state_vars)           ! value of each landuse variable
+  type(dyn_var_time_uninterp_type) :: landuse_transition_vars(num_landuse_transition_vars) ! value of each transitions variable
+  type(dyn_var_time_uninterp_type) :: landuse_state_vars(num_landuse_state_vars)           ! value of each state variable
+  type(dyn_var_time_uninterp_type) :: landuse_harvest_vars(num_landuse_harvest_vars)       ! value of each harvest variable
 
   public :: dynFatesLandUseInit
   public :: dynFatesLandUseInterp
@@ -106,18 +130,22 @@ contains
     if (ier /= 0) then
        call endrun(msg=' allocation error for landuse_transitions'//errMsg(__FILE__, __LINE__))
     end if
+    allocate(landuse_harvest(num_landuse_harvest_vars,bounds%begg:bounds%endg),stat=ier)
+    if (ier /= 0) then
+       call endrun(msg=' allocation error for landuse_harvest'//errMsg(__FILE__, __LINE__))
+    end if
 
+    ! Set all fates landuse variables to zero
     landuse_states = 0._r8
     landuse_transitions = 0._r8
+    landuse_harvest = 0._r8.
 
     if (use_fates_luh) then
 
        ! Generate the dyn_file_type object
-       ! TO DO: check whether to initialize with start or end
        dynFatesLandUse_file = dyn_file_type(landuse_filename, YEAR_POSITION_START_OF_TIMESTEP)
-       ! dynFatesLandUse_file = dyn_file_type(landuse_filename, YEAR_POSITION_END_OF_TIMESTEP)
 
-       ! Get initial land use data
+       ! Get initial land use data from the fates luh2 timeseries dataset
        num_points = (bounds%endg - bounds%begg + 1)
        landuse_shape(1) = num_points ! Does this need an explicit array shape to be passed to the constructor?
        do varnum = 1, num_landuse_transition_vars
@@ -132,6 +160,29 @@ contains
                dim1name=grlnd, conversion_factor=1.0_r8, &
                do_check_sums_equal_1=.false., data_shape=landuse_shape)
        end do
+
+       ! Get the harvest rate data from the fates luh2 timeseries dataset if enabled
+       if (fates_harvest_mode .ge. fates_harvest_luh_area ) then
+
+          ! change the harvest varnames being used depending on the mode selected
+          if (fates_harvest_mode .eq. fates_harvest_luh_area ) then
+             landuse_harvest_varnames => landuse_harvest_area_varnames
+             landuse_harvest_units = landuse_harvest_area_units
+          elseif (fates_harvest_mode .eq. fates_harvest_luh_mass ) then
+             landuse_harvest_varnames => landuse_harvest_mass_varnames
+             landuse_harvest_units = landuse_harvest_mass_units
+          else
+             call endrun(msg=' undefined fates harvest mode selected'//errMsg(__FILE__, __LINE__))
+          end if
+
+          do varnum = 1, num_landuse_harvest_vars
+             landuse_harvest_vars(varnum) = dyn_var_time_uninterp_type( &
+                  dyn_file=dynFatesLandUse_file, varname=landuse_harvest_varnames(varnum), &
+                  dim1name=grlnd, conversion_factor=1.0_r8, &
+                  do_check_sums_equal_1=.false., data_shape=landuse_shape)
+          end do
+       end if
+
     end if
 
     ! Since fates needs state data during initialization, make sure to call

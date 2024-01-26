@@ -1047,6 +1047,13 @@ contains
             this%fates(nc)%bc_in(s)%hlm_luh_state_names = landuse_state_varnames
             this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,g)
             this%fates(nc)%bc_in(s)%hlm_luh_transition_names = landuse_transition_varnames
+
+            if (fates_harvest_mode .ge. fates_harvest_luh_area ) then
+               this%fates(nc)%bc_in(s)%hlm_harvest_rates = landuse_harvest(:,g)
+               this%fates(nc)%bc_in(s)%hlm_harvest_catnames = landuse_harvest_varnames
+               this%fates(nc)%bc_in(s)%hlm_harvest_units = landuse_harvest_units
+            end if
+
          end if
 
       end do
