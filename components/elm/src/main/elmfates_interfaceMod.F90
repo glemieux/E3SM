@@ -502,22 +502,42 @@ contains
            pass_lu_harvest = 0
            pass_num_lu_harvest_types = 0
         end if
-        call set_fates_ctrlparms('use_lu_harvest',ival=pass_lu_harvest)
-        call set_fates_ctrlparms('num_lu_harvest_cats',ival=pass_num_lu_harvest_types)
-        call set_fates_ctrlparms('use_logging',ival=pass_logging)
 
         if(use_fates_luh) then
            pass_use_luh = 1
            pass_num_luh_states = num_landuse_state_vars
            pass_num_luh_transitions = num_landuse_transition_vars
+
+           ! Do not set harvest passing variables to zero not in luh harvest modes
+           ! as the user may want to use the CLM landuse harvest with luh2 transitions
+           if(fates_harvest_mode >= fates_harvest_luh_area) then
+              ! End the run if do_harvest is true with this run mode.
+              ! This should be caught be the build namelist.
+              if(get_do_harvest()) then
+                 call endrun(msg="do_harvest and fates_harvest_mode using luh2 harvest data are incompatible"//&
+                      errmsg(sourcefile, __LINE__))
+              else
+                 pass_logging = 1
+                 pass_num_lu_harvest_types = num_landuse_harvest_vars
+                 pass_lu_harvest = 1
+              end if
+           end if
+
         else
            pass_use_luh = 0
            pass_num_luh_states = 0
            pass_num_luh_transitions = 0
         end if
+
         call set_fates_ctrlparms('use_luh2',ival=pass_use_luh)
         call set_fates_ctrlparms('num_luh2_states',ival=pass_num_luh_states)
         call set_fates_ctrlparms('num_luh2_transitions',ival=pass_num_luh_transitions)
+
+        ! Wait to set the harvest and logging variables after checking get_do_harvest
+        ! and fates_harvest_modes
+        call set_fates_ctrlparms('use_lu_harvest',ival=pass_lu_harvest)
+        call set_fates_ctrlparms('num_lu_harvest_cats',ival=pass_num_lu_harvest_types)
+        call set_fates_ctrlparms('use_logging',ival=pass_logging)
 
         if(use_fates_ed_st3) then
            pass_ed_st3 = 1
