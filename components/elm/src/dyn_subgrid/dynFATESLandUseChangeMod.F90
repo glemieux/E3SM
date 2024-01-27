@@ -226,6 +226,7 @@ contains
        ! Reset the land use transitions to zero for safety
        landuse_transitions(1:num_landuse_transition_vars,bounds%begg:bounds%endg) = 0._r8
        landuse_states(1:num_landuse_state_vars,bounds%begg:bounds%endg) = 0._r8
+       landuse_harvest(1:num_landuse_harvest_vars,bounds%begg:bounds%endg) = 0._r8
     else
        ! Right now we don't account for the topounits
        allocate(this_data(bounds%begg:bounds%endg))
@@ -237,6 +238,12 @@ contains
           call landuse_state_vars(varnum)%get_current_data(this_data)
           landuse_states(varnum,bounds%begg:bounds%endg) = this_data(bounds%begg:bounds%endg)
        end do
+       if (fates_harvest_mode .ge. fates_harvest_luh_area ) then
+          do varnum = 1, num_landuse_harvest_vars
+             call landuse_harvest_vars(varnum)%get_current_data(this_data)
+             landuse_harvest(varnum,bounds%begg:bounds%endg) = this_data(bounds%begg:bounds%endg)
+          end do
+       end if
        deallocate(this_data)
     end if
 
