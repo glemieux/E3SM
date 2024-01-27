@@ -28,6 +28,7 @@ module dynHarvestMod
   use topounit_varcon       , only : max_topounits
   use VegetationDataType    , only : veg_ps, veg_pf
   use elm_varctl            , only : use_cn, use_fates, iulog
+  use controlMod            , only : fluh_timeseries
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -96,7 +97,7 @@ module dynHarvestMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine dynHarvest_init(bounds, harvest_filename, luh_source)
+  subroutine dynHarvest_init(bounds)
     
     ! !DESCRIPTION:
     ! Initialize data structures for harvest information.
@@ -110,15 +111,14 @@ contains
     
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds           ! proc-level bounds
-    character(len=*), intent(in)  :: harvest_filename ! name of file containing harvest information
-    logical, intent(in), optional :: luh_source       ! name of file containing harvest information
 
     ! !LOCAL VARIABLES:
     integer :: varnum     ! counter for harvest variables
     integer :: harvest_shape(1)  ! harvest shape 
     integer :: num_points ! number of spatial points
     integer :: ier        ! error code
-    logical :: luh_source_flag = .false.
+
+    character(len=*) :: harvest_filename ! name of file containing harvest information
 
     character(len=*), parameter :: subname = 'dynHarvest_init'
     !-----------------------------------------------------------------------
@@ -131,12 +131,9 @@ contains
        call endrun(msg=' allocation error for harvest_rates'//errMsg(__FILE__, __LINE__))
     end if
 
-    if(present(luh_source)) then 
-      luh_source_flag = luh_source
-    end if 
-
-    ! Set the harvest_varnames depending on the run mode
-    if (luh_source_flag) then
+    ! Set the harvest_filename and harvest_varnames depending on the run mode
+    if (use_fates_luh) then
+       harvest_filename = fluh_timeseries
        if (wood_harvest_units == 1) then
           harvest_varnames = harvest_varnames_luh_area
        elseif (wood_harvest_units == 2) then
@@ -145,6 +142,7 @@ contains
           call endrun(msg=' invalid fates wood harvest units specified'//errMsg(__FILE__, __LINE__))
        end if
     else
+       harvest_filename = get_flanduse_timeseries())
        harvest_varnames = harvest_varnames_surf
     end if
 

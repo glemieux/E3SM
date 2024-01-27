@@ -731,13 +731,11 @@ contains
 
     call t_startf('init_dyn_subgrid')
     call init_subgrid_weights_mod(bounds_proc)
-    write(iulog,*)'calling dynSubgrid_init'
     call dynSubgrid_init(bounds_proc, glc2lnd_vars, crop_vars)
     call t_stopf('init_dyn_subgrid')
 
     ! Initialize fates LUH2 usage
     if (use_fates_luh) then
-        write(iulog,*)'calling dynFatesLandUseInit'
        call dynFatesLandUseInit(bounds_proc, fluh_timeseries)
     end if
 
