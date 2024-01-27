@@ -784,11 +784,23 @@ sub setup_cmdl_fates_mode {
 
       # The following variables may be set by the user and are compatible with use_fates
       # no need to set defaults, covered in a different routine
-      my @list  = (  "fates_spitfire_mode", "use_vertsoilc", "use_century_decomp",
-                     "use_fates_planthydro", "use_fates_ed_st3", "use_fates_ed_prescribed_phys",
-                     "use_fates_inventory_init", "use_fates_fixed_biogeog", "use_fates_nocomp","use_fates_sp",
-                     "fates_inventory_ctrl_filename","use_fates_logging", "use_fates_tree_damage",
-                     "use_fates_parteh_mode","use_fates_cohort_age_tracking","use_snicar_ad", "use_fates_luh");
+      my @list  = (  "fates_spitfire_mode",
+                     "fates_harvest_mode",
+                     "fates_inventory_ctrl_filename",
+                     "use_century_decomp",
+                     "use_fates_cohort_age_tracking",
+                     "use_fates_ed_st3",
+                     "use_fates_ed_prescribed_phys",
+                     "use_fates_fixed_biogeog",
+                     "use_fates_inventory_init",
+                     "use_fates_luh",
+                     "use_fates_nocomp",
+                     "use_fates_parteh_mode",
+                     "use_fates_planthydro",
+                     "use_fates_sp",
+                     "use_fates_tree_damage",
+                     "use_snicar_ad",
+                     "use_vertsoilc");
       foreach my $var ( @list ) {
 	  if ( defined($nl->get_value($var))  ) {
 	      $nl_flags->{$var} = $nl->get_value($var);
@@ -816,6 +828,10 @@ sub setup_cmdl_fates_mode {
        if ( defined($nl->get_value($var)) ) {
            fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
+       $var = "fates_harvest_mode";
+       if ( defined($nl->get_value($var)) ) {
+           fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
+       }
        $var = "use_fates_cohort_age_tracking";
        if ( defined($nl->get_value($var)) ) {
            fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
@@ -823,10 +839,6 @@ sub setup_cmdl_fates_mode {
 	   $var = "use_fates_fixed_biogeog";
        if ( defined($nl->get_value($var)) ) {
            fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
-       }
-       $var = "use_fates_logging";
-       if ( defined($nl->get_value($var)) ) {
-	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
        $var = "fates_parteh_mode";
        if ( defined($nl->get_value($var)) ) {
@@ -3165,8 +3177,8 @@ sub setup_logic_fates {
 
   if ( value_is_true( $nl_flags->{'use_fates'})  ) {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_spitfire_mode',          'use_fates'=>$nl_flags->{'use_fates'} );
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_harvest_mode',          'use_fates'=>$nl_flags->{'use_fates'} );
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_fixed_biogeog',      'use_fates'=>$nl_flags->{'use_fates'} );
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_logging',            'use_fates'=>$nl_flags->{'use_fates'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_planthydro',         'use_fates'=>$nl_flags->{'use_fates'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_parteh_mode',            'use_fates'=>$nl_flags->{'use_fates'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_ed_st3',             'use_fates'=>$nl_flags->{'use_fates'});

@@ -46,12 +46,12 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : use_fates
    use elm_varctl        , only : use_vertsoilc
    use elm_varctl        , only : fates_spitfire_mode
+   use elm_varctl        , only : fates_harvest_mode
    use elm_varctl        , only : fates_parteh_mode
    use elm_varctl        , only : use_fates_planthydro
    use elm_varctl        , only : use_fates_cohort_age_tracking
    use elm_varctl        , only : use_fates_ed_st3
    use elm_varctl        , only : use_fates_ed_prescribed_phys
-   use elm_varctl        , only : use_fates_logging
    use elm_varctl        , only : use_fates_inventory_init
    use elm_varctl        , only : use_fates_fixed_biogeog
    use elm_varctl        , only : use_fates_nocomp
@@ -168,10 +168,17 @@ module ELMFatesInterfaceMod
    use FatesConstantsMod      , only : hlm_harvest_area_fraction
    use FatesConstantsMod      , only : hlm_harvest_carbon
 
-   use dynFATESLandUseChangeMod, only : num_landuse_transition_vars, num_landuse_state_vars
-   use dynFATESLandUseChangeMod, only : landuse_transitions, landuse_states
-   use dynFATESLandUseChangeMod, only : landuse_transition_varnames, landuse_state_varnames
-   use dynFATESLandUseChangeMod, only : dynFatesLandUseInterp
+   use dynFATESLandUseChangeMod, only : num_landuse_transition_vars
+   use dynFATESLandUseChangeMod, only : num_landuse_state_vars
+   use dynFATESLandUseChangeMod, only : num_landuse_harvest_vars
+   use dynFATESLandUseChangeMod, only : landuse_transitions
+   use dynFATESLandUseChangeMod, only : landuse_states
+   use dynFATESLandUseChangeMod, only : landuse_harvest
+   use dynFATESLandUseChangeMod, only : landuse_transition_varnames
+   use dynFATESLandUseChangeMod, only : landuse_state_varnames
+   use dynFATESLandUseChangeMod, only : landuse_harvest_varnames
+   use dynFATESLandUseChangeMod, only : fates_harvest_logging_only
+   use dynFATESLandUseChangeMod, only : fates_harvest_luh_area
 
    use FatesInterfaceTypesMod       , only : bc_in_type, bc_out_type
    use CLMFatesParamInterfaceMod    , only : FatesReadParameters
@@ -413,7 +420,7 @@ contains
         end if
         call set_fates_ctrlparms('use_tree_damage',ival=pass_tree_damage)
         
-        if((trim(nu_com).eq.'ECA') .or. (trim(nu_com).eq.'MIC')) then
+        if((trim(nu_com)=='ECA') .or. (trim(nu_com)=='MIC')) then
            call set_fates_ctrlparms('nu_com',cval='ECA')
         else
            call set_fates_ctrlparms('nu_com',cval='RD')
@@ -437,7 +444,7 @@ contains
         call set_fates_ctrlparms('nitrogen_spec',ival=1)
         call set_fates_ctrlparms('phosphorus_spec',ival=1)
         
-        if(is_restart() .or. nsrest .eq. nsrBranch) then
+        if(is_restart() .or. nsrest == nsrBranch) then
            pass_is_restart = 1
         else
            pass_is_restart = 0
@@ -481,7 +488,7 @@ contains
         call set_fates_ctrlparms('sf_anthro_ignitions_def',ival=anthro_ignitions)
 
         ! check fates logging namelist value first because hlm harvest overrides it
-        if(use_fates_logging) then
+        if(fates_harvest_mode == fates_harvest_no_logging) then
            pass_logging = 1
         else
            pass_logging = 0
@@ -930,7 +937,7 @@ contains
          lnfm24 = this%fates_fire_data_method%GetLight24()
       end if
       
-      if (fates_spitfire_mode .eq. anthro_suppression) then
+      if (fates_spitfire_mode == anthro_suppression) then
          allocate(gdp_lf_col(bounds_clump%begc:bounds_clump%endc), stat=ier)
          if (ier /= 0) then
             call endrun(msg="allocation error for gdp"//&
@@ -950,13 +957,13 @@ contains
                
                this%fates(nc)%bc_in(s)%lightning24(ifp) = lnfm24(g) * 24._r8  ! #/km2/hr to #/km2/day
                
-               if (fates_spitfire_mode .ge. anthro_ignitions) then
+               if (fates_spitfire_mode >= anthro_ignitions) then
                   this%fates(nc)%bc_in(s)%pop_density(ifp) = this%fates_fire_data_method%forc_hdm(g)
                end if
 
             end do ! ifp
 
-            if (fates_spitfire_mode .eq. anthro_suppression) then
+            if (fates_spitfire_mode == anthro_suppression) then
                ! Placeholder for future fates use of gdp - comment out before integration
                !this%fates(nc)%bc_in(s)%gdp = gdp_lf_col(c) ! k US$/capita(g)
             end if
@@ -1048,7 +1055,7 @@ contains
             this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,g)
             this%fates(nc)%bc_in(s)%hlm_luh_transition_names = landuse_transition_varnames
 
-            if (fates_harvest_mode .ge. fates_harvest_luh_area ) then
+            if (fates_harvest_mode >= fates_harvest_luh_area ) then
                this%fates(nc)%bc_in(s)%hlm_harvest_rates = landuse_harvest(:,g)
                this%fates(nc)%bc_in(s)%hlm_harvest_catnames = landuse_harvest_varnames
                this%fates(nc)%bc_in(s)%hlm_harvest_units = landuse_harvest_units
@@ -1862,17 +1869,24 @@ contains
               call HydrSiteColdStart(this%fates(nc)%sites,this%fates(nc)%bc_in)
            end if
 
-           do s = 1,this%fates(nc)%nsites
-              c = this%f2hmap(nc)%fcolumn(s)
-              g = col_pp%gridcell(c)
+           ! Transfer initial values to fates
+           if (use_fates_luh) then
+              do s = 1,this%fates(nc)%nsites
+                 c = this%f2hmap(nc)%fcolumn(s)
+                 g = col_pp%gridcell(c)
 
-              if (use_fates_luh) then
-                    this%fates(nc)%bc_in(s)%hlm_luh_states = landuse_states(:,g)
-                    this%fates(nc)%bc_in(s)%hlm_luh_state_names = landuse_state_varnames
-                    this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,g)
-                    this%fates(nc)%bc_in(s)%hlm_luh_transition_names = landuse_transition_varnames
-              end if
-           end do
+                 this%fates(nc)%bc_in(s)%hlm_luh_states = landuse_states(:,g)
+                 this%fates(nc)%bc_in(s)%hlm_luh_state_names = landuse_state_varnames
+                 this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,g)
+                 this%fates(nc)%bc_in(s)%hlm_luh_transition_names = landuse_transition_varnames
+
+                 if (fates_harvest_mode >= fates_harvest_luh_area ) then
+                    this%fates(nc)%bc_in(s)%hlm_harvest_rates = landuse_harvest(:,g)
+                    this%fates(nc)%bc_in(s)%hlm_harvest_catnames = landuse_harvest_varnames
+                    this%fates(nc)%bc_in(s)%hlm_harvest_units = landuse_harvest_units
+                 end if
+              end do
+           end if
 
            ! Initialize patches
            call init_patches(this%fates(nc)%nsites, this%fates(nc)%sites, &

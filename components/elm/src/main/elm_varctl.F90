@@ -221,8 +221,8 @@ module elm_varctl
 
   logical, public            :: use_fates = .false.                     ! true => use  ED
   integer, public            :: fates_spitfire_mode = 0                 ! 0 for no fire; 1 for constant ignitions
+  integer, public            :: fates_harvest_mode = 0                  ! 0 for no harvest/logging; 1-4 for harvest mode options
   logical, public            :: use_fates_fixed_biogeog = .false.       ! true => use fixed biogeography mode
-  logical, public            :: use_fates_logging = .false.             ! true => turn on logging module
   logical, public            :: use_fates_planthydro = .false.          ! true => turn on fates hydro
   logical, public            :: use_fates_cohort_age_tracking = .false. ! true => turn on cohort age tracking
   logical, public            :: use_fates_tree_damage = .false.         ! true => turn on tree damage module
