@@ -3177,7 +3177,7 @@ sub setup_logic_fates {
 
   if ( value_is_true( $nl_flags->{'use_fates'})  ) {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_spitfire_mode',          'use_fates'=>$nl_flags->{'use_fates'} );
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_harvest_mode',          'use_fates'=>$nl_flags->{'use_fates'} );
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_harvest_mode',           'use_fates'=>$nl_flags->{'use_fates'} );
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_fixed_biogeog',      'use_fates'=>$nl_flags->{'use_fates'} );
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_planthydro',         'use_fates'=>$nl_flags->{'use_fates'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_parteh_mode',            'use_fates'=>$nl_flags->{'use_fates'});
@@ -3193,6 +3193,60 @@ sub setup_logic_fates {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_paramfile', 'phys'=>$nl_flags->{'phys'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fluh_timeseries', 'phys'=>$nl_flags->{'phys'});
 
+    # For FATES SP mode make sure no-competion, and fixed-biogeography are also set
+    # And also check for other settings that can't be trigged on as well
+    my $var = "use_fates_sp";
+    if ( defined($nl->get_value($var))  ) {
+       if ( &value_is_true($nl->get_value($var)) ) {
+          my @list = ( "use_fates_nocomp", "use_fates_fixed_biogeog" );
+          foreach my $var ( @list ) {
+             if ( ! &value_is_true($nl->get_value($var)) ) {
+               fatal_error("$var is required when FATES SP is on (use_fates_sp)" );
+             }
+          }
+          # spit-fire can't be on with FATES SP mode is active
+          if ( $nl->get_value('fates_spitfire_mode') > 0 ) {
+                fatal_error('fates_spitfire_mode can NOT be set to greater than 0 when use_fates_sp is true');
+          }
+       }
+    }
+    # check that fates landuse change mode has the necessary luh2 landuse timeseries data
+    my $var = "use_fates_luh";
+    if ( defined($nl->get_value($var))  ) {
+       if ( &value_is_true($nl->get_value($var)) ) {
+          $var = "fluh_timeseries";
+          add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var,
+                      'phys'=>$nl_flags->{'phys'}, 'hgrid'=>$nl_flags->{'res'},
+                      'sim_year_range'=>$nl_flags->{'sim_year_range'}, nofail=>1 );
+          my $fname = remove_leading_and_trailing_quotes( $nl->get_value($var) );
+          if ( ! defined($nl->get_value($var))  ) {
+             fatal_error("$var is required when use_fates_luh is set" );
+          } elsif ( ! -f "$fname" ) {
+             fatal_error("$fname does NOT point to a valid filename" );
+          }
+       }
+    }
+    # Check fates_harvest_mode compatibility
+    my $var = "fates_harvest_mode";
+    if ( defined($nl->get_value($var))  ) {
+       # using fates_harvest_mode with CLM landuse driver data
+       # if ( $nl->get_value($var) == 2) {
+       #    # Make sure that do_harvest is set to true
+       #    if ( ! &value_is_true($nl->get_value('do_harvest')) ) {
+       #      fatal_error("do_harvest must be true when $var is equal to 2" );
+       # }
+       # using fates_harvest mode with raw luh2 harvest data
+       if ( $nl->get_value($var) > 2) {
+          # Make sure that use_fates_luh is true when using raw fates luh2 harvest data
+          if ( ! &value_is_true($nl->get_value('use_fates_luh')) ) {
+            fatal_error("use_fates_luh is required to be true when $var is greater than 2" );
+          }
+          # do_harvest can not be on if we are using the raw fates luh2 harvest data
+          if ( &value_is_true($nl->get_value('do_harvest')) ) {
+            fatal_error("do_harvest can not be true when $var is greater than 2" );
+          }
+       }
+    }
   }
 }
 
