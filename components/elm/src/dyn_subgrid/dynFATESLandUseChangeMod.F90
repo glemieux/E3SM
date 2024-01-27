@@ -98,7 +98,7 @@ contains
     ! Initialize data structures for land use information.
 
     ! !USES:
-    use elm_varctl            , only : use_cn, use_fates_luh
+    use elm_varctl            , only : use_cn, use_fates_luh, fates_harvest_mode
     use dynVarTimeUninterpMod , only : dyn_var_time_uninterp_type
     use dynTimeInfoMod        , only : YEAR_POSITION_START_OF_TIMESTEP
     use dynTimeInfoMod        , only : YEAR_POSITION_END_OF_TIMESTEP
@@ -196,7 +196,7 @@ contains
   subroutine dynFatesLandUseInterp(bounds, init_state)
 
     use dynTimeInfoMod , only : time_info_type
-    use elm_varctl     , only : use_cn
+    use elm_varctl     , only : use_cn, fates_harvest_mode
 
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds       ! proc-level bounds
