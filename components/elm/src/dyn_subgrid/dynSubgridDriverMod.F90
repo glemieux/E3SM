@@ -104,7 +104,7 @@ contains
 
     ! Initialize stuff for harvest (currently shares the flanduse_timeseries file)
     if (get_do_harvest()) then
-       call dynHarvest_init(bounds)
+       call dynHarvest_init(bounds, harvest_filename=get_flanduse_timeseries())
     end if
 
     ! Initialize stuff for prescribed transient crops
