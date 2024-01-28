@@ -3229,7 +3229,7 @@ sub setup_logic_fates {
     # Check fates_harvest_mode compatibility
     my $var = "fates_harvest_mode";
     if ( defined($nl->get_value($var))  ) {
-       # using fates_harvest_mode with CLM landuse driver data
+       # using fates_harvest_mode with CLM landuse driver data - for user convienence
        # if ( $nl->get_value($var) == 2) {
        #    # Make sure that do_harvest is set to true
        #    if ( ! &value_is_true($nl->get_value('do_harvest')) ) {
