@@ -22,6 +22,7 @@ module dynFATESLandUseChangeMod
 
   real(r8), allocatable, public :: landuse_transitions(:,:)
   real(r8), allocatable, public :: landuse_states(:,:)
+  real(r8), allocatable, public :: landuse_harvest(:,:)
 
   integer, public, parameter    :: num_landuse_transition_vars = 108
   integer, public, parameter    :: num_landuse_state_vars = 12
@@ -42,14 +43,14 @@ module dynFATESLandUseChangeMod
   TYPE(dyn_file_type), target   :: dynFatesLandUse_file
 
   ! LUH2 raw wood harvest area fraction
-  character(len=10), parameter, target :: landuse_harvest_area_varnames(num_landuse_harvest_vars) = &
+  character(len=10), target :: landuse_harvest_area_varnames(num_landuse_harvest_vars) = &
        [character(len=10) :: 'primf_harv', 'primn_harv', 'secmf_harv', 'secyf_harv', 'secnf_harv']
 
   ! LUH2 raw wood harvest biomass carbon
-  character(len=10), parameter, target :: landuse_harvest_mass_varnames(num_landuse_harvest_vars) = &
+  character(len=10), target :: landuse_harvest_mass_varnames(num_landuse_harvest_vars) = &
        [character(len=10) :: 'primf_bioh', 'primn_bioh', 'secmf_bioh', 'secyf_bioh', 'secnf_bioh']
 
-  character(len=10), public, pointer :: landuse_harvest_varnames => null()
+  character(len=10), public, pointer :: landuse_harvest_varnames(:) => null()
 
   ! Land use name arrays
   character(len=5), public, parameter  :: landuse_state_varnames(num_landuse_state_vars) = &
@@ -138,7 +139,7 @@ contains
     ! Set all fates landuse variables to zero
     landuse_states = 0._r8
     landuse_transitions = 0._r8
-    landuse_harvest = 0._r8.
+    landuse_harvest = 0._r8
 
     if (use_fates_luh) then
 

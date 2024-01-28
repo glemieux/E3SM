@@ -177,7 +177,8 @@ module ELMFatesInterfaceMod
    use dynFATESLandUseChangeMod, only : landuse_transition_varnames
    use dynFATESLandUseChangeMod, only : landuse_state_varnames
    use dynFATESLandUseChangeMod, only : landuse_harvest_varnames
-   use dynFATESLandUseChangeMod, only : fates_harvest_logging_only
+   use dynFATESLandUseChangeMod, only : landuse_harvest_units
+   use dynFATESLandUseChangeMod, only : fates_harvest_no_logging
    use dynFATESLandUseChangeMod, only : fates_harvest_luh_area
 
    use FatesInterfaceTypesMod       , only : bc_in_type, bc_out_type
@@ -487,8 +488,8 @@ contains
         call set_fates_ctrlparms('sf_successful_ignitions_def',ival=successful_ignitions)
         call set_fates_ctrlparms('sf_anthro_ignitions_def',ival=anthro_ignitions)
 
-        ! check fates logging namelist value first because hlm harvest overrides it
-        if(fates_harvest_mode == fates_harvest_no_logging) then
+        ! check fates logging namelist value first because hlm harvest can override it
+        if (fates_harvest_mode > fates_harvest_no_logging) then
            pass_logging = 1
         else
            pass_logging = 0
@@ -517,7 +518,6 @@ contains
                  call endrun(msg="do_harvest and fates_harvest_mode using luh2 harvest data are incompatible"//&
                       errmsg(sourcefile, __LINE__))
               else
-                 pass_logging = 1
                  pass_num_lu_harvest_types = num_landuse_harvest_vars
                  pass_lu_harvest = 1
               end if
