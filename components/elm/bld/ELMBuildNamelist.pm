@@ -796,6 +796,7 @@ sub setup_cmdl_fates_mode {
       my @list  = (  "fates_spitfire_mode",
                      "fates_harvest_mode",
                      "fates_inventory_ctrl_filename",
+                     "fates_seeddisp_cadence",
                      "use_century_decomp",
                      "use_fates_cohort_age_tracking",
                      "use_fates_ed_st3",
