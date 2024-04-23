@@ -807,6 +807,7 @@ sub setup_cmdl_fates_mode {
                      "use_fates_nocomp",
                      "use_fates_parteh_mode",
                      "use_fates_planthydro",
+                     "use_fates_potentialveg",
                      "use_fates_sp",
                      "use_fates_tree_damage",
                      "use_snicar_ad",
