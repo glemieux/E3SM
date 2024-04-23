@@ -260,9 +260,9 @@ contains
           use_fates_nocomp,                             &
           use_fates_sp,                                 &
           use_fates_luh,                                &
-          use_fates_potentialveg,                                &
+          use_fates_potentialveg,                       &
           fluh_timeseries,                              &
-          flandusepftdat,                                  &
+          flandusepftdat,                               &
           fates_parteh_mode,                            &
           fates_seeddisp_cadence,                       &
           use_fates_tree_damage,                        &

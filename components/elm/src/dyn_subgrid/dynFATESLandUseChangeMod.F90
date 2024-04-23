@@ -41,7 +41,7 @@ module dynFATESLandUseChangeMod
   integer, public, parameter    :: landuse_harvest_mass_units = 2
   integer, public               :: landuse_harvest_units
 
-  TYPE(dyn_file_type), target   :: dynFatesLandUse_file
+  type(dyn_file_type), target   :: dynFatesLandUse_file
 
   ! LUH2 raw wood harvest area fraction
   character(len=10), target :: landuse_harvest_area_varnames(num_landuse_harvest_vars) = &
@@ -153,8 +153,8 @@ contains
     if (use_fates_luh) then
 
        ! Generate the dyn_file_type object
-       ! Start calls get_prev_date, where as end calls get_curr_date
-        dynFatesLandUse_file = dyn_file_type(landuse_filename, YEAR_POSITION_END_OF_TIMESTEP)
+       ! Start calls get_prev_date, whereas end calls get_curr_date
+       dynFatesLandUse_file = dyn_file_type(landuse_filename, YEAR_POSITION_END_OF_TIMESTEP)
 
        ! Get initial land use data from the fates luh2 timeseries dataset
        num_points = (bounds%endg - bounds%begg + 1)
@@ -254,7 +254,7 @@ contains
        end if
        deallocate(this_data)
     end if
- 
+
   end subroutine dynFatesLandUseInterp
 
 
