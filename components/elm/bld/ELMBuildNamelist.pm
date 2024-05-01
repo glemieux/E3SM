@@ -3384,7 +3384,7 @@ sub setup_logic_fates {
           if ( ! &value_is_true($nl->get_value('use_fates_luh')) ) {
             fatal_error("use_fates_luh must be true when $var is true" );
           }
-          if ( $nl->get_value('fates_harvest_mod') > 0) {
+          if ( $nl->get_value('fates_harvest_mode') > 0) {
             fatal_error("fates_harvest_mode must be off (i.e. set to zero) when $var is true" );
           }
        }
