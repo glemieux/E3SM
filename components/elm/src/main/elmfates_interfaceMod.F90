@@ -568,13 +568,6 @@ contains
         end if
         call set_fates_ctrlparms('use_fates_potentialveg',ival=pass_use_potentialveg)
 
-        if(use_fates_lupft) then
-           pass_lupftdat = 1
-        else
-           pass_lupftdat = 0
-        end if
-        call set_fates_ctrlparms('use_landusepft_data',ival=pass_lupftdat) ! This is currently unused in FATES
-
         ! Wait to set the harvest and logging variables after checking get_do_harvest
         ! and fates_harvest_modes
         call set_fates_ctrlparms('use_lu_harvest',ival=pass_lu_harvest)
