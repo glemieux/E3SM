@@ -3316,7 +3316,7 @@ sub setup_logic_fates {
                                                                                                           'fates_harvest_mode'=>$nl_flags->{'fates_harvest_mode'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_paramfile', 'phys'=>$nl_flags->{'phys'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fluh_timeseries', 'phys'=>$nl_flags->{'phys'});
-     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_history_dimlevel','use_fates'=>$nl_flags->{'use_fates'});
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_history_dimlevel','use_fates'=>$nl_flags->{'use_fates'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'flandusepftdat', 'phys'=>$nl_flags->{'phys'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_potentialveg',       'use_fates'=>$nl_flags->{'use_fates'});
 
