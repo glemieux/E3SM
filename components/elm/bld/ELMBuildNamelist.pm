@@ -3352,7 +3352,7 @@ sub setup_logic_fates {
              fatal_error("$fname does NOT point to a valid filename" );
           }
        }
-       # make sure that nocomp and fbg mode are enabled
+       # make sure that nocomp and fbg mode are enabled as well as use_fates_luh
        my @list = ( "use_fates_nocomp", "use_fates_fixed_biogeog, use_fates_luh" );
        foreach my $var ( @list ) {
           if ( ! &value_is_true($nl->get_value($var)) ) {
