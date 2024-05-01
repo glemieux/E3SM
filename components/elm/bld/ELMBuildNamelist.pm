@@ -3346,7 +3346,7 @@ sub setup_logic_fates {
        }
     }
     # make sure that fates landuse x pft mode has the necessary run mode configurations
-    # and the necessary data
+    # and the necessary landuse x pft static mapping data
     my $var = "use_fates_lupft";
     if ( defined($nl->get_value($var))  ) {
        if ( &value_is_true($nl->get_value($var)) ) {
@@ -3361,10 +3361,10 @@ sub setup_logic_fates {
           }
        }
        # make sure that nocomp and fbg mode are enabled
-       my @list = ( "use_fates_nocomp", "use_fates_fixed_biogeog" );
+       my @list = ( "use_fates_nocomp", "use_fates_fixed_biogeog, use_fates_luh" );
        foreach my $var ( @list ) {
           if ( ! &value_is_true($nl->get_value($var)) ) {
-            fatal_error("$var is required when FATES SP is on (use_fates_sp)" );
+            fatal_error("$var is required when use_fates_lupft is true" );
           }
        }
     }
