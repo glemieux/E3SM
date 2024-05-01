@@ -3385,6 +3385,18 @@ sub setup_logic_fates {
           }
        }
     }
+    # check that fates landuse is on and harvest mode is off when potential veg switch is true
+    my $var = "use_potentialveg";
+    if ( defined($nl->get_value($var))  ) {
+       if ( &value_is_true($nl->get_value($var)) ) {
+          if ( ! &value_is_true($nl->get_value('use_fates_luh')) ) {
+            fatal_error("use_fates_luh must be true when $var is true" );
+          }
+          if ( $nl->get_value('fates_harvest_mod') > 0) {
+            fatal_error("fates_harvest_mode must be off (i.e. set to zero) when $var is true" );
+          }
+       }
+    }
     # Check fates_harvest_mode compatibility
     my $var = "fates_harvest_mode";
     if ( defined($nl->get_value($var))  ) {
