@@ -3333,6 +3333,10 @@ sub setup_logic_fates {
           if ( $nl->get_value('fates_spitfire_mode') > 0 ) {
                 fatal_error('fates_spitfire_mode can NOT be set to greater than 0 when use_fates_sp is true');
           }
+          # FATES landuse can not be active with fates sp mode is active
+          if ( &value_is_true($nl->get_value('use_fates_luh')) ) {
+            fatal_error("use_fates_luh is can NOT be true when use_fates_sp is true" );
+          }
        }
     }
     # check that fates landuse change mode has the necessary luh2 landuse timeseries data
