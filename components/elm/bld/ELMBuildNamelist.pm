@@ -3338,7 +3338,7 @@ sub setup_logic_fates {
        }
     }
     # make sure that fates landuse x pft mode has the necessary run mode configurations
-    # and the necessary landuse x pft static mapping data
+    # and add the necessary landuse x pft static mapping data default if not defined
     my $var = "use_fates_lupft";
     if ( defined($nl->get_value($var))  ) {
        if ( &value_is_true($nl->get_value($var)) ) {
@@ -3361,6 +3361,7 @@ sub setup_logic_fates {
        }
     }
     # check that fates landuse change mode has the necessary luh2 landuse timeseries data
+    # and add the default if not defined
     my $var = "use_fates_luh";
     if ( defined($nl->get_value($var))  ) {
        if ( &value_is_true($nl->get_value($var)) ) {
