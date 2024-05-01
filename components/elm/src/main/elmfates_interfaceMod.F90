@@ -56,6 +56,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : use_fates_nocomp
    use elm_varctl        , only : use_fates_sp
    use elm_varctl        , only : use_fates_luh
+   use elm_varctl        , only : use_fates_lupft
    use elm_varctl        , only : use_fates_potentialveg
    use elm_varctl        , only : flandusepftdat
    use elm_varctl        , only : use_fates_tree_damage
@@ -573,12 +574,12 @@ contains
         end if
         call set_fates_ctrlparms('use_fates_potentialveg',ival=pass_use_potentialveg)
 
-        if(flandusepftdat /= '') then
+        if(use_fates_lupft) then
            pass_lupftdat = 1
         else
            pass_lupftdat = 0
         end if
-        call set_fates_ctrlparms('use_landusepft_data',ival=pass_lupftdat)
+        call set_fates_ctrlparms('use_landusepft_data',ival=pass_lupftdat) ! This is currently unused in FATES
 
         ! Wait to set the harvest and logging variables after checking get_do_harvest
         ! and fates_harvest_modes
@@ -816,8 +817,8 @@ contains
          write(iulog,*) 'alm_fates%init():  allocating for ',nclumps,' threads'
       end if
 
-      ! Retrieve the landuse x pft static data if the file is present
-      if (flandusepftdat /= '') call GetLandusePFTData(bounds_proc, flandusepftdat, &
+      ! Retrieve the landuse x pft static data if the optional switch has been set
+      if (use_fates_lupft) call GetLandusePFTData(bounds_proc, flandusepftdat, &
                                                        landuse_pft_map, landuse_bareground)
 
       nclumps = get_proc_clumps()
@@ -926,7 +927,7 @@ contains
             this%fates(nc)%sites(s)%lon = grc_pp%londeg(g)
 
             ! Transfer the landuse x pft data to fates via bc_in if file is given
-            if (flandusepftdat /= '') then
+            if (use_fates_lupft) then
                this%fates(nc)%bc_in(s)%pft_areafrac_lu(:,1:num_landuse_pft_vars) = landuse_pft_map(g,:,1:num_landuse_pft_vars)
                this%fates(nc)%bc_in(s)%baregroundfrac = landuse_bareground(g)
             end if
@@ -946,7 +947,7 @@ contains
                endif
             endif
 
-            if (flandusepftdat == '') then
+            if (.not. use_fates_lupft) then
             ! initialize static layers for reduced complexity FATES versions from HLM
                this%fates(nc)%bc_in(s)%pft_areafrac(:)=0._r8
                do m = surfpft_lb,surfpft_ub
@@ -1000,7 +1001,7 @@ contains
       call create_fates_fire_data_method( this%fates_fire_data_method )
 
       ! deallocate the local landuse x pft array
-      if (flandusepftdat /= '') then
+      if (use_fates_lupft) then
          deallocate(landuse_pft_map)
          deallocate(landuse_bareground)
       end if

@@ -388,16 +388,22 @@ Full pathname to the inventory initialization control file.
 
 <!-- This may eventually migrate to the dynamic_subgrid group-->
 <entry id="use_fates_luh" type="logical" category="physics"
-       group="elm_inparm" valid_values="" >
+       group="elm_inparm" valid_values="" value=".false.">
 If TRUE, enable use of land use state and transition data from luh_timeseries file.
 This is enabled by default if fates_harvest_mode is set to use the raw LUH2 harvest
-data (fates_harvest_mode >= 3)
+data (fates_harvest_mode >= 3) or if use_fates_lupft is true.
 (Only valid for fates land use change runs, where there is a luh_timeseries file.)
 (Also, only valid for use_fates = true and is incompatible with transient runs currently.)
 </entry>
 
+<entry id="use_fates_lupft" type="logical" category="physics"
+       group="elm_inparm" valid_values="" value=".false.">
+If TRUE, enable use of fates land use x pft mapping data file.
+(Only valid for use_fates = true and is incompatible with transient runs currently.)
+</entry>
+
 <entry id="use_fates_potentialveg" type="logical" category="physics"
-       group="elm_inparm" valid_values="" >
+       group="elm_inparm" valid_values="" value=".false.">
 If TRUE, ignore the land-use state vector and transitions, and assert that all lands
 are primary, and that there is no harvest.
 </entry>

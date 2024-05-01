@@ -3345,6 +3345,29 @@ sub setup_logic_fates {
           }
        }
     }
+    # make sure that fates landuse x pft mode has the necessary run mode configurations
+    # and the necessary data
+    my $var = "use_fates_lupft";
+    if ( defined($nl->get_value($var))  ) {
+       if ( &value_is_true($nl->get_value($var)) ) {
+          $var = "flandusepftdat";
+          add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, $var,
+                      'phys'=>$nl_flags->{'phys'}, 'hgrid'=>$nl_flags->{'res'}, nofail=>1 );
+          my $fname = remove_leading_and_trailing_quotes( $nl->get_value($var) );
+          if ( ! defined($nl->get_value($var))  ) {
+             fatal_error("$var is required when use_fates_lupft is set" );
+          } elsif ( ! -f "$fname" ) {
+             fatal_error("$fname does NOT point to a valid filename" );
+          }
+       }
+       # make sure that nocomp and fbg mode are enabled
+       my @list = ( "use_fates_nocomp", "use_fates_fixed_biogeog" );
+       foreach my $var ( @list ) {
+          if ( ! &value_is_true($nl->get_value($var)) ) {
+            fatal_error("$var is required when FATES SP is on (use_fates_sp)" );
+          }
+       }
+    }
     # check that fates landuse change mode has the necessary luh2 landuse timeseries data
     my $var = "use_fates_luh";
     if ( defined($nl->get_value($var))  ) {
