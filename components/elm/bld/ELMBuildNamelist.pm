@@ -804,6 +804,7 @@ sub setup_cmdl_fates_mode {
                      "use_fates_fixed_biogeog",
                      "use_fates_inventory_init",
                      "use_fates_luh",
+                     "use_fates_lupft",
                      "use_fates_nocomp",
                      "use_fates_parteh_mode",
                      "use_fates_planthydro",
@@ -873,6 +874,10 @@ sub setup_cmdl_fates_mode {
 	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
        $var = "use_fates_luh";
+       if ( defined($nl->get_value($var)) ) {
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
+       }
+       $var = "use_fates_lupft";
        if ( defined($nl->get_value($var)) ) {
 	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
@@ -3315,6 +3320,7 @@ sub setup_logic_fates {
                                                                                                           'fates_harvest_mode'=>$nl_flags->{'fates_harvest_mode'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_paramfile', 'phys'=>$nl_flags->{'phys'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_potentialveg',       'use_fates'=>$nl_flags->{'use_fates'});
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_lupft',              'use_fates'=>$nl_flags->{'use_fates'});
 
     # For FATES SP mode make sure no-competion, and fixed-biogeography are also set
     # And also check for other settings that can't be trigged on as well
