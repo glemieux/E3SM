@@ -725,8 +725,8 @@ contains
       end if
 
       ! Retrieve the landuse x pft static data if the optional switch has been set
-      if (use_fates_lupft) call GetLandusePFTData(bounds_proc, flandusepftdat, &
-                                                       landuse_pft_map, landuse_bareground)
+      if (use_fates_fixed_biogeog .and. use_fates_luh) call GetLandusePFTData(bounds_proc, flandusepftdat, &
+                                                            landuse_pft_map, landuse_bareground)
 
       nclumps = get_proc_clumps()
 
@@ -833,12 +833,6 @@ contains
             this%fates(nc)%sites(s)%lat = grc_pp%latdeg(g)
             this%fates(nc)%sites(s)%lon = grc_pp%londeg(g)
 
-            ! Transfer the landuse x pft data to fates via bc_in if file is given
-            if (use_fates_lupft) then
-               this%fates(nc)%bc_in(s)%pft_areafrac_lu(:,1:num_landuse_pft_vars) = landuse_pft_map(g,:,1:num_landuse_pft_vars)
-               this%fates(nc)%bc_in(s)%baregroundfrac = landuse_bareground(g)
-            end if
-
             ! Check whether or not the surface dataset has topounits.  If it doesn't set the
             ! index t to max_topounits, which should be 1.  Otherwise, determine the index
             ! from the columntype
@@ -854,18 +848,24 @@ contains
                endif
             endif
 
-            if (.not. use_fates_lupft) then
-            ! initialize static layers for reduced complexity FATES versions from HLM
-               this%fates(nc)%bc_in(s)%pft_areafrac(:)=0._r8
-               do m = surfpft_lb,surfpft_ub
-                  ft = m-surfpft_lb
-                  this%fates(nc)%bc_in(s)%pft_areafrac(ft)=wt_nat_patch(g,t,m)
-               end do
+            if (use_fates_fixed_biogeog) then
+               ! Transfer the landuse x pft data to fates via bc_in if landuse mode engaged
+               if (use_fates_luh) then
+                  this%fates(nc)%bc_in(s)%pft_areafrac_lu(:,1:num_landuse_pft_vars) = landuse_pft_map(g,:,1:num_landuse_pft_vars)
+                  this%fates(nc)%bc_in(s)%baregroundfrac = landuse_bareground(g)
+               else
+                  ! initialize static layers for reduced complexity FATES versions from HLM
+                  this%fates(nc)%bc_in(s)%pft_areafrac(:)=0._r8
+                  do m = surfpft_lb,surfpft_ub
+                     ft = m-surfpft_lb
+                     this%fates(nc)%bc_in(s)%pft_areafrac(ft)=wt_nat_patch(g,t,m)
+                  end do
 
-               if(abs(sum(this%fates(nc)%bc_in(s)%pft_areafrac(surfpft_lb:surfpft_ub))-1.0_r8).gt.1.0e-9)then
-                  write(iulog,*) 'pft_area error in interfc ',s, sum(this%fates(nc)%bc_in(s)%pft_areafrac(:))-1.0_r8
-                  call endrun(msg=errMsg(sourcefile, __LINE__))
-               endif
+                  if(abs(sum(this%fates(nc)%bc_in(s)%pft_areafrac(surfpft_lb:surfpft_ub))-1.0_r8).gt.1.0e-9)then
+                     write(iulog,*) 'pft_area error in interfc ',s, sum(this%fates(nc)%bc_in(s)%pft_areafrac(:))-1.0_r8
+                     call endrun(msg=errMsg(sourcefile, __LINE__))
+                  end if
+               end if
             end if
 
          end do
@@ -908,7 +908,7 @@ contains
       call create_fates_fire_data_method( this%fates_fire_data_method )
 
       ! deallocate the local landuse x pft array
-      if (use_fates_lupft) then
+      if (use_fates_fixed_biogeog .and. use_fates_luh) then
          deallocate(landuse_pft_map)
          deallocate(landuse_bareground)
       end if
