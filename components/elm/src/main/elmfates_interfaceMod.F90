@@ -402,7 +402,7 @@ contains
      integer                                        :: pass_inventory_init
      integer                                        :: pass_is_restart
      integer                                        :: pass_cohort_age_tracking
-     integer                                        :: pass_num_lu_harvest_types
+     integer                                        :: pass_num_lu_harvest_cats
      integer                                        :: pass_lu_harvest
      integer                                        :: pass_tree_damage
      integer                                        :: pass_use_luh
@@ -526,8 +526,8 @@ contains
         if (fates_harvest_mode > fates_harvest_no_logging) then
            pass_logging = 1 ! Time driven logging, without landuse harvest
            ! CLM landuse timeseries driven harvest rates
-           if (fates_harvest_mode == fates_harvest_clmlanduse)
-              pass_num_lu_harvest_cats = num_harvest_inst
+           if (fates_harvest_mode == fates_harvest_clmlanduse) then
+              pass_num_lu_harvest_cats = num_harvest_vars
               pass_lu_harvest = 1
 
            ! LUH2 landuse timeseries driven  harvest rates
@@ -1203,7 +1203,7 @@ contains
          ! for now there is one veg column per gridcell, so store all harvest data in each site
          ! this will eventually change
          ! the harvest data are zero if today is before the start of the harvest time series
-         if (fates_harvest_mode == fates_harvest_clmlanduse)
+         if (fates_harvest_mode == fates_harvest_clmlanduse) then
             this%fates(nc)%bc_in(s)%hlm_harvest_rates = harvest_rates(:,g)
             this%fates(nc)%bc_in(s)%hlm_harvest_catnames = harvest_varnames
             this%fates(nc)%bc_in(s)%hlm_harvest_units = wood_harvest_units
