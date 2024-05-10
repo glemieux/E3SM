@@ -2734,8 +2734,8 @@ sub setup_logic_do_harvest {
   if (string_is_undef_or_empty($nl->get_value('flanduse_timeseries'))) {
     $cannot_be_true = "$var can only be set to true when running a transient case (flanduse_timeseries non-blank)";
   }
-  elsif (!( value_is_true($nl->get_value('use_cn')) || value_is_true($nl->get_value('use_fates')) )) {
-    $cannot_be_true = "$var can only be set to true when running with CN (use_cn == true) or when using FATES (use_fates == true)";
+  elsif (!( value_is_true($nl->get_value('use_cn')))) {
+    $cannot_be_true = "$var can only be set to true when running with CN (use_cn == true)";
   }
 
   if ($cannot_be_true) {
@@ -3404,21 +3404,11 @@ sub setup_logic_fates {
     # Check fates_harvest_mode compatibility
     my $var = "fates_harvest_mode";
     if ( defined($nl->get_value($var))  ) {
-       # using fates_harvest_mode with CLM landuse driver data - for user convienence
-       # if ( $nl->get_value($var) == 2) {
-       #    # Make sure that do_harvest is set to true
-       #    if ( ! &value_is_true($nl->get_value('do_harvest')) ) {
-       #      fatal_error("do_harvest must be true when $var is equal to 2" );
-       # }
        # using fates_harvest mode with raw luh2 harvest data
        if ( $nl->get_value($var) eq "luhdata_area" || $nl->get_value($var) eq "luhdata_mass" ) {
           # Make sure that use_fates_luh is true when using raw fates luh2 harvest data
           if ( ! &value_is_true($nl->get_value('use_fates_luh')) ) {
             fatal_error("use_fates_luh is required to be true when $var is greater than 2" );
-          }
-          # do_harvest can not be on if we are using the raw fates luh2 harvest data
-          if ( &value_is_true($nl->get_value('do_harvest')) ) {
-            fatal_error("do_harvest can not be true when $var is greater than 2" );
           }
        }
     }
