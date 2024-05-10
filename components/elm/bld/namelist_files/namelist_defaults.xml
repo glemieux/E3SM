@@ -2175,7 +2175,7 @@ this mask will have smb calculated over the entire global land surface
 <!-- Defaults for FATES interface -->
 <!-- =========================================  -->
 <fates_spitfire_mode           use_fates=".true.">0</fates_spitfire_mode>
-<fates_harvest_mode            use_fates=".true.">0</fates_harvest_mode>
+<fates_harvest_mode            use_fates=".true.">no_harvest</fates_harvest_mode>
 <use_fates_planthydro          use_fates=".true.">.false.</use_fates_planthydro>
 <use_fates_tree_damage         use_fates=".true.">.false.</use_fates_tree_damage>
 <use_fates_ed_st3              use_fates=".true.">.false.</use_fates_ed_st3>
@@ -2184,11 +2184,11 @@ this mask will have smb calculated over the entire global land surface
 <use_fates_sp                  use_fates=".true.">.false.</use_fates_sp>
 <use_fates_lupft               use_fates=".true.">.false.</use_fates_lupft>
 <use_fates_potentialveg        use_fates=".true.">.false.</use_fates_potentialveg>
-<use_fates_luh                 use_fates=".true." fates_harvest_mode="3"         >.true.</use_fates_luh>
-<use_fates_luh                 use_fates=".true." fates_harvest_mode="4"         >.true.</use_fates_luh>
-<use_fates_luh                 use_fates=".true." use_fates_lupft=".true."       >.true.</use_fates_luh>
-<use_fates_luh                 use_fates=".true." use_fates_potentialveg=".true.">.true.</use_fates_luh>
-<use_fates_luh                 use_fates=".true."                                >.false.</use_fates_luh>
+<use_fates_luh                 use_fates=".true." fates_harvest_mode="luhdata_area">.true.</use_fates_luh>
+<use_fates_luh                 use_fates=".true." fates_harvest_mode="luhdata_mass">.true.</use_fates_luh>
+<use_fates_luh                 use_fates=".true." use_fates_lupft=".true."         >.true.</use_fates_luh>
+<use_fates_luh                 use_fates=".true." use_fates_potentialveg=".true."  >.true.</use_fates_luh>
+<use_fates_luh                 use_fates=".true."                                  >.false.</use_fates_luh>
 <fates_parteh_mode             use_fates=".true.">1</fates_parteh_mode>
 <fates_seeddisp_cadence        use_fates=".true.">0</fates_seeddisp_cadence>
 <use_fates_inventory_init      use_fates=".true.">.false.</use_fates_inventory_init>
