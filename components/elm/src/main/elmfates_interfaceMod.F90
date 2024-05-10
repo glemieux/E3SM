@@ -173,7 +173,6 @@ module ELMFatesInterfaceMod
 
    use dynHarvestMod          , only : num_harvest_vars, harvest_varnames, wood_harvest_units
    use dynHarvestMod          , only : harvest_rates  ! these are dynamic in space and time
-   use dynSubgridControlMod   , only : get_do_harvest ! this gets the namelist value
    use FatesConstantsMod      , only : hlm_harvest_area_fraction
    use FatesConstantsMod      , only : hlm_harvest_carbon
 
@@ -188,6 +187,7 @@ module ELMFatesInterfaceMod
    use dynFATESLandUseChangeMod, only : landuse_harvest_varnames
    use dynFATESLandUseChangeMod, only : landuse_harvest_units
    use dynFATESLandUseChangeMod, only : fates_harvest_no_logging
+   use dynFATESLandUseChangeMod, only : fates_harvest_clmlanduse
    use dynFATESLandUseChangeMod, only : fates_harvest_luh_area
 
    use FatesInterfaceTypesMod       , only : bc_in_type, bc_out_type
@@ -516,41 +516,28 @@ contains
         call set_fates_ctrlparms('sf_successful_ignitions_def',ival=successful_ignitions)
         call set_fates_ctrlparms('sf_anthro_ignitions_def',ival=anthro_ignitions)
 
-        ! check fates logging namelist value first because hlm harvest can override it
+        ! FATES logging and harvest modes
         if (fates_harvest_mode > fates_harvest_no_logging) then
-           pass_logging = 1
-        else
-           pass_logging = 0
-        end if
+           pass_logging = 1 ! Time driven logging, without landuse harvest
+           ! CLM landuse timeseries driven harvest rates
+           if (fates_harvest_mode == fates_harvest_clmlanduse)
+              pass_num_lu_harvest_cats = num_harvest_inst
+              pass_lu_harvest = 1
 
-        if(get_do_harvest()) then
-           pass_logging = 1
-           pass_num_lu_harvest_types = num_harvest_vars
-           pass_lu_harvest = 1
-        else
-           pass_lu_harvest = 0
-           pass_num_lu_harvest_types = 0
+           ! LUH2 landuse timeseries driven  harvest rates
+           else if (fates_harvest_mode >= fates_harvest_luh_area) then
+              pass_lu_harvest = 1
+              pass_num_lu_harvest_cats = num_landuse_harvest_vars
+           else
+              pass_lu_harvest = 0
+              pass_num_lu_harvest_cats = 0
+           end if
         end if
 
         if(use_fates_luh) then
            pass_use_luh = 1
            pass_num_luh_states = num_landuse_state_vars
            pass_num_luh_transitions = num_landuse_transition_vars
-
-           ! Do not set harvest passing variables to zero not in luh harvest modes
-           ! as the user may want to use the CLM landuse harvest with luh2 transitions
-           if(fates_harvest_mode >= fates_harvest_luh_area) then
-              ! End the run if do_harvest is true with this run mode.
-              ! This should be caught be the build namelist.
-              if(get_do_harvest()) then
-                 call endrun(msg="do_harvest and fates_harvest_mode using luh2 harvest data are incompatible"//&
-                      errmsg(sourcefile, __LINE__))
-              else
-                 pass_num_lu_harvest_types = num_landuse_harvest_vars
-                 pass_lu_harvest = 1
-              end if
-           end if
-
         else
            pass_use_luh = 0
            pass_num_luh_states = 0
@@ -571,7 +558,7 @@ contains
         ! Wait to set the harvest and logging variables after checking get_do_harvest
         ! and fates_harvest_modes
         call set_fates_ctrlparms('use_lu_harvest',ival=pass_lu_harvest)
-        call set_fates_ctrlparms('num_lu_harvest_cats',ival=pass_num_lu_harvest_types)
+        call set_fates_ctrlparms('num_lu_harvest_cats',ival=pass_num_lu_harvest_cats)
         call set_fates_ctrlparms('use_logging',ival=pass_logging)
 
         if(use_fates_ed_st3) then
@@ -1130,10 +1117,14 @@ contains
          ! for now there is one veg column per gridcell, so store all harvest data in each site
          ! this will eventually change
          ! the harvest data are zero if today is before the start of the harvest time series
-         if (get_do_harvest()) then
+         if (fates_harvest_mode == fates_harvest_clmlanduse)
             this%fates(nc)%bc_in(s)%hlm_harvest_rates = harvest_rates(:,g)
             this%fates(nc)%bc_in(s)%hlm_harvest_catnames = harvest_varnames
             this%fates(nc)%bc_in(s)%hlm_harvest_units = wood_harvest_units
+         elseif (fates_harvest_mode >= fates_harvest_luh_area ) then
+            this%fates(nc)%bc_in(s)%hlm_harvest_rates = landuse_harvest(:,g)
+            this%fates(nc)%bc_in(s)%hlm_harvest_catnames = landuse_harvest_varnames
+            this%fates(nc)%bc_in(s)%hlm_harvest_units = landuse_harvest_units
          end if
          this%fates(nc)%bc_in(s)%site_area=col_pp%wtgcell(c)*grc_pp%area(g)*m2_per_km2
 
@@ -1142,13 +1133,6 @@ contains
             this%fates(nc)%bc_in(s)%hlm_luh_state_names = landuse_state_varnames
             this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,g)
             this%fates(nc)%bc_in(s)%hlm_luh_transition_names = landuse_transition_varnames
-
-            if (fates_harvest_mode >= fates_harvest_luh_area ) then
-               this%fates(nc)%bc_in(s)%hlm_harvest_rates = landuse_harvest(:,g)
-               this%fates(nc)%bc_in(s)%hlm_harvest_catnames = landuse_harvest_varnames
-               this%fates(nc)%bc_in(s)%hlm_harvest_units = landuse_harvest_units
-            end if
-
          end if
 
       end do
@@ -2006,7 +1990,7 @@ contains
                  this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,g)
                  this%fates(nc)%bc_in(s)%hlm_luh_transition_names = landuse_transition_varnames
 
-                 if (fates_harvest_mode >= fates_harvest_luh_area ) then
+                 if (fates_harvest_mode >= fates_harvest_luh_area) then
                     this%fates(nc)%bc_in(s)%hlm_harvest_rates = landuse_harvest(:,g)
                     this%fates(nc)%bc_in(s)%hlm_harvest_catnames = landuse_harvest_varnames
                     this%fates(nc)%bc_in(s)%hlm_harvest_units = landuse_harvest_units

@@ -71,11 +71,13 @@ contains
     ! clumps - so this routine needs to be called from outside any loops over clumps.
     !
     ! !USES:
-    use decompMod         , only : bounds_type, BOUNDS_LEVEL_PROC
-    use decompMod         , only : get_proc_clumps, get_clump_bounds
-    use dynpftFileMod     , only : dynpft_init
-    use dynHarvestMod     , only : dynHarvest_init
-    use dynpftFileMod     , only : dynpft_interp
+    use decompMod                , only : bounds_type, BOUNDS_LEVEL_PROC
+    use decompMod                , only : get_proc_clumps, get_clump_bounds
+    use dynpftFileMod            , only : dynpft_init
+    use dynHarvestMod            , only : dynHarvest_init
+    use dynpftFileMod            , only : dynpft_interp
+    use clm_varctl               , only : fates_harvest_mode
+    use dynFATESLandUseChangeMod , only : fates_harvest_clmlanduse
     !
     ! !ARGUMENTS:
     type(bounds_type) , intent(in)    :: bounds  ! processor-level bounds
@@ -103,7 +105,7 @@ contains
     end if
 
     ! Initialize stuff for harvest (currently shares the flanduse_timeseries file)
-    if (get_do_harvest()) then
+    if (get_do_harvest() .or. fates_harvest_mode == fates_harvest_clmlanduse) then
        call dynHarvest_init(bounds, harvest_filename=get_flanduse_timeseries())
     end if
 
