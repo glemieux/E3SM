@@ -76,7 +76,7 @@ contains
     use dynpftFileMod            , only : dynpft_init
     use dynHarvestMod            , only : dynHarvest_init
     use dynpftFileMod            , only : dynpft_interp
-    use clm_varctl               , only : fates_harvest_mode
+    use elm_varctl               , only : fates_harvest_mode
     use dynFATESLandUseChangeMod , only : fates_harvest_clmlanduse
     !
     ! !ARGUMENTS:
