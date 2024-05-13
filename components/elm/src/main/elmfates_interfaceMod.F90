@@ -189,6 +189,7 @@ module ELMFatesInterfaceMod
    use dynFATESLandUseChangeMod, only : fates_harvest_no_logging
    use dynFATESLandUseChangeMod, only : fates_harvest_clmlanduse
    use dynFATESLandUseChangeMod, only : fates_harvest_luh_area
+   use dynFATESLandUseChangeMod, only : fates_harvest_luh_mass
 
    use FatesInterfaceTypesMod       , only : bc_in_type, bc_out_type
 
@@ -517,22 +518,27 @@ contains
         call set_fates_ctrlparms('sf_anthro_ignitions_def',ival=anthro_ignitions)
 
         ! FATES logging and harvest modes
-        if (fates_harvest_mode > fates_harvest_no_logging) then
+        pass_logging = 0
+        pass_lu_harvest = 0
+        pass_num_lu_harvest_cats = 0
+        if (trim(fates_harvest_mode) /= fates_harvest_no_logging) then
            pass_logging = 1 ! Time driven logging, without landuse harvest
            ! CLM landuse timeseries driven harvest rates
-           if (fates_harvest_mode == fates_harvest_clmlanduse) then
+           if (trim(fates_harvest_mode) == fates_harvest_clmlanduse) then
               pass_num_lu_harvest_cats = num_harvest_vars
               pass_lu_harvest = 1
 
            ! LUH2 landuse timeseries driven  harvest rates
-           else if (fates_harvest_mode >= fates_harvest_luh_area) then
+           else if (trim(fates_harvest_mode) == fates_harvest_luh_area .or. &
+                    trim(fates_harvest_mode) == fates_harvest_luh_mass) then
               pass_lu_harvest = 1
               pass_num_lu_harvest_cats = num_landuse_harvest_vars
-           else
-              pass_lu_harvest = 0
-              pass_num_lu_harvest_cats = 0
            end if
         end if
+
+        call set_fates_ctrlparms('use_lu_harvest',ival=pass_lu_harvest)
+        call set_fates_ctrlparms('num_lu_harvest_cats',ival=pass_num_lu_harvest_cats)
+        call set_fates_ctrlparms('use_logging',ival=pass_logging)
 
         if(use_fates_luh) then
            pass_use_luh = 1
@@ -554,12 +560,6 @@ contains
            pass_use_potentialveg = 0
         end if
         call set_fates_ctrlparms('use_fates_potentialveg',ival=pass_use_potentialveg)
-
-        ! Wait to set the harvest and logging variables after checking get_do_harvest
-        ! and fates_harvest_modes
-        call set_fates_ctrlparms('use_lu_harvest',ival=pass_lu_harvest)
-        call set_fates_ctrlparms('num_lu_harvest_cats',ival=pass_num_lu_harvest_cats)
-        call set_fates_ctrlparms('use_logging',ival=pass_logging)
 
         if(use_fates_ed_st3) then
            pass_ed_st3 = 1
@@ -1117,11 +1117,12 @@ contains
          ! for now there is one veg column per gridcell, so store all harvest data in each site
          ! this will eventually change
          ! the harvest data are zero if today is before the start of the harvest time series
-         if (fates_harvest_mode == fates_harvest_clmlanduse) then
+         if (trim(fates_harvest_mode) == fates_harvest_clmlanduse) then
             this%fates(nc)%bc_in(s)%hlm_harvest_rates = harvest_rates(:,g)
             this%fates(nc)%bc_in(s)%hlm_harvest_catnames = harvest_varnames
             this%fates(nc)%bc_in(s)%hlm_harvest_units = wood_harvest_units
-         elseif (fates_harvest_mode >= fates_harvest_luh_area ) then
+         else if (trim(fates_harvest_mode) == fates_harvest_luh_area .or. &
+                  trim(fates_harvest_mode) == fates_harvest_luh_mass) then
             this%fates(nc)%bc_in(s)%hlm_harvest_rates = landuse_harvest(:,g)
             this%fates(nc)%bc_in(s)%hlm_harvest_catnames = landuse_harvest_varnames
             this%fates(nc)%bc_in(s)%hlm_harvest_units = landuse_harvest_units
@@ -1990,7 +1991,8 @@ contains
                  this%fates(nc)%bc_in(s)%hlm_luh_transitions = landuse_transitions(:,g)
                  this%fates(nc)%bc_in(s)%hlm_luh_transition_names = landuse_transition_varnames
 
-                 if (fates_harvest_mode >= fates_harvest_luh_area) then
+                 if (trim(fates_harvest_mode) == fates_harvest_luh_area .or. &
+                     trim(fates_harvest_mode) == fates_harvest_luh_mass) then
                     this%fates(nc)%bc_in(s)%hlm_harvest_rates = landuse_harvest(:,g)
                     this%fates(nc)%bc_in(s)%hlm_harvest_catnames = landuse_harvest_varnames
                     this%fates(nc)%bc_in(s)%hlm_harvest_units = landuse_harvest_units
