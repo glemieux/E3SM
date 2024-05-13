@@ -804,7 +804,7 @@ contains
 
 
     call mpi_bcast (fates_spitfire_mode, 1, MPI_INTEGER, 0, mpicom, ier)
-    call mpi_bcast (fates_harvest_mode, 1, MPI_INTEGER, 0, mpicom, ier)
+    call mpi_bcast (fates_harvest_mode, len(fates_harvest_mode), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fates_paramfile, len(fates_paramfile) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fluh_timeseries, len(fluh_timeseries) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (flandusepftdat, len(flandusepftdat) , MPI_CHARACTER, 0, mpicom, ier)
