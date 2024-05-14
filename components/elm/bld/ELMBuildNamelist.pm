@@ -3317,9 +3317,16 @@ sub setup_logic_fates {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_seeddisp_cadence',       'use_fates'=>$nl_flags->{'use_fates'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_potentialveg',       'use_fates'=>$nl_flags->{'use_fates'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_lupft',              'use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_luh',                'use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_nocomp',             'use_fates'=>$nl_flags->{'use_fates'});
-    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_fixed_biogeog',      'use_fates'=>$nl_flags->{'use_fates'});
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_luh',                'use_fates'=>$nl_flags->{'use_fates'},
+                                                                                                             'use_fates_lupft'=>$nl->get_value('use_fates_lupft'),
+                                                                                               'use_fates_potentialveg'=>$nl->get_value('use_fates_potentialveg'),
+                                                                                                       'fates_harvest_mode'=>$nl->get_value('fates_harvest_mode'));
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_nocomp',             'use_fates'=>$nl_flags->{'use_fates'},
+                                                                                                             'use_fates_lupft'=>$nl->get_value('use_fates_lupft'),
+                                                                                                                  'use_fates_sp'=>$nl->get_value('use_fates_sp'));
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_fixed_biogeog',      'use_fates'=>$nl_flags->{'use_fates'},
+                                                                                                             'use_fates_lupft'=>$nl->get_value('use_fates_lupft'),
+                                                                                                                  'use_fates_sp'=>$nl->get_value('use_fates_sp'));
 
     # For FATES SP mode make sure no-competion, and fixed-biogeography are also set
     # And also check for other settings that can't be trigged on as well
@@ -3357,12 +3364,12 @@ sub setup_logic_fates {
              fatal_error("$fname does NOT point to a valid filename" );
           }
           # make sure that nocomp and fbg mode are enabled as well as use_fates_luh
-	  #my @list = ( "use_fates_luh, use_fates_nocomp", "use_fates_fixed_biogeog" );
-          #foreach my $var ( @list ) {
-          #   if ( ! &value_is_true($nl->get_value($var)) ) {
-          #     fatal_error("$var is required when use_fates_lupft is true" );
-          #   }
-          #}
+          my @list = ( "use_fates_luh, use_fates_nocomp", "use_fates_fixed_biogeog" );
+          foreach my $var ( @list ) {
+             if ( ! &value_is_true($nl->get_value($var)) ) {
+               fatal_error("$var is required when use_fates_lupft is true" );
+             }
+          }
        }
     }
     # check that fates landuse change mode has the necessary luh2 landuse timeseries data
