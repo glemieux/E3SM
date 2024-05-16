@@ -156,7 +156,7 @@ contains
     !
     ! !USES:
     use elm_varctl           , only : use_cn, create_glacier_mec_landunit
-    use elm_varctl           , only : use_fates, use_fates_luh
+    use elm_varctl           , only : use_fates, use_fates_luh, fates_harvest_mode
     use decompMod            , only : bounds_type, get_proc_clumps, get_clump_bounds
     use decompMod            , only : BOUNDS_LEVEL_PROC
     use dynInitColumnsMod    , only : initialize_new_columns
@@ -166,6 +166,7 @@ contains
     use dynHarvestMod        , only : dynHarvest_interp_harvest_types
 
     use dynFATESLandUseChangeMod, only : dynFatesLandUseInterp
+    use dynFATESLandUseChangeMod , only : fates_harvest_clmlanduse
 
     use dynEDMod             , only : dyn_ED
     use reweightMod          , only : reweight_wrapup
@@ -246,7 +247,7 @@ contains
        call dyncrop_interp(bounds_proc,crop_vars)
     end if
 
-    if (get_do_harvest()) then
+    if (get_do_harvest() .or. fates_harvest_mode == fates_harvest_clmlanduse) then
        call dynHarvest_interp_harvest_types(bounds_proc)
     end if
 
