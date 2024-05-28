@@ -157,6 +157,7 @@ contains
     ! !USES:
     use elm_varctl           , only : use_cn, create_glacier_mec_landunit
     use elm_varctl           , only : use_fates, use_fates_luh, fates_harvest_mode
+    use elm_varctl           , only : use_fates_potentialveg
     use decompMod            , only : bounds_type, get_proc_clumps, get_clump_bounds
     use decompMod            , only : BOUNDS_LEVEL_PROC
     use dynInitColumnsMod    , only : initialize_new_columns
@@ -251,7 +252,7 @@ contains
        call dynHarvest_interp_harvest_types(bounds_proc)
     end if
 
-    if (use_fates_luh) then
+    if (use_fates_luh .and. .not. use_fates_potentialveg) then
        call dynFatesLandUseInterp(bounds_proc)
     end if
 
