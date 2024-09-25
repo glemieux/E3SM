@@ -70,7 +70,7 @@ module VegetationType
      ! Fates relevant types
      logical , pointer :: is_veg            (:) => null() ! This is an ACTIVE fates patch
      logical , pointer :: is_bareground     (:) => null() ! ?
-     real(r8), pointer :: wt_ed             (:) => null() ! TODO mv ? can this be removed
+     real(r8), pointer :: wt_fates             (:) => null() ! TODO mv ? can this be removed
      real(r8), pointer :: sp_pftorder_index (:) => null() ! index to map 'p' onto the order of FATES patches in SP mode.
      logical , pointer :: is_fates          (:) => null() ! true for patch vector space reserved
                                                           ! for FATES.
@@ -123,7 +123,7 @@ contains
     if (use_fates) then
        allocate(this%is_veg  (begp:endp)); this%is_veg  (:) = .false.
        allocate(this%is_bareground (begp:endp)); this%is_bareground (:) = .false.
-       allocate(this%wt_ed      (begp:endp)); this%wt_ed      (:) = spval
+       allocate(this%wt_fates      (begp:endp)); this%wt_fates      (:) = spval
        allocate(this%sp_pftorder_index      (begp:endp)); this%sp_pftorder_index      (:) = spval
     end if
 
@@ -152,7 +152,7 @@ contains
     if (use_fates) then
        deallocate(this%is_veg)
        deallocate(this%is_bareground)
-       deallocate(this%wt_ed)
+       deallocate(this%wt_fates)
        deallocate(this%sp_pftorder_index)
     end if
 

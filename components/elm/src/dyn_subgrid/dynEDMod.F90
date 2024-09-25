@@ -32,7 +32,7 @@ contains
        c = veg_pp%column(p)
        if (col_pp%itype(c) == istsoil .and. col_pp%active(c) ) then 
           if ( veg_pp%is_veg(p) .or. veg_pp%is_bareground(p)) then
-             veg_pp%wtcol(p) = veg_pp%wt_ed(p)
+             veg_pp%wtcol(p) = veg_pp%wt_fates(p)
           else
              veg_pp%wtcol(p) = 0.0_r8 
           end if
