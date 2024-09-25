@@ -1475,7 +1475,7 @@ contains
        ! Convert FATES dynamics into HLM usable information
        ! Initialize weighting variables (note FATES is the only HLM module
        ! that uses "is_veg" and "is_bareground".  The entire purpose of these
-       ! variables is to inform patch%wtcol(p).  wt_ed is imposed on wtcol,
+       ! variables is to inform patch%wtcol(p).  wt_fates is imposed on wtcol,
        ! but only for FATES columns.
 
        ! Check if seed dispersal mode is 'turned on', if not return to calling procedure
@@ -1498,7 +1498,7 @@ contains
 
           veg_pp%is_veg(col_pp%pfti(c):col_pp%pftf(c))        = .false.
           veg_pp%is_bareground(col_pp%pfti(c):col_pp%pftf(c)) = .false.
-          veg_pp%wt_ed(col_pp%pfti(c):col_pp%pftf(c))         = 0.0_r8
+          veg_pp%wt_fates(col_pp%pfti(c):col_pp%pftf(c))         = 0.0_r8
 
 
           ! Other modules may have AI's we only flush values
@@ -1535,12 +1535,12 @@ contains
           ! it can generate weird logic scenarios in the ctsm/elm code, so we
           ! protext it here with a lower bound of 0.0_r8.
 
-          veg_pp%wt_ed(col_pp%pfti(c)) = max(0.0_r8, &
+          veg_pp%wt_fates(col_pp%pfti(c)) = max(0.0_r8, &
                1.0_r8 - sum(this%fates(nc)%bc_out(s)%canopy_fraction_pa(1:npatch)) )
 
           ! initialize SP mode pft order index to 0.  Below ground is the 0th patch
           veg_pp%sp_pftorder_index(col_pp%pfti(c)) = 0
-          areacheck = veg_pp%wt_ed(col_pp%pfti(c))
+          areacheck = veg_pp%wt_fates(col_pp%pfti(c))
 
           do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
 
@@ -1551,9 +1551,9 @@ contains
              ! area footprint of the current patch's vegetation canopy
 
              veg_pp%is_veg(p) = .true.
-             veg_pp%wt_ed(p)  = this%fates(nc)%bc_out(s)%canopy_fraction_pa(ifp)
+             veg_pp%wt_fates(p)  = this%fates(nc)%bc_out(s)%canopy_fraction_pa(ifp)
 
-             areacheck = areacheck + veg_pp%wt_ed(p)
+             areacheck = areacheck + veg_pp%wt_fates(p)
 
              elai(p) = this%fates(nc)%bc_out(s)%elai_pa(ifp)
              esai(p) = this%fates(nc)%bc_out(s)%esai_pa(ifp)
