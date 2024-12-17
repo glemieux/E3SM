@@ -355,7 +355,7 @@ Toggle to turn on FATES no competition mode (only relevant if FATES is being use
 </entry>
 
 <entry id="use_fates_multicolumn" type="char*256" category="physics"
-        group="elm_inparm" valid_values="singlesite, multisite">
+        group="elm_inparm" valid_values="none, singlesite, multisite" value="none">
 Toggle to turn on FATES multicolumn mode (only relevant if FATES is being used).
 This will setup FATES to run on multiple columns.
 Temporary options:
