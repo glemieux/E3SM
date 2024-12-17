@@ -317,8 +317,10 @@ contains
     logical , intent(in)    :: setdata           ! set info or just compute
     !
     ! !LOCAL VARIABLES:
-    integer  :: m,tgi                                ! index
+    integer  :: m,c,tgi                          ! indices
     integer  :: npfts                            ! number of pfts in landunit
+    integer  :: patch_lb, patch_ub               ! number of fates soil column age bins - temporary
+    integer  :: num_fates_age_bins = 15          ! number of fates soil column age bins - temporary
     integer  :: pitype                           ! patch itype
     real(r8) :: wtlunit2topounit                 ! landunit weight on topounit
     real(r8) :: p_wt                             ! patch weight (0-1)
@@ -344,15 +346,31 @@ contains
     if (npfts > 0) then
        call add_landunit(li=li, ti=ti, ltype=ltype, wttopounit=wtlunit2topounit)
        
-       ! Assume one column on the landunit
-       call add_column(ci=ci, li=li, ctype=1, wtlunit=1.0_r8)
-       do m = natpft_lb,natpft_ub
-          if(use_fates .and. .not.use_fates_sp)then
-             p_wt = 1.0_r8/real(natpft_size,r8)
-          else
-             p_wt = wt_nat_patch(gi,topo_ind,m)
-          end if
-          call add_patch(pi=pi, ci=ci, ptype=m, wtcol=p_wt)
+       ! Assume one column on the landunit unless FATES is running in multicolumn mode
+       ncols = 1
+       patch_lb = natpft_lb
+       patch_ub = natpft_ub
+
+       ! FATES multi-column modes selection
+       if (trim(use_fates_multicolumn) == "singlesite") then
+          patch_lb = 1
+          patch_ub = patch_lb
+          ncols = natpft_ub - natpft_lb
+       elseif (trim(use_fates_multicolumn) == "multisite") then
+          ncols = num_fates_age_bins
+       end if
+
+       ! Add vegetated columns and patches
+       do c = 1, ncols
+          call add_column(ci=ci, li=li, ctype=1, wtlunit=1.0_r8)
+          do m = patch_lb,patch_ub
+             if(use_fates .and. .not.use_fates_sp)then
+                p_wt = 1.0_r8/real(natpft_size,r8)
+             else
+                p_wt = wt_nat_patch(gi,topo_ind,m)
+             end if
+             call add_patch(pi=pi, ci=ci, ptype=m, wtcol=p_wt)
+          end do
        end do
     end if
 
