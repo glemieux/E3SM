@@ -824,7 +824,7 @@ contains
     call mpi_bcast (use_fates_ed_st3, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_fixed_biogeog, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_nocomp, 1, MPI_LOGICAL, 0, mpicom, ier)
-    call mpi_bcast (use_fates_multicolumn, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_fates_multicolumn, len(use_fates_multicolumn) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (use_fates_sp, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_luh, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_lupft, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -1249,7 +1249,7 @@ contains
        write(iulog, *) '    use_fates_inventory_init = ',use_fates_inventory_init
        write(iulog, *) '    use_fates_fixed_biogeog = ', use_fates_fixed_biogeog
        write(iulog, *) '    use_fates_nocomp = ', use_fates_nocomp
-       write(iulog, *) '    use_fates_multicolumn = ', use_fates_multicolumn
+       write(iulog, *) '    use_fates_multicolumn = ', trim(use_fates_multicolumn)
        write(iulog, *) '    use_fates_sp = ', use_fates_sp
        write(iulog, *) '    use_fates_luh = ', use_fates_luh
        write(iulog, *) '    use_fates_lupft = ', use_fates_lupft

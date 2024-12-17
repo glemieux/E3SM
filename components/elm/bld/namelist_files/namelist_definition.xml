@@ -354,10 +354,15 @@ Toggle to turn on FATES fixed biogeography mode (only relevant if FATES is being
 Toggle to turn on FATES no competition mode (only relevant if FATES is being used).
 </entry>
 
-<entry id="use_fates_multicolumn" type="logical" category="physics"
-        group="elm_inparm" valid_values="" value=".false.">
+<entry id="use_fates_multicolumn" type="char*256" category="physics"
+        group="elm_inparm" valid_values="singlesite, multisite">
 Toggle to turn on FATES multicolumn mode (only relevant if FATES is being used).
 This will setup FATES to run on multiple columns.
+Temporary options:
+   multisite: initialize vegetated columns equal to the number of soil age bins
+              with one FATES site per column and max HLM patches per column
+   singlesite: initialize vegetated columns equal to the number of max HLM patches
+               with one HLM patch per column.
 </entry>
 
 <entry id="use_fates_sp" type="logical" category="physics"
