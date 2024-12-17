@@ -354,6 +354,12 @@ Toggle to turn on FATES fixed biogeography mode (only relevant if FATES is being
 Toggle to turn on FATES no competition mode (only relevant if FATES is being used).
 </entry>
 
+<entry id="use_fates_multicolumn" type="logical" category="physics"
+        group="elm_inparm" valid_values="" value=".false.">
+Toggle to turn on FATES multicolumn mode (only relevant if FATES is being used).
+This will setup FATES to run on multiple columns.
+</entry>
+
 <entry id="use_fates_sp" type="logical" category="physics"
         group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on FATES satellite phenology mode (only relevant if FATES is being used).

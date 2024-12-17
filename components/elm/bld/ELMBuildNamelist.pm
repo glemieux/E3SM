@@ -826,6 +826,7 @@ sub setup_cmdl_fates_mode {
                      "use_fates_nocomp",
                      "use_fates_planthydro",
                      "use_fates_potentialveg",
+                     "use_fates_multicolumn",
                      "use_fates_sp",
                      "use_fates_tree_damage",
                      "use_century_decomp",
@@ -895,6 +896,10 @@ sub setup_cmdl_fates_mode {
 	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
        $var = "use_fates_lupft";
+       if ( defined($nl->get_value($var)) ) {
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
+       }
+       $var = "use_fates_multicolumn";
        if ( defined($nl->get_value($var)) ) {
 	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
@@ -3428,6 +3433,7 @@ sub setup_logic_fates {
                    "use_fates_lupft",
                    "use_fates_planthydro",
                    "use_fates_potentialveg",
+                   "use_fates_multicolumn",
                    "use_fates_sp",
                    "use_fates_tree_damage");
 
