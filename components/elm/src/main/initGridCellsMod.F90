@@ -305,6 +305,7 @@ contains
     use elm_varsur, only : wt_lunit, wt_nat_patch
     use subgridMod, only : subgrid_get_topounitinfo
     use elm_varpar, only : numpft, maxpatch_pft, numcft, natpft_lb, natpft_ub, natpft_size
+    use elm_varctl, only : use_fates_multicolumn
     !
     ! !ARGUMENTS:    
     integer , intent(in)    :: ltype             ! landunit type
@@ -319,11 +320,13 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: m,c,tgi                          ! indices
     integer  :: npfts                            ! number of pfts in landunit
+    integer  :: ncols                            ! number of columns in landunit
     integer  :: patch_lb, patch_ub               ! number of fates soil column age bins - temporary
     integer  :: num_fates_age_bins = 15          ! number of fates soil column age bins - temporary
     integer  :: pitype                           ! patch itype
     real(r8) :: wtlunit2topounit                 ! landunit weight on topounit
     real(r8) :: p_wt                             ! patch weight (0-1)
+    real(r8) :: lu_wt                            ! land unit weight (0-1)
     !------------------------------------------------------------------------
 
     ! Set decomposition properties
@@ -350,6 +353,7 @@ contains
        ncols = 1
        patch_lb = natpft_lb
        patch_ub = natpft_ub
+       lu_wt = 1.0_r8
 
        ! FATES multi-column modes selection
        if (trim(use_fates_multicolumn) == "singlesite") then
@@ -362,7 +366,8 @@ contains
 
        ! Add vegetated columns and patches
        do c = 1, ncols
-          call add_column(ci=ci, li=li, ctype=1, wtlunit=1.0_r8)
+          if (c > 1) lu_wt = 0.0_r8  ! Set only the first column to have wtlunit of one
+          call add_column(ci=ci, li=li, ctype=1, wtlunit=lu_wt)
           do m = patch_lb,patch_ub
              if(use_fates .and. .not.use_fates_sp)then
                 p_wt = 1.0_r8/real(natpft_size,r8)
