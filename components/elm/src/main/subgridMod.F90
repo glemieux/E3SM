@@ -39,8 +39,8 @@ contains
     ! Obtain gridcell properties
     !
     ! !USES
-    use elm_varpar  , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec
-    use elm_varctl  , only : create_crop_landunit
+    use elm_varpar  , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec, num_fates_age_bins
+    use elm_varctl  , only : create_crop_landunit, use_fates_multicolumn
     use elm_varsur  , only : wt_lunit, urban_valid, wt_glc_mec
     use landunit_varcon  , only : istsoil, istcrop, istice, istice_mec, istdlak, istwet, &
                              isturb_tbd, isturb_hd, isturb_md
@@ -77,6 +77,7 @@ contains
     integer  :: ipfts            ! number of pfts in gridcell
     integer  :: icohorts         ! number of cohorts in gridcell
     integer  :: npfts_per_lunit  ! number of pfts in landunit
+    integer  :: ncols_per_lunit  ! number of column in landunit
     integer  :: ntopounits_per_gcell  ! number of topounits in this gridcell
     !integer  :: tmp_tpu_ind_glb
     !integer  :: tmp_tpu_lnd
@@ -140,9 +141,16 @@ contains
 
        npfts_per_lunit = natpft_size
 
-       ! Assume that the vegetated landunit has one column
+       ! Assume that the vegetated landunit has one column unless FATES is using multicolumn mode
        ilunits = ilunits + 1
-       icols = icols + 1  
+       ncols_per_lunit = 1
+
+       if (trim(use_fates_multicolumn) == "singlesite") then
+          ncols_per_lunit = natpft_size
+       elseif (trim(use_fates_multicolumn) == "multisite") then
+          ncols_per_lunit = num_fates_age_bins
+       end if
+       icols = icols + ncols_per_lunit
 
        ipfts = ipfts + npfts_per_lunit
 
@@ -333,7 +341,7 @@ contains
     ! Obtain topounit properties
     !
     ! !USES
-    use elm_varpar  , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec
+    use elm_varpar  , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec, num_fates_age_bins
     use elm_varctl  , only : create_crop_landunit
     use elm_varsur  , only : wt_lunit, urban_valid, wt_glc_mec
     use landunit_varcon  , only : istsoil, istcrop, istice, istice_mec, istdlak, istwet, &
@@ -369,6 +377,7 @@ contains
     integer  :: ipfts            ! number of pfts in topounit
     integer  :: icohorts         ! number of cohorts in topounit
     integer  :: npfts_per_lunit  ! number of pfts in landunit
+    integer  :: ncols_per_lunit  ! number of column in landunit
     !------------------------------------------------------------------------------
 
     ! -------------------------------------------------------------------------
@@ -404,9 +413,16 @@ contains
 
     npfts_per_lunit = natpft_size
 
-    ! Assume that the vegetated landunit has one column
+    ! Assume that the vegetated landunit has one column unles FATES is in multicolumn mode
     ilunits = ilunits + 1
-    icols = icols + 1  
+    ncols_per_lunit = 1
+
+    if (trim(use_fates_multicolumn) == "singlesite") then
+       ncols_per_lunit = natpft_size
+    elseif (trim(use_fates_multicolumn) == "multisite") then
+       ncols_per_lunit = num_fates_age_bins
+    end if
+    icols = icols + ncols_per_lunit
 
     ipfts = ipfts + npfts_per_lunit
 

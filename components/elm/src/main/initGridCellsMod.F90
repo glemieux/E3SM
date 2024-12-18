@@ -304,7 +304,7 @@ contains
     ! !USES
     use elm_varsur, only : wt_lunit, wt_nat_patch
     use subgridMod, only : subgrid_get_topounitinfo
-    use elm_varpar, only : numpft, maxpatch_pft, numcft, natpft_lb, natpft_ub, natpft_size
+    use elm_varpar, only : numpft, maxpatch_pft, numcft, natpft_lb, natpft_ub, natpft_size, num_fates_age_bins
     use elm_varctl, only : use_fates_multicolumn
     !
     ! !ARGUMENTS:    
@@ -322,7 +322,6 @@ contains
     integer  :: npfts                            ! number of pfts in landunit
     integer  :: ncols                            ! number of columns in landunit
     integer  :: patch_lb, patch_ub               ! number of fates soil column age bins - temporary
-    integer  :: num_fates_age_bins = 15          ! number of fates soil column age bins - temporary
     integer  :: pitype                           ! patch itype
     real(r8) :: wtlunit2topounit                 ! landunit weight on topounit
     real(r8) :: p_wt                             ! patch weight (0-1)
@@ -359,7 +358,7 @@ contains
        if (trim(use_fates_multicolumn) == "singlesite") then
           patch_lb = 1
           patch_ub = patch_lb
-          ncols = natpft_ub - natpft_lb
+          ncols = natpft_size
        elseif (trim(use_fates_multicolumn) == "multisite") then
           ncols = num_fates_age_bins
        end if

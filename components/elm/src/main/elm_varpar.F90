@@ -101,6 +101,8 @@ module elm_varpar
   integer :: maxpatch_glcmec    ! max number of elevation classes
   integer :: max_patch_per_col
 
+  integer :: num_fates_age_bins = 15 ! maximum number of FATES age binned columns (multicolumn mode only)
+
   real(r8) :: mach_eps            ! machine epsilon
   !
   ! !PUBLIC MEMBER FUNCTIONS:
