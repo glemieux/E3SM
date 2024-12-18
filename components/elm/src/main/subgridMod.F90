@@ -342,7 +342,7 @@ contains
     !
     ! !USES
     use elm_varpar  , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec, num_fates_age_bins
-    use elm_varctl  , only : create_crop_landunit
+    use elm_varctl  , only : create_crop_landunit, use_fates_multicolumn
     use elm_varsur  , only : wt_lunit, urban_valid, wt_glc_mec
     use landunit_varcon  , only : istsoil, istcrop, istice, istice_mec, istdlak, istwet, &
                              isturb_tbd, isturb_hd, isturb_md
