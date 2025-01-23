@@ -324,7 +324,7 @@ contains
     integer  :: patch_lb, patch_ub               ! number of fates soil column age bins - temporary
     integer  :: pitype                           ! patch itype
     real(r8) :: wtlunit2topounit                 ! landunit weight on topounit
-    real(r8) :: p_wt                             ! patch weight (0-1)
+    real(r8) :: p_wt, fates_patch_weight         ! patch weight (0-1)
     real(r8) :: lu_wt                            ! land unit weight (0-1)
     !------------------------------------------------------------------------
 
@@ -353,6 +353,7 @@ contains
        patch_lb = natpft_lb
        patch_ub = natpft_ub
        lu_wt = 1.0_r8
+       fates_patch_weight = 1.0_r8
 
        ! FATES multi-column modes selection
        if (trim(use_fates_multicolumn) == "singlesite") then
@@ -361,6 +362,7 @@ contains
           ncols = natpft_size
        elseif (trim(use_fates_multicolumn) == "multisite") then
           ncols = num_fates_age_bins
+          fates_patch_weight = 1.0_r8/real(natpft_size,r8)
        end if
 
        ! Add vegetated columns and patches
@@ -369,10 +371,11 @@ contains
           call add_column(ci=ci, li=li, ctype=1, wtlunit=lu_wt)
           do m = patch_lb,patch_ub
              if(use_fates .and. .not.use_fates_sp)then
-                p_wt = 1.0_r8/real(natpft_size,r8)
+                p_wt = fates_patch_weight
              else
                 p_wt = wt_nat_patch(gi,topo_ind,m)
              end if
+             write(iulog,*)' set_landunit_veg_compete: pi, ci, m, wtcol', pi, ci, m, p_wt
              call add_patch(pi=pi, ci=ci, ptype=m, wtcol=p_wt)
           end do
        end do
