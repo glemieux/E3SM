@@ -105,7 +105,7 @@ contains
     ltype = lun_pp%itype(l)
     select case(ltype)
     case(istsoil)
-       c_template = initial_template_col_soil(c_new)
+       c_template = initial_template_col_soil(bounds, c_new,cactive_prior(bounds%begc:bounds%endc) )
     case(istcrop)
        c_template = initial_template_col_crop(bounds, c_new,cactive_prior(bounds%begc:bounds%endc) )
     case(istice)
@@ -126,7 +126,7 @@ contains
 
 
   !-----------------------------------------------------------------------
-  function initial_template_col_soil(c_new) result(c_template)
+  function initial_template_col_soil(bounds, c_new, cactive_prior) result(c_template)
     !
     ! !DESCRIPTION:
     ! Find column to use as a template for a vegetated column that has newly become active.
@@ -138,22 +138,31 @@ contains
     !$acc routine seq
     ! !USES:
     use elm_varcon, only : ispval
+    use elm_varctl, only : use_fates_multicolumn
+    use landunit_varcon, only : istsoil
     !
     ! !ARGUMENTS:
     integer              :: c_template ! function result
-    integer , intent(in) :: c_new        ! column index that needs initialization
+    type(bounds_type) , intent(in) :: bounds                        ! bounds
+    integer           , intent(in) :: c_new                         ! column index that needs initialization
+    logical           , intent(in) :: cactive_prior( bounds%begc: ) ! column-level active flags from prior time step
     !
     ! !LOCAL VARIABLES:
     !-----------------------------------------------------------------------
 
-    if (col_pp%wtgcell(c_new) > 0._r8) then
+    ! For FATES multi-column, single site mode, allow activation of new columns
+    if (trim(use_fates_multicolumn) == "singlesite") then
+       c_template = initial_template_col(bounds, c_new, istsoil, cactive_prior(bounds%begc:bounds%endc) )
+    else
+       if (col_pp%wtgcell(c_new) > 0._r8) then
 
-       write(iulog,*) ' ERROR: Expectation is that the only vegetated columns that',c_new
-       write(iulog,*) ' can newly become active are ones with 0 weight on the grid cell'
-       call endrun()
+          write(iulog,*) ' ERROR: Expectation is that the only vegetated columns that',c_new
+          write(iulog,*) ' can newly become active are ones with 0 weight on the grid cell'
+          call endrun()
+       end if
+
+       c_template = ispval
     end if
-
-    c_template = ispval
 
   end function initial_template_col_soil
 
