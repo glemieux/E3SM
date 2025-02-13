@@ -1550,6 +1550,9 @@ contains
              ! the site's total ground area that is occupied by the
              ! area footprint of the current patch's vegetation canopy
 
+             ! For multi-column fates, make sure that the column with active patches is
+             ! identified as an active fates column
+             col_pp%is_fates(c) = .true.
              veg_pp%is_veg(p) = .true.
              veg_pp%wt_fates(p)  = this%fates(nc)%bc_out(s)%canopy_fraction_pa(ifp)
 
