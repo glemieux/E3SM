@@ -227,6 +227,16 @@ module ELMFatesInterfaceMod
       ! This vector may be sparse, and non-sites have index 0
       integer, allocatable :: hsites  (:)
 
+      ! number of subgrid heirarchy data types per fates site
+      integer, private :: columns_per_site
+      integer, private :: landunits_per_site
+
+      contains
+
+        procedure, public :: InitMapping
+        procedure, public :: GetIndex
+        procedure, public :: SetIndex
+
    end type f2hmap_type
 
 
@@ -3873,5 +3883,50 @@ end subroutine wrap_update_hifrq_hist
    call ncd_pio_closefile(ncid)
 
  end subroutine GetLandusePFTData
+
+ ! ======================================================================================
+
+ subroutine InitMapping(this)
+
+   ! !DESCRIPTION:
+   ! Initialize the h2fmap_type mapping arrays
+
+   ! !ARGUMENTS:
+   class(hlm_fates_interface_type), intent(inout) :: this
+   type(bounds_type),intent(in)                   :: bounds_clump
+
+   ! !LOCAL VARIABLES
+   !
+ end subroutine InitMapping
+
+ ! ======================================================================================
+
+ subroutine GetIndex(this, subgrid_type)
+
+   ! !DESCRIPTION:
+   ! Initialize the h2fmap_type mapping arrays
+
+   ! !ARGUMENTS:
+   class(hlm_fates_interface_type), intent(inout) :: this
+   type(bounds_type),intent(in)                   :: bounds_clump
+
+   ! !LOCAL VARIABLES
+   !
+ end subroutine GetIndex
+
+ ! ======================================================================================
+
+ subroutine SetIndex(this, subgrid_type)
+
+   ! !DESCRIPTION:
+   ! Initialize the h2fmap_type mapping arrays
+
+   ! !ARGUMENTS:
+   class(hlm_fates_interface_type), intent(inout) :: this
+   type(bounds_type),intent(in)                   :: bounds_clump
+
+   ! !LOCAL VARIABLES
+   !
+ end subroutine SetIndex
 
 end module ELMFatesInterfaceMod
