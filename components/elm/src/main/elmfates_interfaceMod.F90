@@ -3146,8 +3146,6 @@ contains
       do s = 1, this%fates(nc)%nsites
          c = this%f2hmap(nc)%fcolumn(s)
          this%fates(nc)%bc_in(s)%tot_het_resp = hr(c)
-         this%fates(nc)%bc_in(s)%tot_somc     = totsomc(c)
-         this%fates(nc)%bc_in(s)%tot_litc     = totlitc(c)
       end do
 
       ! Update history variables that track these variables
