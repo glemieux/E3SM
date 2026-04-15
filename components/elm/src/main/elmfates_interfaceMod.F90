@@ -87,6 +87,7 @@ module ELMFatesInterfaceMod
    use elm_varpar        , only : ivis
    use elm_varpar        , only : inir
    use elm_varpar        , only : nlevsoi
+   use elm_varpar        , only : nlevgrnd
    use elm_varpar        , only : nlevdecomp
    use elm_varpar        , only : nlevdecomp_full
    use elm_varpar        , only : i_met_lit, i_cel_lit, i_lig_lit
@@ -4053,6 +4054,8 @@ end subroutine wrap_update_hifrq_hist
 
       ! Register and initialize the boundary condition variables
       ! Global variables
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_nlevground, &
+                                               data=nlevgrnd, hlm_flag=.true.)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_decomp, &
                                                data=nlevdecomp, hlm_flag=.true.)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_decomp_max, &
