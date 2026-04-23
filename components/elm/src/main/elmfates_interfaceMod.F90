@@ -1296,9 +1296,6 @@ contains
          this%fates(nc)%bc_in(s)%h2o_liqvol_sl(1:nlevsoil)  = &
                col_ws%h2osoi_vol(c,1:nlevsoil)
 
-         this%fates(nc)%bc_in(s)%max_rooting_depth_index_col = &
-              min(nlevsoil, canopystate_inst%altmax_lastyear_indx_col(c))
-
          do j = 1,nlevsoil
             this%fates(nc)%bc_in(s)%tempk_sl(j) = col_es%t_soisno(c,j)
          end do
@@ -1990,8 +1987,6 @@ contains
                do s = 1,this%fates(nc)%nsites
 
                   c = this%f2hmap(nc)%fcolumn(s)
-                  this%fates(nc)%bc_in(s)%max_rooting_depth_index_col = &
-                       min(this%fates(nc)%bc_in(s)%nlevsoil, canopystate_inst%altmax_lastyear_indx_col(c))
 
                   ! When restarting the model, this subroutine has several
                   ! procedures that are incremental or don't need to be performed for
@@ -2259,8 +2254,6 @@ contains
            do s = 1,this%fates(nc)%nsites
 
               c = this%f2hmap(nc)%fcolumn(s)
-              this%fates(nc)%bc_in(s)%max_rooting_depth_index_col = this%fates(nc)%bc_in(s)%nlevdecomp
-
 
               call ed_update_site(this%fates(nc)%sites(s), &
                    this%fates(nc)%bc_in(s), &
