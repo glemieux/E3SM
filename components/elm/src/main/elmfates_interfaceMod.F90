@@ -3140,11 +3140,8 @@ contains
       nc = bounds_clump%clump_index
       dtime = real(get_step_size(),r8)
 
-      ! Summarize Net Fluxes
-      do s = 1, this%fates(nc)%nsites
-         c = this%f2hmap(nc)%fcolumn(s)
-         this%fates(nc)%bc_in(s)%tot_het_resp = hr(c)
-      end do
+      ! Update model timestep (hifreq) interface variables for fates history
+      call this%fates(nc)%UpdateInterfaceVariablesTimeStep(update_history=.true.)
 
       ! Update history variables that track these variables
       call fates_hist%update_history_hifrq(nc, &
@@ -4068,6 +4065,9 @@ end subroutine wrap_update_hifrq_hist
       end if
 
       ! Variables that do not need to accumulate
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_heterotrophic_respiration, &
+                                               data=col_cf%hr(c), hlm_flag=.true., &
+                                               subgrid_type=registry_var_intid_column)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_soil_level, &
                                                data=col_pp%nlevbed(c), hlm_flag=.true., &
                                                subgrid_type=registry_var_intid_column)
