@@ -4152,7 +4152,7 @@ end subroutine RegisterInterfaceVariablesInit
 
 subroutine RegisterInterfaceVariablesColdStart(this, nc, canopystate_inst)
 
-   use FatesInterfaceParametersMod, only : hlm_fates_thaw_max_depth_index
+   use FatesInterfaceParametersMod
 
    class(hlm_fates_interface_type), intent(inout) :: this
    integer, intent(in)                            :: nc              
@@ -4169,7 +4169,9 @@ subroutine RegisterInterfaceVariablesColdStart(this, nc, canopystate_inst)
       c = this%fates(nc)%registry(r)%GetColumnIndex()
 
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_thaw_max_depth_index, &
-                                               data=canopystate_inst%altmax_lastyear_indx_col(c), hlm_flag=.true.)
+                                               data=canopystate_inst%altmax_lastyear_indx_col(c), &
+                                               hlm_flag=.true., &
+                                               subgrid_type=registry_var_intid_column)
    end do
 
 end subroutine RegisterInterfaceVariablesColdStart
