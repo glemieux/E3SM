@@ -38,8 +38,8 @@ module ELMFatesInterfaceMod
    use CanopyStateType   , only : canopystate_type
    use TemperatureType   , only : temperature_type
    use EnergyFluxType    , only : energyflux_type
-
    use SoilStateType     , only : soilstate_type
+
    use elm_varctl        , only : iulog
    use elm_varctl        , only : use_fates
    use elm_varctl        , only : use_vertsoilc
@@ -1979,7 +1979,7 @@ contains
 
 
                ! Register interface variables handled normally during cold start
-               call this%RegisterInterfaceVariablesColdStart(nc, canopystate_inst)
+               call this%RegisterInterfaceVariablesColdStart(nc, canopystate_inst, soilstate_inst)
 
                ! Update the interface variables
                call this%fates(nc)%UpdateInterfaceVariables(restarting=.true.)
@@ -2151,7 +2151,7 @@ contains
         if ( this%fates(nc)%nsites>0 ) then
 
            ! Register interface variables
-           call this%RegisterInterfaceVariablesColdStart(nc, canopystate_inst)
+           call this%RegisterInterfaceVariablesColdStart(nc, canopystate_inst, soilstate_inst)
 
            ! Update the interface variables
            call this%fates(nc)%UpdateInterfaceVariables(initialize=.true.)
@@ -2514,7 +2514,6 @@ contains
               do j = 1,nlevsoil
                  this%fates(nc)%bc_in(s)%tempk_sl(j)         = t_soisno(c,j)
                  this%fates(nc)%bc_in(s)%h2o_liqvol_sl(j)    = h2osoi_liqvol(c,j)
-                 this%fates(nc)%bc_in(s)%eff_porosity_sl(j)  = eff_porosity(c,j)
                  this%fates(nc)%bc_in(s)%watsat_sl(j)        = watsat(c,j)
               end do
 
@@ -2522,11 +2521,13 @@ contains
               this%fates(nc)%bc_in(s)%filter_btran = .false.
               this%fates(nc)%bc_in(s)%tempk_sl(:)         = -999._r8
               this%fates(nc)%bc_in(s)%h2o_liqvol_sl(:)    = -999._r8
-              this%fates(nc)%bc_in(s)%eff_porosity_sl(:)  = -999._r8
               this%fates(nc)%bc_in(s)%watsat_sl(:)        = -999._r8
            end if
 
         end do
+
+         ! Update the interface variables that work on the model time step now
+        call this%fates(nc)%UpdateInterfaceVariablesTimeStep()
 
         ! -------------------------------------------------------------------------------
         ! This function evaluates the ground layer to determine if
@@ -3681,8 +3682,6 @@ end subroutine wrap_update_hifrq_hist
             soilstate_inst%bsw_col(c,1:nlevsoil)
       this%fates(nc)%bc_in(s)%h2o_liq_sisl(1:nlevsoil)    = &
             col_ws%h2osoi_liq(c,1:nlevsoil)
-      this%fates(nc)%bc_in(s)%eff_porosity_sl(1:nlevsoil) = &
-            soilstate_inst%eff_porosity_col(c,1:nlevsoil)
 
       do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
          p = ifp+col_pp%pfti(c)
@@ -4150,13 +4149,14 @@ end subroutine RegisterInterfaceVariablesInit
 
 ! ======================================================================================
 
-subroutine RegisterInterfaceVariablesColdStart(this, nc, canopystate_inst)
+subroutine RegisterInterfaceVariablesColdStart(this, nc, canopystate_inst, soilstate_inst)
 
    use FatesInterfaceParametersMod
 
    class(hlm_fates_interface_type), intent(inout) :: this
    integer, intent(in)                            :: nc              
    type(canopystate_type), intent(inout)          :: canopystate_inst
+   type(soilstate_type),   intent(inout)          :: soilstate_inst
 
    ! Locals
    integer :: r   ! register index
@@ -4172,6 +4172,11 @@ subroutine RegisterInterfaceVariablesColdStart(this, nc, canopystate_inst)
                                                data=canopystate_inst%altmax_lastyear_indx_col(c), &
                                                hlm_flag=.true., &
                                                subgrid_type=registry_var_intid_column)
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_effective_porosity, &
+                                               data=soilstate_inst%eff_porosity_col(c,:), &
+                                               hlm_flag=.true., &
+                                               subgrid_type=registry_var_intid_column)
+
    end do
 
 end subroutine RegisterInterfaceVariablesColdStart
