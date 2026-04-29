@@ -2514,14 +2514,12 @@ contains
               do j = 1,nlevsoil
                  this%fates(nc)%bc_in(s)%tempk_sl(j)         = t_soisno(c,j)
                  this%fates(nc)%bc_in(s)%h2o_liqvol_sl(j)    = h2osoi_liqvol(c,j)
-                 this%fates(nc)%bc_in(s)%watsat_sl(j)        = watsat(c,j)
               end do
 
            else
               this%fates(nc)%bc_in(s)%filter_btran = .false.
               this%fates(nc)%bc_in(s)%tempk_sl(:)         = -999._r8
               this%fates(nc)%bc_in(s)%h2o_liqvol_sl(:)    = -999._r8
-              this%fates(nc)%bc_in(s)%watsat_sl(:)        = -999._r8
            end if
 
         end do
@@ -4146,7 +4144,7 @@ end subroutine wrap_update_hifrq_hist
                                                   subgrid_type=registry_var_intid_column)
       end if
    end do
-
+   
 end subroutine RegisterInterfaceVariablesInit
 
 ! ======================================================================================
@@ -4176,6 +4174,10 @@ subroutine RegisterInterfaceVariablesColdStart(this, nc, canopystate_inst, soils
                                                subgrid_type=registry_var_intid_column)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_effective_porosity, &
                                                data=soilstate_inst%eff_porosity_col(c,:), &
+                                               hlm_flag=.true., &
+                                               subgrid_type=registry_var_intid_column)
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_soil_water_saturation, &
+                                               data=soilstate_inst%watsat_col(c,:), &
                                                hlm_flag=.true., &
                                                subgrid_type=registry_var_intid_column)
 
