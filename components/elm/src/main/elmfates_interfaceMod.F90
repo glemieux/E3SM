@@ -38,8 +38,8 @@ module ELMFatesInterfaceMod
    use CanopyStateType   , only : canopystate_type
    use TemperatureType   , only : temperature_type
    use EnergyFluxType    , only : energyflux_type
-
    use SoilStateType     , only : soilstate_type
+
    use elm_varctl        , only : iulog
    use elm_varctl        , only : use_fates
    use elm_varctl        , only : use_vertsoilc
@@ -87,6 +87,7 @@ module ELMFatesInterfaceMod
    use elm_varpar        , only : ivis
    use elm_varpar        , only : inir
    use elm_varpar        , only : nlevsoi
+   use elm_varpar        , only : nlevgrnd
    use elm_varpar        , only : nlevdecomp
    use elm_varpar        , only : nlevdecomp_full
    use elm_varpar        , only : i_met_lit, i_cel_lit, i_lig_lit
@@ -1295,9 +1296,6 @@ contains
          this%fates(nc)%bc_in(s)%h2o_liqvol_sl(1:nlevsoil)  = &
                col_ws%h2osoi_vol(c,1:nlevsoil)
 
-         this%fates(nc)%bc_in(s)%max_rooting_depth_index_col = &
-              min(nlevsoil, canopystate_inst%altmax_lastyear_indx_col(c))
-
          do j = 1,nlevsoil
             this%fates(nc)%bc_in(s)%tempk_sl(j) = col_es%t_soisno(c,j)
          end do
@@ -1978,7 +1976,7 @@ contains
 
 
                ! Register interface variables handled normally during cold start
-               call this%RegisterInterfaceVariablesColdStart(nc, canopystate_inst)
+               call this%RegisterInterfaceVariablesColdStart(nc, canopystate_inst, soilstate_inst)
 
                ! Update the interface variables
                call this%fates(nc)%UpdateInterfaceVariables(restarting=.true.)
@@ -1989,8 +1987,6 @@ contains
                do s = 1,this%fates(nc)%nsites
 
                   c = this%f2hmap(nc)%fcolumn(s)
-                  this%fates(nc)%bc_in(s)%max_rooting_depth_index_col = &
-                       min(this%fates(nc)%bc_in(s)%nlevsoil, canopystate_inst%altmax_lastyear_indx_col(c))
 
                   ! When restarting the model, this subroutine has several
                   ! procedures that are incremental or don't need to be performed for
@@ -2150,7 +2146,7 @@ contains
         if ( this%fates(nc)%nsites>0 ) then
 
            ! Register interface variables
-           call this%RegisterInterfaceVariablesColdStart(nc, canopystate_inst)
+           call this%RegisterInterfaceVariablesColdStart(nc, canopystate_inst, soilstate_inst)
 
            ! Update the interface variables
            call this%fates(nc)%UpdateInterfaceVariables(initialize=.true.)
@@ -2258,8 +2254,6 @@ contains
            do s = 1,this%fates(nc)%nsites
 
               c = this%f2hmap(nc)%fcolumn(s)
-              this%fates(nc)%bc_in(s)%max_rooting_depth_index_col = this%fates(nc)%bc_in(s)%nlevdecomp
-
 
               call ed_update_site(this%fates(nc)%sites(s), &
                    this%fates(nc)%bc_in(s), &
@@ -2513,19 +2507,18 @@ contains
               do j = 1,nlevsoil
                  this%fates(nc)%bc_in(s)%tempk_sl(j)         = t_soisno(c,j)
                  this%fates(nc)%bc_in(s)%h2o_liqvol_sl(j)    = h2osoi_liqvol(c,j)
-                 this%fates(nc)%bc_in(s)%eff_porosity_sl(j)  = eff_porosity(c,j)
-                 this%fates(nc)%bc_in(s)%watsat_sl(j)        = watsat(c,j)
               end do
 
            else
               this%fates(nc)%bc_in(s)%filter_btran = .false.
               this%fates(nc)%bc_in(s)%tempk_sl(:)         = -999._r8
               this%fates(nc)%bc_in(s)%h2o_liqvol_sl(:)    = -999._r8
-              this%fates(nc)%bc_in(s)%eff_porosity_sl(:)  = -999._r8
-              this%fates(nc)%bc_in(s)%watsat_sl(:)        = -999._r8
            end if
 
         end do
+
+         ! Update the interface variables that work on the model time step now
+        call this%fates(nc)%UpdateInterfaceVariablesTimeStep()
 
         ! -------------------------------------------------------------------------------
         ! This function evaluates the ground layer to determine if
@@ -3141,13 +3134,8 @@ contains
       nc = bounds_clump%clump_index
       dtime = real(get_step_size(),r8)
 
-      ! Summarize Net Fluxes
-      do s = 1, this%fates(nc)%nsites
-         c = this%f2hmap(nc)%fcolumn(s)
-         this%fates(nc)%bc_in(s)%tot_het_resp = hr(c)
-         this%fates(nc)%bc_in(s)%tot_somc     = totsomc(c)
-         this%fates(nc)%bc_in(s)%tot_litc     = totlitc(c)
-      end do
+      ! Update model timestep interface variables
+      call this%fates(nc)%UpdateInterfaceVariablesTimeStep()
 
       ! Update history variables that track these variables
       call fates_hist%update_history_hifrq(nc, &
@@ -4053,6 +4041,8 @@ end subroutine wrap_update_hifrq_hist
 
       ! Register and initialize the boundary condition variables
       ! Global variables
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_nlevground, &
+                                               data=nlevgrnd, hlm_flag=.true.)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_decomp, &
                                                data=nlevdecomp, hlm_flag=.true.)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_decomp_max, &
@@ -4071,6 +4061,9 @@ end subroutine wrap_update_hifrq_hist
       end if
 
       ! Variables that do not need to accumulate
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_heterotrophic_respiration, &
+                                               data=col_cf%hr(c), hlm_flag=.true., &
+                                               subgrid_type=registry_var_intid_column)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_soil_level, &
                                                data=col_pp%nlevbed(c), hlm_flag=.true., &
                                                subgrid_type=registry_var_intid_column)
@@ -4144,18 +4137,19 @@ end subroutine wrap_update_hifrq_hist
                                                   subgrid_type=registry_var_intid_column)
       end if
    end do
-
+   
 end subroutine RegisterInterfaceVariablesInit
 
 ! ======================================================================================
 
-subroutine RegisterInterfaceVariablesColdStart(this, nc, canopystate_inst)
+subroutine RegisterInterfaceVariablesColdStart(this, nc, canopystate_inst, soilstate_inst)
 
-   use FatesInterfaceParametersMod, only : hlm_fates_thaw_max_depth_index
+   use FatesInterfaceParametersMod
 
    class(hlm_fates_interface_type), intent(inout) :: this
    integer, intent(in)                            :: nc              
    type(canopystate_type), intent(inout)          :: canopystate_inst
+   type(soilstate_type),   intent(inout)          :: soilstate_inst
 
    ! Locals
    integer :: r   ! register index
@@ -4168,7 +4162,18 @@ subroutine RegisterInterfaceVariablesColdStart(this, nc, canopystate_inst)
       c = this%fates(nc)%registry(r)%GetColumnIndex()
 
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_thaw_max_depth_index, &
-                                               data=canopystate_inst%altmax_lastyear_indx_col(c), hlm_flag=.true.)
+                                               data=canopystate_inst%altmax_lastyear_indx_col(c), &
+                                               hlm_flag=.true., &
+                                               subgrid_type=registry_var_intid_column)
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_effective_porosity, &
+                                               data=soilstate_inst%eff_porosity_col(c,:), &
+                                               hlm_flag=.true., &
+                                               subgrid_type=registry_var_intid_column)
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_soil_water_saturation, &
+                                               data=soilstate_inst%watsat_col(c,:), &
+                                               hlm_flag=.true., &
+                                               subgrid_type=registry_var_intid_column)
+
    end do
 
 end subroutine RegisterInterfaceVariablesColdStart
