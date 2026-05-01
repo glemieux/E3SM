@@ -2526,6 +2526,9 @@ contains
 
         end do
 
+         ! Update the interface variables that work on the model time step now
+        call this%fates(nc)%UpdateInterfaceVariablesTimeStep()
+
         ! -------------------------------------------------------------------------------
         ! This function evaluates the ground layer to determine if
         ! root water uptake can happen, and soil suction should even
