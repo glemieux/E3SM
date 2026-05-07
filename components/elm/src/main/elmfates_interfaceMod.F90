@@ -1574,7 +1574,6 @@ contains
          z0m  => frictionvel_inst%z0m_patch  , & ! Output: [real(r8) (:)   ] momentum roughness length (m)
          displa => canopystate_inst%displa_patch, &
          dleaf_patch => canopystate_inst%dleaf_patch, &
-         snow_depth => col_ws%snow_depth, &
          frac_sno_eff => col_ws%frac_sno_eff, &
          frac_veg_nosno_alb => canopystate_inst%frac_veg_nosno_alb_patch)
 
@@ -1583,7 +1582,6 @@ contains
        ! --------------------------------------------------------------------------------
        do s=1,this%fates(nc)%nsites
           c = this%f2hmap(nc)%fcolumn(s)
-          this%fates(nc)%bc_in(s)%snow_depth_si   = snow_depth(c)
           this%fates(nc)%bc_in(s)%frac_sno_eff_si = frac_sno_eff(c)
        end do
 
@@ -4069,6 +4067,9 @@ end subroutine wrap_update_hifrq_hist
                                                subgrid_type=registry_var_intid_column)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_decomp_frac_temperature, &
                                                data=col_cf%t_scalar(c,:), hlm_flag=.true., &
+                                               subgrid_type=registry_var_intid_column)
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_snow_depth, &
+                                               data=col_ws%snow_depth(c), hlm_flag=.true., &
                                                subgrid_type=registry_var_intid_column)
 
       ! Variables that need to accumulate                                               
