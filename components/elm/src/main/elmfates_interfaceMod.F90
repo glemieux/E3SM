@@ -1580,11 +1580,6 @@ contains
 
        ! Process input boundary conditions to FATES
        ! --------------------------------------------------------------------------------
-       do s=1,this%fates(nc)%nsites
-          c = this%f2hmap(nc)%fcolumn(s)
-          this%fates(nc)%bc_in(s)%frac_sno_eff_si = frac_sno_eff(c)
-       end do
-
        ! Only update the fates internal snow burial if this is not a restart
        if (.not. is_initing_from_restart) then
           call UpdateFatesAvgSnowDepth(this%fates(nc)%sites,this%fates(nc)%bc_in)
@@ -4070,6 +4065,9 @@ end subroutine wrap_update_hifrq_hist
                                                subgrid_type=registry_var_intid_column)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_snow_depth, &
                                                data=col_ws%snow_depth(c), hlm_flag=.true., &
+                                               subgrid_type=registry_var_intid_column)
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_snow_cover_frac, &
+                                               data=col_ws%frac_sno_eff(c), hlm_flag=.true., &
                                                subgrid_type=registry_var_intid_column)
 
       ! Variables that need to accumulate                                               
