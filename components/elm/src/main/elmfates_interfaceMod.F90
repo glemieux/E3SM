@@ -1291,10 +1291,6 @@ contains
          end if
 
          nlevsoil = this%fates(nc)%bc_in(s)%nlevsoil
-         
-         do j = 1,nlevsoil
-            this%fates(nc)%bc_in(s)%tempk_sl(j) = col_es%t_soisno(c,j)
-         end do
 
          call get_active_suction_layers(this%fates(nc)%nsites, &
              this%fates(nc)%sites,  &
@@ -2490,15 +2486,9 @@ contains
 
            ! Check to see if this column is in the exposed veg filter
            if( any(filterc==c) )then
-
               this%fates(nc)%bc_in(s)%filter_btran = .true.
-              do j = 1,nlevsoil
-                 this%fates(nc)%bc_in(s)%tempk_sl(j)         = t_soisno(c,j)
-              end do
-
            else
               this%fates(nc)%bc_in(s)%filter_btran = .false.
-              this%fates(nc)%bc_in(s)%tempk_sl(:)         = -999._r8
            end if
 
         end do
@@ -4071,6 +4061,9 @@ end subroutine wrap_update_hifrq_hist
                                                subgrid_type=registry_var_intid_column)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_soil_h2o_liquid, &
                                                data=col_ws%h2osoi_liqvol(c,lb:), hlm_flag=.true., &
+                                               subgrid_type=registry_var_intid_column)
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_soil_temperature, &
+                                               data=col_es%t_soisno(c,lb:), hlm_flag=.true., &
                                                subgrid_type=registry_var_intid_column)
 
       ! Variables that need to accumulate                                               
