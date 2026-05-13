@@ -3629,8 +3629,6 @@ end subroutine wrap_update_hifrq_hist
       c = this%f2hmap(nc)%fcolumn(s)
       nlevsoil = this%fates(nc)%bc_in(s)%nlevsoil
 
-      this%fates(nc)%bc_in(s)%smpmin_si                 = &
-            soilstate_inst%smpmin_col(c)
       this%fates(nc)%bc_in(s)%watsat_sisl(1:nlevsoil)    = &
             soilstate_inst%watsat_col(c,1:nlevsoil)
       this%fates(nc)%bc_in(s)%watres_sisl(1:nlevsoil)    = &
@@ -4167,6 +4165,13 @@ subroutine RegisterInterfaceVariablesColdStart(this, nc, canopystate_inst, soils
                                                data=soilstate_inst%watsat_col(c,:), &
                                                hlm_flag=.true., &
                                                subgrid_type=registry_var_intid_column)
+
+      if (use_fates_planthydro) then
+         call this%fates(nc)%registry(r)%Register(key=hlm_fates_soil_potential_min, &
+                                                  data=soilstate_inst%smpmin_col(c), &
+                                                  hlm_flag=.true., &
+                                                  subgrid_type=registry_var_intid_column)
+      end if
 
    end do
 
