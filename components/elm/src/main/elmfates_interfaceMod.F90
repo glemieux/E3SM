@@ -2630,11 +2630,6 @@ contains
          c = this%f2hmap(nc)%fcolumn(s)
          t = col_pp%topounit(c)
 
-         nlevsoil = this%fates(nc)%bc_in(s)%nlevsoil
-
-         do j = 1,nlevsoil
-            this%fates(nc)%bc_in(s)%t_soisno_sl(j)   = t_soisno(c,j)  ! soil temperature (Kelvin)
-         end do
          this%fates(nc)%bc_in(s)%forc_pbot           = forc_pbot(t)   ! atmospheric pressure (Pa)
 
          do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
@@ -4065,6 +4060,13 @@ end subroutine wrap_update_hifrq_hist
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_soil_temperature, &
                                                data=col_es%t_soisno(c,lb:), hlm_flag=.true., &
                                                subgrid_type=registry_var_intid_column)
+
+      ! Register variables related to plant hydraulics if necessary
+      if (use_fates_planthydro) then
+         call this%fates(nc)%registry(r)%Register(key=hlm_fates_liquid_water, &
+                                                  data=col_ws%h2osoi_liq(c,lb:), hlm_flag=.true., &
+                                                  subgrid_type=registry_var_intid_column)
+      end if
 
       ! Variables that need to accumulate                                               
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_cellulose, &
