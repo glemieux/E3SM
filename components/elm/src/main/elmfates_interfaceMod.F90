@@ -1292,10 +1292,6 @@ contains
 
          nlevsoil = this%fates(nc)%bc_in(s)%nlevsoil
          
-         ! Soil water
-         this%fates(nc)%bc_in(s)%h2o_liqvol_sl(1:nlevsoil)  = &
-               col_ws%h2osoi_vol(c,1:nlevsoil)
-
          do j = 1,nlevsoil
             this%fates(nc)%bc_in(s)%tempk_sl(j) = col_es%t_soisno(c,j)
          end do
@@ -2498,13 +2494,11 @@ contains
               this%fates(nc)%bc_in(s)%filter_btran = .true.
               do j = 1,nlevsoil
                  this%fates(nc)%bc_in(s)%tempk_sl(j)         = t_soisno(c,j)
-                 this%fates(nc)%bc_in(s)%h2o_liqvol_sl(j)    = h2osoi_liqvol(c,j)
               end do
 
            else
               this%fates(nc)%bc_in(s)%filter_btran = .false.
               this%fates(nc)%bc_in(s)%tempk_sl(:)         = -999._r8
-              this%fates(nc)%bc_in(s)%h2o_liqvol_sl(:)    = -999._r8
            end if
 
         end do
@@ -4008,9 +4002,15 @@ end subroutine wrap_update_hifrq_hist
    integer :: r               ! Register index
    integer :: p               ! HLM patch index
    integer :: c               ! Column index
+   integer :: lb              ! Local lower bounds
    logical :: is_bareground   ! Is this register associated with a bareground patch
    logical :: is_first        ! Is this register associated with the first patch on the column, landunit, etc
                               ! This is necessary to ensure that accumulation variables are zero'd properly
+   
+   ! Set the local lower bound to be one.  This is a workaround to address the fact that
+   ! some HLM arrays have lower bounds that are less than 1, but fates does not currently 
+   ! use these lower bounds.
+   lb = 1
    
    ! Iterate over the number of vegetated patches
    do r = 1, this%fates(nc)%npatches
@@ -4068,6 +4068,9 @@ end subroutine wrap_update_hifrq_hist
                                                subgrid_type=registry_var_intid_column)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_snow_cover_frac, &
                                                data=col_ws%frac_sno_eff(c), hlm_flag=.true., &
+                                               subgrid_type=registry_var_intid_column)
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_soil_h2o_liquid, &
+                                               data=col_ws%h2osoi_liqvol(c,lb:), hlm_flag=.true., &
                                                subgrid_type=registry_var_intid_column)
 
       ! Variables that need to accumulate                                               
