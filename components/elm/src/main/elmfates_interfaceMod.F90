@@ -1341,7 +1341,6 @@ contains
             this%fates(nc)%bc_in(s)%watres_sisl(1:nlevsoil) = soilstate_inst%watmin_col(c,1:nlevsoil)
             this%fates(nc)%bc_in(s)%sucsat_sisl(1:nlevsoil) = soilstate_inst%sucsat_col(c,1:nlevsoil)
             this%fates(nc)%bc_in(s)%bsw_sisl(1:nlevsoil)    = soilstate_inst%bsw_col(c,1:nlevsoil)
-            this%fates(nc)%bc_in(s)%h2o_liq_sisl(1:nlevsoil) =  col_ws%h2osoi_liq(c,1:nlevsoil)
          end if
 
          ! get the harvest data, which is by gridcell
@@ -2033,9 +2032,6 @@ contains
                      this%fates(nc)%bc_in(s)%bsw_sisl(1:nlevsoil) = &
                           soilstate_inst%bsw_col(c,1:nlevsoil)
 
-                     this%fates(nc)%bc_in(s)%h2o_liq_sisl(1:nlevsoil) = &
-                          col_ws%h2osoi_liq(c,1:nlevsoil)
-
                   end do
 
                   call RestartHydrStates(this%fates(nc)%sites,  &
@@ -2188,9 +2184,6 @@ contains
 
                  this%fates(nc)%bc_in(s)%bsw_sisl(1:nlevsoil) = &
                       soilstate_inst%bsw_col(c,1:nlevsoil)
-
-                 this%fates(nc)%bc_in(s)%h2o_liq_sisl(1:nlevsoil) = &
-                      col_ws%h2osoi_liq(c,1:nlevsoil)
 
                  this%fates(nc)%bc_in(s)%hksat_sisl(1:nlevsoil) = &
                        soilstate_inst%hksat_col(c,1:nlevsoil)
@@ -3637,8 +3630,6 @@ end subroutine wrap_update_hifrq_hist
             soilstate_inst%sucsat_col(c,1:nlevsoil)
       this%fates(nc)%bc_in(s)%bsw_sisl(1:nlevsoil)        = &
             soilstate_inst%bsw_col(c,1:nlevsoil)
-      this%fates(nc)%bc_in(s)%h2o_liq_sisl(1:nlevsoil)    = &
-            col_ws%h2osoi_liq(c,1:nlevsoil)
 
       do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
          p = ifp+col_pp%pfti(c)
