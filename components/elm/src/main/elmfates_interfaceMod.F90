@@ -1336,7 +1336,6 @@ contains
           end if ! SP
 
          if(use_fates_planthydro)then
-            this%fates(nc)%bc_in(s)%hksat_sisl(1:nlevsoil)  = soilstate_inst%hksat_col(c,1:nlevsoil)
             this%fates(nc)%bc_in(s)%watsat_sisl(1:nlevsoil) = soilstate_inst%watsat_col(c,1:nlevsoil)
             this%fates(nc)%bc_in(s)%watres_sisl(1:nlevsoil) = soilstate_inst%watmin_col(c,1:nlevsoil)
             this%fates(nc)%bc_in(s)%sucsat_sisl(1:nlevsoil) = soilstate_inst%sucsat_col(c,1:nlevsoil)
@@ -2017,9 +2016,6 @@ contains
                   do s = 1,this%fates(nc)%nsites
                      c = this%f2hmap(nc)%fcolumn(s)
                      nlevsoil = this%fates(nc)%bc_in(s)%nlevsoil
-                     this%fates(nc)%bc_in(s)%hksat_sisl(1:nlevsoil) = &
-                          soilstate_inst%hksat_col(c,1:nlevsoil)
-
                      this%fates(nc)%bc_in(s)%watsat_sisl(1:nlevsoil) = &
                           soilstate_inst%watsat_col(c,1:nlevsoil)
 
@@ -2184,9 +2180,6 @@ contains
 
                  this%fates(nc)%bc_in(s)%bsw_sisl(1:nlevsoil) = &
                       soilstate_inst%bsw_col(c,1:nlevsoil)
-
-                 this%fates(nc)%bc_in(s)%hksat_sisl(1:nlevsoil) = &
-                       soilstate_inst%hksat_col(c,1:nlevsoil)
 
                  do j = 1, nlevsoil
                     vol_ice = min(soilstate_inst%watsat_col(c,j), &
@@ -4160,6 +4153,10 @@ subroutine RegisterInterfaceVariablesColdStart(this, nc, canopystate_inst, soils
       if (use_fates_planthydro) then
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_soil_potential_min, &
                                                   data=soilstate_inst%smpmin_col(c), &
+                                                  hlm_flag=.true., &
+                                                  subgrid_type=registry_var_intid_column)
+         call this%fates(nc)%registry(r)%Register(key=hlm_fates_soil_saturated_hydr_cond, &
+                                                  data=soilstate_inst%hksat_col(c,:), &
                                                   hlm_flag=.true., &
                                                   subgrid_type=registry_var_intid_column)
       end if
