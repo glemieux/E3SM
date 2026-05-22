@@ -1335,10 +1335,6 @@ contains
             end do ! p
           end if ! SP
 
-         if(use_fates_planthydro)then
-            this%fates(nc)%bc_in(s)%watsat_sisl(1:nlevsoil) = soilstate_inst%watsat_col(c,1:nlevsoil)
-         end if
-
          ! get the harvest data, which is by gridcell
          ! for now there is one veg column per gridcell, so store all harvest data in each site
          ! this will eventually change
@@ -2010,14 +2006,6 @@ contains
                ! ------------------------------------------------------------------------
                if (use_fates_planthydro) then
 
-                  do s = 1,this%fates(nc)%nsites
-                     c = this%f2hmap(nc)%fcolumn(s)
-                     nlevsoil = this%fates(nc)%bc_in(s)%nlevsoil
-                     this%fates(nc)%bc_in(s)%watsat_sisl(1:nlevsoil) = &
-                          soilstate_inst%watsat_col(c,1:nlevsoil)
-
-                  end do
-
                   call RestartHydrStates(this%fates(nc)%sites,  &
                        this%fates(nc)%nsites, &
                        this%fates(nc)%bc_in,  &
@@ -2156,9 +2144,6 @@ contains
               do s = 1,this%fates(nc)%nsites
                  c = this%f2hmap(nc)%fcolumn(s)
                  nlevsoil = this%fates(nc)%bc_in(s)%nlevsoil
-
-                 this%fates(nc)%bc_in(s)%watsat_sisl(1:nlevsoil) = &
-                      soilstate_inst%watsat_col(c,1:nlevsoil)
 
                  do j = 1, nlevsoil
                     vol_ice = min(soilstate_inst%watsat_col(c,j), &
@@ -3592,10 +3577,6 @@ end subroutine wrap_update_hifrq_hist
 
    do s = 1, this%fates(nc)%nsites
       c = this%f2hmap(nc)%fcolumn(s)
-      nlevsoil = this%fates(nc)%bc_in(s)%nlevsoil
-
-      this%fates(nc)%bc_in(s)%watsat_sisl(1:nlevsoil)    = &
-            soilstate_inst%watsat_col(c,1:nlevsoil)
 
       do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
          p = ifp+col_pp%pfti(c)
