@@ -1337,7 +1337,6 @@ contains
 
          if(use_fates_planthydro)then
             this%fates(nc)%bc_in(s)%watsat_sisl(1:nlevsoil) = soilstate_inst%watsat_col(c,1:nlevsoil)
-            this%fates(nc)%bc_in(s)%watres_sisl(1:nlevsoil) = soilstate_inst%watmin_col(c,1:nlevsoil)
          end if
 
          ! get the harvest data, which is by gridcell
@@ -2017,9 +2016,6 @@ contains
                      this%fates(nc)%bc_in(s)%watsat_sisl(1:nlevsoil) = &
                           soilstate_inst%watsat_col(c,1:nlevsoil)
 
-                     this%fates(nc)%bc_in(s)%watres_sisl(1:nlevsoil) = &
-                          soilstate_inst%watmin_col(c,1:nlevsoil)
-
                   end do
 
                   call RestartHydrStates(this%fates(nc)%sites,  &
@@ -2163,9 +2159,6 @@ contains
 
                  this%fates(nc)%bc_in(s)%watsat_sisl(1:nlevsoil) = &
                       soilstate_inst%watsat_col(c,1:nlevsoil)
-
-                 this%fates(nc)%bc_in(s)%watres_sisl(1:nlevsoil) = &
-                      soilstate_inst%watmin_col(c,1:nlevsoil)
 
                  do j = 1, nlevsoil
                     vol_ice = min(soilstate_inst%watsat_col(c,j), &
@@ -3603,8 +3596,6 @@ end subroutine wrap_update_hifrq_hist
 
       this%fates(nc)%bc_in(s)%watsat_sisl(1:nlevsoil)    = &
             soilstate_inst%watsat_col(c,1:nlevsoil)
-      this%fates(nc)%bc_in(s)%watres_sisl(1:nlevsoil)    = &
-           soilstate_inst%watmin_col(c,1:nlevsoil)
 
       do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
          p = ifp+col_pp%pfti(c)
@@ -4147,6 +4138,10 @@ subroutine RegisterInterfaceVariablesColdStart(this, nc, canopystate_inst, soils
                                                   subgrid_type=registry_var_intid_column)
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_soil_suction_min, &
                                                   data=soilstate_inst%sucsat_col(c,:), &
+                                                  hlm_flag=.true., &
+                                                  subgrid_type=registry_var_intid_column)
+         call this%fates(nc)%registry(r)%Register(key=hlm_fates_soil_water_vol_min, &
+                                                  data=soilstate_inst%watmin_col(c,:), &
                                                   hlm_flag=.true., &
                                                   subgrid_type=registry_var_intid_column)
       end if
