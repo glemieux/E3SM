@@ -657,6 +657,7 @@ module ColumnDataType
     real(r8), pointer :: rr_vr                                 (:,:)   => null() ! column (gC/m2/s) root respiration (fine root MR + total root GR) (p2c)
     real(r8), pointer :: ar                                    (:)     => null() ! column (gC/m2/s) autotrophic respiration (MR + GR) (p2c)
     real(r8), pointer :: gpp                                   (:)     => null() ! column (gC/m2/s) GPP flux before downregulation  (p2c)
+    real(r8), pointer :: gpp_fates                             (:)     => null() ! column (gC/m2/s) GPP flux from FATES 
     real(r8), pointer :: npp                                   (:)     => null() ! column (gC/m2/s) net primary production (p2c)
     real(r8), pointer :: fire_closs_p2c                        (:)     => null() ! column (gC/m2/s) patch2col averaged column-level fire C loss (p2c)
     real(r8), pointer :: fire_closs                            (:)     => null() ! column (gC/m2/s) total patch-level fire C loss
@@ -6262,6 +6263,7 @@ contains
     allocate(this%rr_vr(begc:endc,1:nlevdecomp_full));                            this%rr_vr(:,:) = spval
     allocate(this%ar                                (begc:endc))                  ; this%ar                           (:)   = spval
     allocate(this%gpp                               (begc:endc))                  ; this%gpp                          (:)   = spval
+    allocate(this%gpp_fates                         (begc:endc))                  ; this%gpp_fates                    (:)   = spval
     allocate(this%npp                               (begc:endc))                  ; this%npp                          (:)   = spval
     allocate(this%fire_closs_p2c                    (begc:endc))                  ; this%fire_closs_p2c               (:)   = spval
     allocate(this%fire_closs                        (begc:endc))                  ; this%fire_closs                   (:)   = spval
@@ -7981,6 +7983,10 @@ contains
        this%vegfire(i)               = value_column
        this%wood_harvestc(i)         = value_column
        this%hrv_xsmrpool_to_atm(i)   = value_column
+       
+       ! Zero fates column fluxes
+       this%gpp_fates(i)             = value_column
+
     end do
   
     if(use_crop) then 
@@ -8034,6 +8040,7 @@ contains
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        this%gpp(c) = 0._r8
+       this%gpp_fates(c) = 0._r8
        this%ar(c) = 0._r8
        this%npp(c) = 0._r8
        this%vegfire(c) = 0._r8

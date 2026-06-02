@@ -2749,7 +2749,8 @@ contains
         nee     => col_cf%nee    , &
         nbp     => col_cf%nbp    , &
         product_closs => col_cf%product_closs ,  &
-        hr     => col_cf%hr)
+        hr     => col_cf%hr, &
+        gpp_fates => col_cf%gpp_fates)
  
     nc = bounds_clump%clump_index
     ! Loop over columns
@@ -2757,7 +2758,7 @@ contains
        c = filterc(icc)
        s = this%f2hmap(nc)%hsites(c)
 
-       nep(c) = this%fates(nc)%bc_out(s)%gpp_site*g_per_kg &
+       nep(c) = gpp_fates(c) &
             - this%fates(nc)%bc_out(s)%ar_site*g_per_kg &
             - hr(c)
 
@@ -4004,6 +4005,9 @@ end subroutine wrap_update_hifrq_hist
                                                   subgrid_type=registry_var_intid_column)
       end if
 
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_gpp, data=col_cf%gpp_fates(c), &
+                                               hlm_flag=.true., subgrid_type=registry_var_intid_column)
+
       ! Variables that need to accumulate                                               
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_cellulose, &
                                                data=col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_cel_lit), &
@@ -4015,6 +4019,9 @@ end subroutine wrap_update_hifrq_hist
                                                subgrid_type=registry_var_intid_column)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_labile, &
                                                data=col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit), &
+                                               hlm_flag=.true., accumulate=.true., &
+                                               subgrid_type=registry_var_intid_column)
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_gpp, data=col_cf%gpp_fates(c), &
                                                hlm_flag=.true., accumulate=.true., &
                                                subgrid_type=registry_var_intid_column)
 
