@@ -2752,8 +2752,9 @@ contains
         hr     => col_cf%hr, &
         gpp_fates => col_cf%gpp_fates, &
         ar_fates => col_cf%ar_fates, &
-        grazing_loss_atm_fates => col_cf%grazing_loss_atm_fates)
- 
+        grazing_loss_atm_fates => col_cf%grazing_loss_atm_fates, &
+        fire_loss_atm_fates => col_cf%fire_loss_atm_fates)
+
     nc = bounds_clump%clump_index
     ! Loop over columns
     do icc = 1,fc
@@ -2764,7 +2765,7 @@ contains
 
        nbp(c) = nep(c) &
             - grazing_loss_atm_fates(c) &
-            - this%fates(nc)%bc_out(s)%fire_closs_to_atm_si*g_per_kg &
+            - fire_loss_atm_fates(c) &
             - product_closs(c)
 
        nee(c) = -nbp(c)
@@ -4028,7 +4029,11 @@ end subroutine wrap_update_hifrq_hist
                                                data=col_cf%grazing_loss_atm_fates(c), &
                                                hlm_flag=.true., accumulate=.true., &
                                                subgrid_type=registry_var_intid_column)
-
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_fire_loss_atm, &
+                                               data=col_cf%fire_loss_atm_fates(c), &
+                                               hlm_flag=.true., accumulate=.true., &
+                                               subgrid_type=registry_var_intid_column)
+   
 
       ! Pass is_first option to assure HLM updates are zero'd 
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_total, &
