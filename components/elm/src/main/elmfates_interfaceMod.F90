@@ -2750,7 +2750,8 @@ contains
         nbp     => col_cf%nbp    , &
         product_closs => col_cf%product_closs ,  &
         hr     => col_cf%hr, &
-        gpp_fates => col_cf%gpp_fates)
+        gpp_fates => col_cf%gpp_fates, &
+        ar_fates => col_cf%ar_fates)
  
     nc = bounds_clump%clump_index
     ! Loop over columns
@@ -2758,9 +2759,7 @@ contains
        c = filterc(icc)
        s = this%f2hmap(nc)%hsites(c)
 
-       nep(c) = gpp_fates(c) &
-            - this%fates(nc)%bc_out(s)%ar_site*g_per_kg &
-            - hr(c)
+       nep(c) = gpp_fates(c) - ar_fates(c) - hr(c)
 
        nbp(c) = nep(c) &
             - this%fates(nc)%bc_out(s)%grazing_closs_to_atm_si*g_per_kg &
@@ -4005,9 +4004,6 @@ end subroutine wrap_update_hifrq_hist
                                                   subgrid_type=registry_var_intid_column)
       end if
 
-      call this%fates(nc)%registry(r)%Register(key=hlm_fates_gpp, data=col_cf%gpp_fates(c), &
-                                               hlm_flag=.true., subgrid_type=registry_var_intid_column)
-
       ! Variables that need to accumulate                                               
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_cellulose, &
                                                data=col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_cel_lit), &
@@ -4024,6 +4020,10 @@ end subroutine wrap_update_hifrq_hist
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_gpp, data=col_cf%gpp_fates(c), &
                                                hlm_flag=.true., accumulate=.true., &
                                                subgrid_type=registry_var_intid_column)
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_ar, data=col_cf%ar_fates(c), &
+                                               hlm_flag=.true., accumulate=.true., &
+                                               subgrid_type=registry_var_intid_column)
+
 
       ! Pass is_first option to assure HLM updates are zero'd 
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_carbon_total, &

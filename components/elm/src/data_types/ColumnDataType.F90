@@ -656,6 +656,7 @@ module ColumnDataType
     real(r8), pointer :: rr                                    (:)     => null() ! column (gC/m2/s) root respiration (fine root MR + total root GR) (p2c)
     real(r8), pointer :: rr_vr                                 (:,:)   => null() ! column (gC/m2/s) root respiration (fine root MR + total root GR) (p2c)
     real(r8), pointer :: ar                                    (:)     => null() ! column (gC/m2/s) autotrophic respiration (MR + GR) (p2c)
+    real(r8), pointer :: ar_fates                              (:)     => null() ! column (gC/m2/s) autotrophic respiration from FATES 
     real(r8), pointer :: gpp                                   (:)     => null() ! column (gC/m2/s) GPP flux before downregulation  (p2c)
     real(r8), pointer :: gpp_fates                             (:)     => null() ! column (gC/m2/s) GPP flux from FATES 
     real(r8), pointer :: npp                                   (:)     => null() ! column (gC/m2/s) net primary production (p2c)
@@ -6262,6 +6263,7 @@ contains
     allocate(this%rr                                (begc:endc))                  ; this%rr                           (:)   = spval
     allocate(this%rr_vr(begc:endc,1:nlevdecomp_full));                            this%rr_vr(:,:) = spval
     allocate(this%ar                                (begc:endc))                  ; this%ar                           (:)   = spval
+    allocate(this%ar_fates                          (begc:endc))                  ; this%ar_fates                     (:)   = spval
     allocate(this%gpp                               (begc:endc))                  ; this%gpp                          (:)   = spval
     allocate(this%gpp_fates                         (begc:endc))                  ; this%gpp_fates                    (:)   = spval
     allocate(this%npp                               (begc:endc))                  ; this%npp                          (:)   = spval
@@ -7986,6 +7988,7 @@ contains
        
        ! Zero fates column fluxes
        this%gpp_fates(i)             = value_column
+       this%ar_fates(i)              = value_column
 
     end do
   
@@ -8042,6 +8045,7 @@ contains
        this%gpp(c) = 0._r8
        this%gpp_fates(c) = 0._r8
        this%ar(c) = 0._r8
+       this%ar_fates(c) = 0._r8
        this%npp(c) = 0._r8
        this%vegfire(c) = 0._r8
        this%wood_harvestc(c) = 0._r8
