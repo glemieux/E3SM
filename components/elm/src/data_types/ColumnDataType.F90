@@ -644,6 +644,7 @@ module ColumnDataType
     real(r8), pointer :: nep                                   (:)     => null() ! (gC/m2/s) net ecosystem production, excludes fire, landuse, and harvest flux, positive for sink
     real(r8), pointer :: nbp                                   (:)     => null() ! (gC/m2/s) net biome production, includes fire, landuse, and harvest flux, positive for sink
     real(r8), pointer :: nee                                   (:)     => null() ! (gC/m2/s) net ecosystem exchange of carbon, includes fire, landuse, harvest, and hrv_xsmrpool flux, positive for source
+    real(r8), pointer :: grazing_loss_atm_fates                (:)     => null() ! (gC/m2/s) loss of carbon to atmosphere from grazing in FATES
     real(r8), pointer :: cinputs                               (:)     => null() ! column-level C inputs (gC/m2/s)
     real(r8), pointer :: coutputs                              (:)     => null() ! column-level C outputs (gC/m2/s)
     ! CLAMP summary (diagnostic) flux variables, not involved in mass balance
@@ -6253,6 +6254,7 @@ contains
     allocate(this%nep                               (begc:endc))                  ; this%nep                          (:)   = spval
     allocate(this%nbp                               (begc:endc))                  ; this%nbp                          (:)   = spval
     allocate(this%nee                               (begc:endc))                  ; this%nee                          (:)   = spval
+    allocate(this%grazing_loss_atm_fates            (begc:endc))                  ; this%grazing_loss_atm_fates       (:)   = spval
     allocate(this%cinputs                           (begc:endc))                  ; this%cinputs                      (:)   = spval
     allocate(this%coutputs                          (begc:endc))                  ; this%coutputs                     (:)   = spval
     allocate(this%bgc_cpool_ext_inputs_vr           (begc:endc, 1:nlevdecomp_full,ndecomp_pools)) ; this%bgc_cpool_ext_inputs_vr(:,:,:) = spval
@@ -7989,6 +7991,7 @@ contains
        ! Zero fates column fluxes
        this%gpp_fates(i)             = value_column
        this%ar_fates(i)              = value_column
+       this%grazing_loss_atm_fates(i)= value_column
 
     end do
   
@@ -8052,6 +8055,7 @@ contains
        this%fire_closs_p2c(c) = 0._r8
        !this%litfall(c) = 0._r8 (overwritten)
        this%hrv_xsmrpool_to_atm(c) = 0._r8
+       this%grazing_loss_atm_fates(c) = 0._r8
 
     end do
     
