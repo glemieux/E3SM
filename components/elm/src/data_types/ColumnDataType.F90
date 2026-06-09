@@ -211,6 +211,7 @@ module ColumnDataType
     real(r8), pointer :: cwdc                 (:)    => null() ! (gC/m2) Diagnostic: coarse woody debris C
     real(r8), pointer :: ctrunc               (:)    => null() ! (gC/m2) column-level sink for C truncation
     real(r8), pointer :: totlitc              (:)    => null() ! (gC/m2) total litter carbon
+    real(r8), pointer :: totlitc_cwd_fates    (:)    => null() ! (gC/m2) total litter carbon + coarse woody debris, FATES
     real(r8), pointer :: totsomc              (:)    => null() ! (gC/m2) total soil organic matter carbon
     real(r8), pointer :: som1c                (:)    => null()
     real(r8), pointer :: som2c                (:)    => null()
@@ -2193,6 +2194,7 @@ contains
     allocate(this%totlitc_1m           (begc:endc))     ; this%totlitc_1m           (:)     = spval
     allocate(this%totsomc_1m           (begc:endc))     ; this%totsomc_1m           (:)     = spval
     allocate(this%totlitc              (begc:endc))     ; this%totlitc              (:)     = spval
+    allocate(this%totlitc_cwd_fates    (begc:endc))     ; this%totlitc_cwd_fates    (:)     = spval
     allocate(this%totsomc              (begc:endc))     ; this%totsomc              (:)     = spval
 
     !-----------------------------------------------------------------------
@@ -3309,6 +3311,7 @@ contains
        this%totvegc(c) = 0._r8
        this%totvegc_abg(c) = 0._r8
        this%cropseedc_deficit(c) = 0._r8
+       this%totlitc_cwd_fates(c) = 0._r8
     end do
 
     return
