@@ -2801,7 +2801,8 @@ contains
         totsomc        => col_cs%totsomc, &
         totprodc       => col_cs%totprodc, &
         totvegc        => col_cs%totvegc, &
-        litt_cwdc      => col_cs%totlitc_cwd_fates)
+        litt_cwdc      => col_cs%totlitc_cwd_fates, &
+        seedc          => col_cs%seedc_fates)
  
     nc = bounds_clump%clump_index
     ! Loop over columns
@@ -2810,8 +2811,8 @@ contains
        s = this%f2hmap(nc)%hsites(c)
 
        totecosysc(c) = totsomc(c) + totlitc(c) + totprodc(c) + &
-            totvegc(c) + litt_cwdc(c) + &
-            this%fates(nc)%bc_out(s)%seed_c_si
+            totvegc(c) + litt_cwdc(c) + seedc(c)
+            
  
     end do
 
@@ -4004,6 +4005,9 @@ end subroutine wrap_update_hifrq_hist
                                                subgrid_type=registry_var_intid_column)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_litter_cwd_carbon_total, &
                                                data=col_cs%totlitc_cwd_fates(c), hlm_flag=.true., &
+                                               subgrid_type=registry_var_intid_column)
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_seed_carbon_total, &
+                                               data=col_cs%seedc_fates(c), hlm_flag=.true., &
                                                subgrid_type=registry_var_intid_column)
 
       ! Register variables related to plant hydraulics if necessary

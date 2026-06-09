@@ -200,6 +200,7 @@ module ColumnDataType
     real(r8), pointer :: ctrunc_vr            (:,:)  => null() ! (gC/m3) vertically-resolved column-level sink for C truncation
     real(r8), pointer :: frootc               (:)    => null() ! (gC/m2) column-level C pool for fine root
     real(r8), pointer :: seedc                (:)    => null() ! (gC/m2) column-level pool for seeding new Patches
+    real(r8), pointer :: seedc_fates          (:)    => null() ! (gC/m2) column-level seed carbon from FATES
     real(r8), pointer :: prod1c               (:)    => null() ! (gC/m2) crop product C pool, 1-year lifespan
     real(r8), pointer :: prod10c              (:)    => null() ! (gC/m2) wood product C pool, 10-year lifespan
     real(r8), pointer :: prod100c             (:)    => null() ! (gC/m2) wood product C pool, 100-year lifespan
@@ -2158,6 +2159,7 @@ contains
     allocate(this%fuelc_crop           (begc:endc))     ; this%fuelc_crop           (:)     = spval
     allocate(this%frootc               (begc:endc))     ; this%frootc               (:)     = spval
     allocate(this%seedc                (begc:endc))     ; this%seedc                (:)     = spval
+    allocate(this%seedc_fates          (begc:endc))     ; this%seedc_fates          (:)     = spval
     allocate(this%prod1c               (begc:endc))     ; this%prod1c               (:)     = spval
     allocate(this%prod10c              (begc:endc))     ; this%prod10c              (:)     = spval
     allocate(this%prod100c             (begc:endc))     ; this%prod100c             (:)     = spval
@@ -3312,6 +3314,7 @@ contains
        this%totvegc_abg(c) = 0._r8
        this%cropseedc_deficit(c) = 0._r8
        this%totlitc_cwd_fates(c) = 0._r8
+       this%seedc_fates(c) = 0._r8
     end do
 
     return
