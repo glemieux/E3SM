@@ -61,6 +61,7 @@ module SoilStateType
      real(r8), pointer :: watmin_col           (:,:) ! col minimum volumetric soil water (nlevsoi)
      real(r8), pointer :: sucsat_col           (:,:) ! col minimum soil suction (mm) (nlevgrnd)
      real(r8), pointer :: sucmin_col           (:,:) ! col minimum allowable soil liquid suction pressure (mm) [Note: sucmin_col is a negative value, while sucsat_col is a positive quantity]
+     real(r8), pointer :: sucpot_col_fates     (:,:) ! col soil suction potential (mm) [Note: sucpot_col is a negative value, while sucsat_col is a positive quantity]
      real(r8), pointer :: soilbeta_col         (:)   ! col factor that reduces ground evaporation L&P1992(-)
      real(r8), pointer :: soilalpha_col        (:)   ! col factor that reduces ground saturated specific humidity (-)
      real(r8), pointer :: soilalpha_u_col      (:)   ! col urban factor that reduces ground saturated specific humidity (-)
@@ -165,6 +166,7 @@ contains
     allocate(this%watmin_col           (begc:endc,nlevgrnd))            ; this%watmin_col           (:,:) = spval
     allocate(this%sucsat_col           (begc:endc,nlevgrnd))            ; this%sucsat_col           (:,:) = spval
     allocate(this%sucmin_col           (begc:endc,nlevgrnd))            ; this%sucmin_col           (:,:) = spval
+    allocate(this%sucpot_col_fates     (begc:endc,nlevgrnd))            ; this%sucpot_col_fates     (:,:) = spval
     allocate(this%soilbeta_col         (begc:endc))                     ; this%soilbeta_col         (:)   = spval
     allocate(this%soilalpha_col        (begc:endc))                     ; this%soilalpha_col        (:)   = spval
     allocate(this%soilalpha_u_col      (begc:endc))                     ; this%soilalpha_u_col      (:)   = spval

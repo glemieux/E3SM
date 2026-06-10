@@ -1217,7 +1217,7 @@ contains
       integer  :: nc                       ! clump index
       integer  :: nlevsoil                 ! number of soil layers at the site
       integer  :: ier                      ! allocate status code
-      real(r8) :: s_node, smp_node         ! local for relative water content and potential
+      real(r8) :: s_node                   ! local for relative water content and potential
       logical  :: nitr_suppl,phos_suppl    ! Is ELM currently supplementing N or P?
       real(r8), pointer :: lnfm24(:)       ! 24-hour averaged lightning data
       real(r8), pointer :: gdp_lf_col(:)          ! gdp data
@@ -1303,8 +1303,7 @@ contains
                call soil_water_retention_curve%soil_suction(soilstate_inst%sucsat_col(c,j), &
                        s_node, &
                        soilstate_inst%bsw_col(c,j), &
-                       smp_node)
-               this%fates(nc)%bc_in(s)%smp_sl(j) = smp_node
+                       soilstate_inst%sucpot_col_fates(c,j))
             end if
          end do
          
@@ -2387,7 +2386,6 @@ contains
       class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
 
       ! local variables
-      real(r8) :: smp_node ! Soil suction potential, negative, [mm]
       real(r8) :: s_node
       integer  :: s
       integer  :: c
@@ -2474,11 +2472,7 @@ contains
                  call soil_water_retention_curve%soil_suction( soilstate_inst%sucsat_col(c,j), &
                        s_node, &
                        soilstate_inst%bsw_col(c,j), &
-                       smp_node)
-
-                 ! Non-fates places a maximum (which is a negative upper bound) on smp
-
-                 this%fates(nc)%bc_in(s)%smp_sl(j)           = smp_node
+                       soilstate_inst%sucpot_col_fates(c,j))
               end if
            end do
         end do
@@ -4135,6 +4129,10 @@ subroutine RegisterInterfaceVariablesColdStart(this, nc, canopystate_inst, soils
                                                subgrid_type=registry_var_intid_column)
       call this%fates(nc)%registry(r)%Register(key=hlm_fates_soil_water_saturation, &
                                                data=soilstate_inst%watsat_col(c,:), &
+                                               hlm_flag=.true., &
+                                               subgrid_type=registry_var_intid_column)
+      call this%fates(nc)%registry(r)%Register(key=hlm_fates_soil_suction_potential, &
+                                               data=soilstate_inst%sucpot_col_fates(c,:), &
                                                hlm_flag=.true., &
                                                subgrid_type=registry_var_intid_column)
 
