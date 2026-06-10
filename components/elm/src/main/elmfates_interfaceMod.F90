@@ -4010,6 +4010,12 @@ end subroutine wrap_update_hifrq_hist
                                                data=col_cs%seedc_fates(c), hlm_flag=.true., &
                                                subgrid_type=registry_var_intid_column)
 
+      if(trim(nu_com)=='ECA') then
+         call this%fates(nc)%registry(r)%Register(key=hlm_fates_decomposer_biomass, &
+                                                  data=col_cs%decompmicc_fates(c,:), hlm_flag=.true., &
+                                                  subgrid_type=registry_var_intid_column)
+      end if
+
       ! Register variables related to plant hydraulics if necessary
       if (use_fates_planthydro) then
          call this%fates(nc)%registry(r)%Register(key=hlm_fates_liquid_water, &

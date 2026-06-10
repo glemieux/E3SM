@@ -209,6 +209,7 @@ module ColumnDataType
     real(r8), pointer :: totpftc              (:)    => null() ! (gC/m2) total patch-level carbon, including cpool averaged to column (p2c)
     real(r8), pointer :: decomp_cpools_1m     (:,:)  => null() ! (gC/m2)  Diagnostic: decomposing (litter, cwd, soil) c pools to 1 meter
     real(r8), pointer :: decomp_cpools        (:,:)  => null() ! (gC/m2)  decomposing (litter, cwd, soil) c pools
+    real(r8), pointer :: decompmicc_fates     (:,:)  => null() ! (gC/m3)  microbial decomposer biomass per decomp level, FATES
     real(r8), pointer :: cwdc                 (:)    => null() ! (gC/m2) Diagnostic: coarse woody debris C
     real(r8), pointer :: ctrunc               (:)    => null() ! (gC/m2) column-level sink for C truncation
     real(r8), pointer :: totlitc              (:)    => null() ! (gC/m2) total litter carbon
@@ -2191,6 +2192,7 @@ contains
     allocate(this%decomp_cpools_vr (begc:endc,1:nlevdecomp_full,1:ndecomp_pools)) ; this%decomp_cpools_vr (:,:,:) = spval
     allocate(this%ctrunc_vr        (begc:endc,1:nlevdecomp_full))                 ; this%ctrunc_vr        (:,:)   = spval
     allocate(this%decomp_som2c_vr  (begc:endc,1:nlevdecomp_full))                 ; this%decomp_som2c_vr  (:,:)   = spval
+    allocate(this%decompmicc_fates (begc:endc,1:nlevdecomp_full))                 ; this%decompmicc_fates (:,:)   = spval
     allocate(this%decomp_cpools_1m (begc:endc,1:ndecomp_pools))                   ; this%decomp_cpools_1m (:,:)   = spval
     allocate(this%decomp_cpools    (begc:endc,1:ndecomp_pools))                   ; this%decomp_cpools    (:,:)   = spval
     allocate(this%totlitc_1m           (begc:endc))     ; this%totlitc_1m           (:)     = spval
@@ -3315,6 +3317,7 @@ contains
        this%cropseedc_deficit(c) = 0._r8
        this%totlitc_cwd_fates(c) = 0._r8
        this%seedc_fates(c) = 0._r8
+       this%decompmicc_fates(c,:) = 0.0_r8
     end do
 
     return

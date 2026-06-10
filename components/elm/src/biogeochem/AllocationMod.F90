@@ -24,6 +24,7 @@ module AllocationMod
   use LandunitType        , only : lun_pp
   use ColumnType          , only : col_pp
   use ColumnDataType      , only : col_ws
+  use ColumnDataType      , only : col_cs
   use ColumnDataType      , only : col_cf, c13_col_cf, c14_col_cf
   use ColumnDataType      , only : col_ns, col_nf, col_ps, col_pf
   use VegetationType      , only : veg_pp
@@ -1318,7 +1319,7 @@ contains
 
 
            else  !(ECA)
-              decompmicc(fc,:)  =  elm_fates%fates(ci)%bc_out(s)%decompmicc(:) ! Should be (nlevdecomp)
+              decompmicc(fc,:)  =  col_cs%decompmicc_fates(fc,:)
            end if
          end do 
 
