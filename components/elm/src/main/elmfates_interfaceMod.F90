@@ -2371,7 +2371,7 @@ contains
       !
       ! ---------------------------------------------------------------------------------
 
-      
+      use FatesInterfaceParametersMod, only: hlm_fates_soil_suction_potential
 
       implicit none
 
@@ -2476,6 +2476,9 @@ contains
               end if
            end do
         end do
+
+        ! Update the soil suction potential interface variable only
+        call this%fates(nc)%UpdateInterfaceVariable(key=hlm_fates_soil_suction_potential)
 
         ! -------------------------------------------------------------------------------
         ! Suction and active uptake layers calculated, lets calculate uptake (btran)
