@@ -1585,6 +1585,7 @@ contains
          htop => canopystate_inst%htop_patch , &
          hbot => canopystate_inst%hbot_patch , &
          z0m  => frictionvel_inst%z0m_patch  , & ! Output: [real(r8) (:)   ] momentum roughness length (m)
+         z0mg => frictionvel_inst%z0mg_col   , & 
          displa => canopystate_inst%displa_patch, &
          dleaf_patch => canopystate_inst%dleaf_patch, &
          snow_depth => col_ws%snow_depth, &
@@ -1598,6 +1599,7 @@ contains
           c = this%f2hmap(nc)%fcolumn(s)
           this%fates(nc)%bc_in(s)%snow_depth_si   = snow_depth(c)
           this%fates(nc)%bc_in(s)%frac_sno_eff_si = frac_sno_eff(c)
+          this%fates(nc)%bc_in(s)%z0mg = z0mg(c)
        end do
 
        ! Only update the fates internal snow burial if this is not a restart
@@ -1614,7 +1616,8 @@ contains
        call update_hlm_dynamics(this%fates(nc)%nsites, &
             this%fates(nc)%sites,  &
             this%f2hmap(nc)%fcolumn, &
-            this%fates(nc)%bc_out )
+            this%fates(nc)%bc_out, &
+            this%fates(nc)%bc_in)
 
        !---------------------------------------------------------------------------------
        ! Diagnose water storage in canopy if hydraulics is on
