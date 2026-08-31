@@ -374,11 +374,8 @@ contains
          ! Ground roughness lengths over non-lake columns (includes bare ground, ground
          ! underneath canopy, wetlands, etc.)
 
-         if (frac_sno(c) > 0._r8) then
-            z0mg(c) = zsno
-         else
-            z0mg(c) = zlnd
-         end if
+         call frictionvel_vars%SetRoughnessLengthsOverGround(c, frac_sno)
+
          z0hg(c) = z0mg(c)            ! initial set only
          z0qg(c) = z0mg(c)            ! initial set only
 

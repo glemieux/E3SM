@@ -2276,6 +2276,14 @@ contains
                    this%fates(nc)%bc_out(s), &
                    is_restarting = .false.)
 
+              ! Update the bareground roughness lengths if not using 
+              ! interstitial bareground in FATES to prep for passing to FATES.
+              ! If this is not updated here then the roughness length sent to 
+              ! FATES will be spval.
+              if (.not.use_fates_interstitial_bareground) then
+                 call frictionvel_inst%SetRoughnessLengthsOverGround(c, col_ws%frac_sno)
+              end if
+
            end do
 
            ! ------------------------------------------------------------------------
