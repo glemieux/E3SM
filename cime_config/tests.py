@@ -520,6 +520,7 @@ _TESTS = {
             "SMS_D_Ld15.f45_g37.IELMFATES.elm-fates_cold_twostream",
             "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_managedfire",
             "ERS_Ld60.f45_g37.IELMFATES.elm-fates_cold_nocomp_dbhinit"
+            "ERP_D_Ld60.f45_g37.IELMFATES.elm-fates_cold_bareground_off"
             )
         },
 
