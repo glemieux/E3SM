@@ -252,6 +252,7 @@ module elm_varctl
   logical, public            :: use_fates_lupft = .false.               ! true => FATES land use x pft mode
   logical, public            :: use_fates_potentialveg = .false.        ! true => FATES potential veg only
   logical, public            :: use_fates_daylength_factor = .false.    ! true => enable fates to use host land model daylength factor
+  logical, public            :: use_fates_interstitial_bareground = .true.    ! true => incorporate fates interstitial bareground with ELM bareground
   character(len=256), public :: fluh_timeseries = ''                    ! filename for land use harmonization data
   character(len=256), public :: flandusepftdat = ''                     ! filename for fates landuse x pft data
   character(len=256), public :: fates_inventory_ctrl_filename = ''      ! filename for inventory control

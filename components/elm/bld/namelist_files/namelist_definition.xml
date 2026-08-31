@@ -464,6 +464,14 @@ Initialize cohorts at coldstart with diameter at breast height instead of densit
 (Only relevant if FATES is on).
 </entry>
 
+<entry id="use_fates_interstitial_bareground" type="logical" category="physics"
+        group="elm_inparm" valid_values="" value=".true.">
+This option sets whether or not to include the interstitial bareground areas from FATES
+patches into the CLM bareground patch area.  If this option is turned off, fates_radiation_model
+must by set to 'twostream'.
+</entry>
+
+
 <entry id="fates_inventory_ctrl_filename" type="char*256" category="datasets"
        input_pathname="abs" group="elm_inparm" valid_values="" >
 Full pathname to the inventory initialization control file.

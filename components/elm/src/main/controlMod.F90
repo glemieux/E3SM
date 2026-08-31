@@ -85,6 +85,7 @@ module controlMod
                         fates_spitfire_mode, fates_harvest_mode, use_fates_dbh_init, &
                         use_fates_planthydro, use_fates_ed_st3, use_fates_cohort_age_tracking, &
                         use_fates_ed_prescribed_phys, use_fates_inventory_init, &
+                        use_fates_interstitial_bareground, &
                         fates_inventory_ctrl_filename, use_fates_fixed_biogeog, &
                         use_fates_nocomp, use_fates_sp, use_fates_luh, &
                         use_fates_lupft, use_fates_potentialveg, use_fates_managed_fire, &
@@ -321,6 +322,7 @@ contains
           fates_seeddisp_cadence,                       &
           use_fates_tree_damage,                        &
           use_fates_daylength_factor,                   &
+          use_fates_interstitial_bareground,            &
           fates_photosynth_acclimation,                 &
           fates_stomatal_model,                         &
           fates_stomatal_assimilation,                  &
@@ -898,6 +900,7 @@ contains
     call mpi_bcast (use_fates_inventory_init, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_dbh_init, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_fates_daylength_factor, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_fates_interstitial_bareground, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (fates_photosynth_acclimation, len(fates_photosynth_acclimation), MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fates_stomatal_model, len(fates_stomatal_model) , MPI_CHARACTER, 0, mpicom, ier)
     call mpi_bcast (fates_stomatal_assimilation, len(fates_stomatal_assimilation) , MPI_CHARACTER, 0, mpicom, ier)
@@ -1357,6 +1360,7 @@ contains
        write(iulog, *) '    use_fates_lupft = ', use_fates_lupft
        write(iulog, *) '    use_fates_potentialveg = ', use_fates_potentialveg
        write(iulog, *) '    use_fates_daylength_factor = ', use_fates_daylength_factor
+       write(iulog, *) '    use_fates_interstitial_bareground= ', use_fates_interstitial_bareground
        write(iulog, *) '    fates_photosynth_acclimation = ', trim(fates_photosynth_acclimation)
        write(iulog, *) '    fates_stomatal_model = ', fates_stomatal_model
        write(iulog, *) '    fates_stomatal_assimilation = ', fates_stomatal_assimilation
