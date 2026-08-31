@@ -466,6 +466,7 @@ contains
      integer                                        :: pass_radiation_model
      integer                                        :: pass_electron_transport_model
      integer                                        :: pass_managed_fire
+     integer                                        :: pass_interstitial_bareground
      
      ! ----------------------------------------------------------------------------------
      ! FATES lightning definitions
@@ -644,6 +645,14 @@ contains
            pass_cohort_age_tracking = 0
         end if
         call set_fates_ctrlparms('use_cohort_age_tracking',ival=pass_cohort_age_tracking)
+
+        if(use_fates_interstitial_bareground) then
+           pass_interstitial_bareground = 1
+        else
+           pass_interstitial_bareground = 0
+        end if
+        call set_fates_ctrlparms('use_fates_interstitial_bareground',ival=pass_interstitial_bareground)
+
 
         if (trim(fates_radiation_model) == 'norman') then
            pass_radiation_model = 1
