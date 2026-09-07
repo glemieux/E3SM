@@ -3486,7 +3486,7 @@ sub setup_logic_fates {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_fixed_biogeog', 'use_fates'=>$nl_flags->{'use_fates'},
                                                                                       'use_fates_lupft'=>$nl->get_value('use_fates_lupft'),
                                                                                       'use_fates_sp'=>$nl->get_value('use_fates_sp') );
-	add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_spitfire_mode', 'use_fates'=>$nl_flags->{'use_fates'},
+	  add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_spitfire_mode', 'use_fates'=>$nl_flags->{'use_fates'},
                                                                                       'use_fates_managed_fire'=>$nl->get_value('use_fates_managed_fire'),
                                                                                       'use_fates_sp'=>$nl->get_value('use_fates_sp') );
     add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_radiation_model', 'use_fates'=>$nl_flags->{'use_fates'},
