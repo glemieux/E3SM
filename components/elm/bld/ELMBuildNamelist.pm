@@ -3449,7 +3449,7 @@ sub setup_logic_fates {
                    "use_fates_ed_st3",
                    "use_fates_ed_prescribed_phys",
                    "use_fates_inventory_init",
-		   "use_fates_dbh_init",
+		               "use_fates_dbh_init",
                    "use_fates_lupft",
                    "use_fates_planthydro",
                    "use_fates_potentialveg",
@@ -3521,9 +3521,9 @@ sub setup_logic_fates {
     # Make sure that dbh initialization is only active if FATES is in no-comp mode
     my $var = "use_fates_dbh_init";
     if ( defined($nl->get_value($var))  ) {
-	if ( &value_is_true($nl->get_value($var)) && ( !&value_is_true($nl->get_value("use_fates_nocomp")))) {
-	    fatal_error("$var can only be .true. if use_fates_nocomp is .true." );
-	}
+	      if ( &value_is_true($nl->get_value($var)) && ( !&value_is_true($nl->get_value("use_fates_nocomp")))) {
+	          fatal_error("$var can only be .true. if use_fates_nocomp is .true." );
+	          }
     }
     
     # make sure that fates landuse x pft mode has the necessary run mode configurations
