@@ -1690,7 +1690,7 @@ contains
 
           ! FATES sets the bareground fraction for the given site as the fraction
           ! of the site that is not covered by the sum of the canopy. 
-          if (use_fates_interstitial_baregound) then
+          if (use_fates_interstitial_bareground) then
 
             ! Precision errors on the patch_fraction sum, even small (e-12)
             ! do exist, and can create potentially negetive bare-soil fractions
