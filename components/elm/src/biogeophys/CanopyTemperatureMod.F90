@@ -374,7 +374,7 @@ contains
          ! Ground roughness lengths over non-lake columns (includes bare ground, ground
          ! underneath canopy, wetlands, etc.)
 
-         call frictionvel_vars%SetRoughnessLengthsOverGround(c, frac_sno)
+         call frictionvel_vars%SetRoughnessLengthsOverGround(c, frac_sno(c))
 
          z0hg(c) = z0mg(c)            ! initial set only
          z0qg(c) = z0mg(c)            ! initial set only

@@ -383,16 +383,16 @@ contains
     !
     ! !ARGUMENTS:
     class(frictionvel_type) :: this
-    real(r8)                :: frac_sno  ! snow fraction for the column
+    integer, intent(in)     :: c
+    real(r8), intent(in)    :: frac_sno  ! snow fraction for the column
     !
     ! !LOCAL VARIABLES:
-    integer :: c
     !-----------------------------------------------------------------------
 
-    if (frac_sno(c) > 0._r8) then
-       this%z0mg(c) = zsno
+    if (frac_sno > 0._r8) then
+       this%z0mg_col(c) = zsno
     else
-       this%z0mg(c) = zlnd
+       this%z0mg_col(c) = zlnd
     end if
 
   end subroutine SetRoughnessLengthsOverGround

@@ -2281,7 +2281,7 @@ contains
               ! If this is not updated here then the roughness length sent to 
               ! FATES will be spval.
               if (.not.use_fates_interstitial_bareground) then
-                 call frictionvel_inst%SetRoughnessLengthsOverGround(c, col_ws%frac_sno)
+                 call frictionvel_inst%SetRoughnessLengthsOverGround(c, col_ws%frac_sno(c))
               end if
 
            end do
