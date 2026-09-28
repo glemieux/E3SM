@@ -64,7 +64,7 @@ module FrictionVelocityType
      procedure, private :: InitAllocate
      procedure, private :: InitHistory
      procedure, private :: InitCold
-
+     procedure, public  :: SetRoughnessLengthsOverGround             ! Set roughness lengths over ground for non-lake points
 
   end type frictionvel_type
   !------------------------------------------------------------------------------
@@ -368,6 +368,34 @@ contains
 
   end subroutine Restart
 
+  !------------------------------------------------------------------------
+  subroutine SetRoughnessLengthsOverGround(this, c, frac_sno)
+    !
+    ! !DESCRIPTION:
+    ! Set roughness lengths over ground for non-lake points
+    !
+    ! This is broken out into a separate subroutine because it is called from the
+    ! ELM-FATES interface module during initialization so that the roughness lengths
+    ! over ground can be passed to FATES prior to the first model timestep.
+    !
+    ! !USES:
+    use elm_varcon, only : zlnd, zsno
+    !
+    ! !ARGUMENTS:
+    class(frictionvel_type) :: this
+    integer, intent(in)     :: c
+    real(r8), intent(in)    :: frac_sno  ! snow fraction for the column
+    !
+    ! !LOCAL VARIABLES:
+    !-----------------------------------------------------------------------
 
+    if (frac_sno > 0._r8) then
+       this%z0mg_col(c) = zsno
+    else
+       this%z0mg_col(c) = zlnd
+    end if
+
+  end subroutine SetRoughnessLengthsOverGround
+  !------------------------------------------------------------------------
 
 end module FrictionVelocityType

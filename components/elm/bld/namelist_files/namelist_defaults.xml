@@ -2269,6 +2269,7 @@ this mask will have smb calculated over the entire global land surface
 <fates_regeneration_model       use_fates=".true.">default</fates_regeneration_model>
 <fates_hydro_solver             use_fates=".true.">2D_Picard</fates_hydro_solver>
 <fates_radiation_model          use_fates=".true.">norman</fates_radiation_model>
+<fates_radiation_model          use_fates=".true." use_fates_interstitial_bareground=".false.">twostream</fates_radiation_model>
 <fates_electron_transport_model use_fates=".true.">FvCB1980</fates_electron_transport_model>
 <use_fates_luh                  use_fates=".true." fates_harvest_mode="luhdata_area"  >.true.</use_fates_luh>
 <use_fates_luh                  use_fates=".true." fates_harvest_mode="luhdata_mass"  >.true.</use_fates_luh>
@@ -2284,6 +2285,8 @@ this mask will have smb calculated over the entire global land surface
 <use_fates_fixed_biogeog        use_fates=".true." use_fates_sp=".true.">.true.</use_fates_fixed_biogeog>
 <use_fates_fixed_biogeog        use_fates=".true." use_fates_lupft=".true.">.true.</use_fates_fixed_biogeog>
 <use_fates_fixed_biogeog        use_fates=".true."                      >.false.</use_fates_fixed_biogeog>
+<use_fates_interstitial_bareground use_fates=".true." >.true.</use_fates_interstitial_bareground>
+
 <use_vertsoilc                  bgc_mode="fates"  >.true.</use_vertsoilc>
 <use_century_decomp             bgc_mode="fates"  >.true.</use_century_decomp>
 <use_lch4                       bgc_mode="fates"  >.false.</use_lch4>

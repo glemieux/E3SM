@@ -61,6 +61,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : use_fates_lupft
    use elm_varctl        , only : use_fates_potentialveg
    use elm_varctl        , only : use_fates_daylength_factor
+   use elm_varctl        , only : use_fates_interstitial_bareground
    use elm_varctl        , only : fates_photosynth_acclimation
    use elm_varctl        , only : fates_stomatal_model
    use elm_varctl        , only : fates_stomatal_assimilation
@@ -465,6 +466,7 @@ contains
      integer                                        :: pass_radiation_model
      integer                                        :: pass_electron_transport_model
      integer                                        :: pass_managed_fire
+     integer                                        :: pass_interstitial_bareground
      
      ! ----------------------------------------------------------------------------------
      ! FATES lightning definitions
@@ -643,6 +645,14 @@ contains
            pass_cohort_age_tracking = 0
         end if
         call set_fates_ctrlparms('use_cohort_age_tracking',ival=pass_cohort_age_tracking)
+
+        if(use_fates_interstitial_bareground) then
+           pass_interstitial_bareground = 1
+        else
+           pass_interstitial_bareground = 0
+        end if
+        call set_fates_ctrlparms('use_fates_interstitial_bareground',ival=pass_interstitial_bareground)
+
 
         if (trim(fates_radiation_model) == 'norman') then
            pass_radiation_model = 1
@@ -1575,6 +1585,7 @@ contains
          htop => canopystate_inst%htop_patch , &
          hbot => canopystate_inst%hbot_patch , &
          z0m  => frictionvel_inst%z0m_patch  , & ! Output: [real(r8) (:)   ] momentum roughness length (m)
+         z0mg => frictionvel_inst%z0mg_col   , & 
          displa => canopystate_inst%displa_patch, &
          dleaf_patch => canopystate_inst%dleaf_patch, &
          snow_depth => col_ws%snow_depth, &
@@ -1588,6 +1599,7 @@ contains
           c = this%f2hmap(nc)%fcolumn(s)
           this%fates(nc)%bc_in(s)%snow_depth_si   = snow_depth(c)
           this%fates(nc)%bc_in(s)%frac_sno_eff_si = frac_sno_eff(c)
+          this%fates(nc)%bc_in(s)%z0mg = z0mg(c)
        end do
 
        ! Only update the fates internal snow burial if this is not a restart
@@ -1604,7 +1616,8 @@ contains
        call update_hlm_dynamics(this%fates(nc)%nsites, &
             this%fates(nc)%sites,  &
             this%f2hmap(nc)%fcolumn, &
-            this%fates(nc)%bc_out )
+            this%fates(nc)%bc_out, &
+            this%fates(nc)%bc_in)
 
        !---------------------------------------------------------------------------------
        ! Diagnose water storage in canopy if hydraulics is on
@@ -1675,14 +1688,19 @@ contains
           veg_pp%is_bareground(col_pp%pfti(c)) = .true.
           npatch = this%fates(nc)%sites(s)%youngest_patch%patchno
 
-          ! Precision errors on the canopy_fraction_pa sum, even small (e-12)
-          ! do exist, and can create potentially negetive bare-soil fractions
-          ! (ie -1e-12 or smaller). Even though this is effectively zero,
-          ! it can generate weird logic scenarios in the ctsm/elm code, so we
-          ! protext it here with a lower bound of 0.0_r8.
+          ! FATES sets the bareground fraction for the given site as the fraction
+          ! of the site that is not covered by the sum of the canopy. 
+          if (use_fates_interstitial_bareground) then
 
-          veg_pp%wt_ed(col_pp%pfti(c)) = max(0.0_r8, &
-               1.0_r8 - sum(this%fates(nc)%bc_out(s)%canopy_fraction_pa(1:npatch)) )
+            ! Precision errors on the patch_fraction sum, even small (e-12)
+            ! do exist, and can create potentially negetive bare-soil fractions
+            ! (ie -1e-12 or smaller). Even though this is effectively zero,
+            ! it can generate weird logic scenarios in the ctsm/elm code, so we
+            ! protext it here with a lower bound of 0.0_r8.
+
+            veg_pp%wt_ed(col_pp%pfti(c)) = max(0.0_r8, &
+                 1.0_r8 - sum(this%fates(nc)%bc_out(s)%patch_fraction(1:npatch)) )
+          end if
 
           ! initialize SP mode pft order index to 0.  Below ground is the 0th patch
           veg_pp%sp_pftorder_index(col_pp%pfti(c)) = 0
@@ -1692,12 +1710,17 @@ contains
 
              p = ifp+col_pp%pfti(c)
 
-             ! bc_out(s)%canopy_fraction_pa(ifp) is the area fraction
+             ! If FATES interstitial bareground is being counted in the
+             ! CLM bareground patch, then the 
+             ! bc_out(s)%patch_fraction(ifp) is the area fraction
              ! the site's total ground area that is occupied by the
-             ! area footprint of the current patch's vegetation canopy
+             ! area footprint of the current patch's vegetation canopy.
+             ! Otherwise this is the fraction of the site that the FATES patch
+             ! occupies including the interstitial bareground.
+             ! This logic check is handled on the FATES side. 
 
              veg_pp%is_veg(p) = .true.
-             veg_pp%wt_ed(p)  = this%fates(nc)%bc_out(s)%canopy_fraction_pa(ifp)
+             veg_pp%wt_ed(p)  = this%fates(nc)%bc_out(s)%patch_fraction(ifp)
 
              areacheck = areacheck + veg_pp%wt_ed(p)
 
@@ -2252,6 +2275,14 @@ contains
                    this%fates(nc)%bc_in(s), &
                    this%fates(nc)%bc_out(s), &
                    is_restarting = .false.)
+
+              ! Update the bareground roughness lengths if not using 
+              ! interstitial bareground in FATES to prep for passing to FATES.
+              ! If this is not updated here then the roughness length sent to 
+              ! FATES will be spval.
+              if (.not.use_fates_interstitial_bareground) then
+                 call frictionvel_inst%SetRoughnessLengthsOverGround(c, col_ws%frac_sno(c))
+              end if
 
            end do
 

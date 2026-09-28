@@ -834,6 +834,7 @@ sub setup_cmdl_fates_mode {
                      "use_vertsoilc",
                      "use_fates_managed_fire",
                      "use_fates_daylength_factor",
+                     "use_fates_interstitial_bareground",
                      "fates_photosynth_acclimation",
                      "fates_stomatal_model",
                      "fates_stomatal_assimilation",
@@ -921,6 +922,10 @@ sub setup_cmdl_fates_mode {
 	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
        $var = "use_fates_potentialveg";
+       if ( defined($nl->get_value($var)) ) {
+	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
+       }
+       $var = "use_fates_interstitial_bareground";
        if ( defined($nl->get_value($var)) ) {
 	   fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
        }
@@ -3444,7 +3449,7 @@ sub setup_logic_fates {
                    "use_fates_ed_st3",
                    "use_fates_ed_prescribed_phys",
                    "use_fates_inventory_init",
-		   "use_fates_dbh_init",
+		               "use_fates_dbh_init",
                    "use_fates_lupft",
                    "use_fates_planthydro",
                    "use_fates_potentialveg",
@@ -3452,6 +3457,7 @@ sub setup_logic_fates {
                    "use_fates_tree_damage",
                    "use_fates_daylength_factor",
                    "use_fates_managed_fire",
+                   "use_fates_interstitial_bareground",
                    "fates_photosynth_acclimation",
                    "fates_stomatal_model",
                    "fates_stomatal_assimilation",
@@ -3480,9 +3486,11 @@ sub setup_logic_fates {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_fixed_biogeog', 'use_fates'=>$nl_flags->{'use_fates'},
                                                                                       'use_fates_lupft'=>$nl->get_value('use_fates_lupft'),
                                                                                       'use_fates_sp'=>$nl->get_value('use_fates_sp') );
-	add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_spitfire_mode', 'use_fates'=>$nl_flags->{'use_fates'},
+	  add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_spitfire_mode', 'use_fates'=>$nl_flags->{'use_fates'},
                                                                                       'use_fates_managed_fire'=>$nl->get_value('use_fates_managed_fire'),
                                                                                       'use_fates_sp'=>$nl->get_value('use_fates_sp') );
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_radiation_model', 'use_fates'=>$nl_flags->{'use_fates'},
+                    'use_fates_interstitial_bareground'=>$nl->get_value('use_fates_interstitial_bareground') );                               
 
     # For FATES SP mode make sure no-competion, and fixed-biogeography are also set
     # And also check for other settings that can't be trigged on as well
@@ -3513,9 +3521,9 @@ sub setup_logic_fates {
     # Make sure that dbh initialization is only active if FATES is in no-comp mode
     my $var = "use_fates_dbh_init";
     if ( defined($nl->get_value($var))  ) {
-	if ( &value_is_true($nl->get_value($var)) && ( !&value_is_true($nl->get_value("use_fates_nocomp")))) {
-	    fatal_error("$var can only be .true. if use_fates_nocomp is .true." );
-	}
+	      if ( &value_is_true($nl->get_value($var)) && ( !&value_is_true($nl->get_value("use_fates_nocomp")))) {
+	          fatal_error("$var can only be .true. if use_fates_nocomp is .true." );
+	          }
     }
     
     # make sure that fates landuse x pft mode has the necessary run mode configurations
@@ -3621,6 +3629,17 @@ sub setup_logic_fates {
            if ( $nl->get_value('fates_spitfire_mode') == 0 ) {
               fatal_error("fates_spitfire_mode must be non-zero when $var is true");
 	         }
+        }
+     }        
+     
+     # Check the fates_radiation_model is compatible with interstitial bareground
+     my $var = "use_fates_interstitial_bareground";
+     if ( defined($nl->get_value($var))  ) {
+        if ( ! &value_is_true($nl->get_value($var)) ) {
+        my $mode = remove_leading_and_trailing_quotes($nl->get_value('fates_radiation_model'));
+           if ( $mode ne 'twostream' ) {
+              fatal_error("fates_radiation_model must be 'twostream' when $var is false");
+	        }
         }
      }
   }
